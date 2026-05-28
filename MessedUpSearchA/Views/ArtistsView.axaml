@@ -1,0 +1,134 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:MessedUpSearchA.ViewModels"
+             x:Class="MessedUpSearchA.Views.ArtistsView"
+             x:DataType="vm:ArtistsViewModel">
+
+    <UserControl.Styles>
+        <StyleInclude Source="/Assets/Styles/MainWindowStyles.axaml"/>
+    </UserControl.Styles>
+
+    <Grid RowDefinitions="44,*,Auto" RowSpacing="20">
+
+        <!-- ============== ACTION BUTTONS ============== -->
+        <StackPanel Grid.Row="0"
+                    Orientation="Horizontal"
+                    HorizontalAlignment="Right"
+                    Spacing="12">
+            <Button Classes="action" Content="CRM"/>
+            <Button Classes="action" Content="SETTINGS"/>
+        </StackPanel>
+
+        <!-- ============== TABLE CARD ============== -->
+        <Border Grid.Row="1" Classes="card" ClipToBounds="True">
+            <Grid RowDefinitions="76,*"
+                  ColumnDefinitions="60,1.8*,1.5*,1.3*,2.4*,1.2*">
+
+                <!-- vertical column dividers (span both rows) -->
+                <Border Grid.Row="0" Grid.RowSpan="2" Grid.Column="0" Classes="colDivider"/>
+                <Border Grid.Row="0" Grid.RowSpan="2" Grid.Column="1" Classes="colDivider"/>
+                <Border Grid.Row="0" Grid.RowSpan="2" Grid.Column="2" Classes="colDivider"/>
+                <Border Grid.Row="0" Grid.RowSpan="2" Grid.Column="3" Classes="colDivider"/>
+                <Border Grid.Row="0" Grid.RowSpan="2" Grid.Column="4" Classes="colDivider"/>
+
+                <!-- header text -->
+                <TextBlock Grid.Row="0" Grid.Column="1" Classes="tableHeader" Text="NICKNAME"/>
+                <TextBlock Grid.Row="0" Grid.Column="2" Classes="tableHeader" Text="TYPE / GENRE"/>
+                <TextBlock Grid.Row="0" Grid.Column="3" Classes="tableHeader"
+                           Text="PLAYS&#10;(on last track)"
+                           TextWrapping="Wrap"/>
+                <TextBlock Grid.Row="0" Grid.Column="4" Classes="tableHeader"
+                           Text="Links to social media and music platforms&#10;(listenings per month)"
+                           TextWrapping="Wrap"
+                           Margin="14,0,14,0"/>
+                <TextBlock Grid.Row="0" Grid.Column="5" Classes="tableHeader" Text="LANGUAGE"/>
+
+                <!-- header underline -->
+                <Border Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="6" Classes="headerDivider"/>
+
+                <!-- body: empty for now -->
+                <ScrollViewer Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="6"
+                              HorizontalScrollBarVisibility="Disabled"
+                              VerticalScrollBarVisibility="Auto">
+                    <ItemsControl x:Name="ArtistsList"/>
+                </ScrollViewer>
+            </Grid>
+        </Border>
+
+        <!-- ============== FILTERS + SEARCH ============== -->
+        <Grid Grid.Row="2" ColumnDefinitions="*,*,*,*,2*" ColumnSpacing="14" Height="72">
+
+            <!-- TYPE -->
+            <Border Grid.Column="0" Classes="filterBox">
+                <Grid RowDefinitions="Auto,*">
+                    <TextBlock Grid.Row="0" Classes="filterLabel" Text="TYPE"/>
+                    <ComboBox Grid.Row="1" Classes="filter" SelectedIndex="0">
+                        <ComboBoxItem>ALL</ComboBoxItem>
+                        <ComboBoxItem>Rage</ComboBoxItem>
+                        <ComboBoxItem>Plugg</ComboBoxItem>
+                        <ComboBoxItem>Jerk</ComboBoxItem>
+                        <ComboBoxItem>Cloud</ComboBoxItem>
+                        <ComboBoxItem>Phonk</ComboBoxItem>
+                        <ComboBoxItem>Dark</ComboBoxItem>
+                        <ComboBoxItem>Ambient</ComboBoxItem>
+                        <ComboBoxItem>Trap</ComboBoxItem>
+                        <ComboBoxItem>Sad</ComboBoxItem>
+                        <ComboBoxItem>Emo</ComboBoxItem>
+                    </ComboBox>
+                </Grid>
+            </Border>
+
+            <!-- PLAYS min-max -->
+            <Border Grid.Column="1" Classes="filterBox">
+                <Grid RowDefinitions="Auto,*">
+                    <TextBlock Grid.Row="0" Classes="filterLabel" Text="PLAYS"/>
+                    <Grid Grid.Row="1" ColumnDefinitions="*,Auto,*" VerticalAlignment="Center">
+                        <TextBlock Grid.Column="0" Classes="filterMuted" Text="min"/>
+                        <TextBlock Grid.Column="1" Classes="filterMuted" Text="—" Margin="8,0"/>
+                        <TextBlock Grid.Column="2" Classes="filterMuted" Text="max"/>
+                    </Grid>
+                </Grid>
+            </Border>
+
+            <!-- LANGUAGE -->
+            <Border Grid.Column="2" Classes="filterBox">
+                <Grid RowDefinitions="Auto,*">
+                    <TextBlock Grid.Row="0" Classes="filterLabel" Text="LANGUAGE"/>
+                    <ComboBox Grid.Row="1" Classes="filter" SelectedIndex="0">
+                        <ComboBoxItem>ALL</ComboBoxItem>
+                        <ComboBoxItem>English</ComboBoxItem>
+                        <ComboBoxItem>Russian</ComboBoxItem>
+                        <ComboBoxItem>French</ComboBoxItem>
+                        <ComboBoxItem>Spanish</ComboBoxItem>
+                        <ComboBoxItem>German</ComboBoxItem>
+                        <ComboBoxItem>Unknown</ComboBoxItem>
+                    </ComboBox>
+                </Grid>
+            </Border>
+
+            <!-- PERIOD -->
+            <Border Grid.Column="3" Classes="filterBox">
+                <Grid RowDefinitions="Auto,*">
+                    <TextBlock Grid.Row="0" Classes="filterLabel" Text="PERIOD"/>
+                    <ComboBox Grid.Row="1" Classes="filter" SelectedIndex="0">
+                        <ComboBoxItem>All time</ComboBoxItem>
+                        <ComboBoxItem>Today</ComboBoxItem>
+                        <ComboBoxItem>This week</ComboBoxItem>
+                        <ComboBoxItem>This month</ComboBoxItem>
+                        <ComboBoxItem>This year</ComboBoxItem>
+                    </ComboBox>
+                </Grid>
+            </Border>
+
+            <!-- SEARCH -->
+            <Border Grid.Column="4" Classes="filterBox" Padding="20,8">
+                <Grid ColumnDefinitions="*,Auto" VerticalAlignment="Center">
+                    <TextBox Grid.Column="0"
+                             Classes="search"
+                             PlaceholderText="SEARCH (KEY WORD)"/>
+                    <TextBlock Grid.Column="1" Classes="searchIcon" Text="🔍"/>
+                </Grid>
+            </Border>
+        </Grid>
+    </Grid>
+</UserControl>

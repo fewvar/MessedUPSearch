@@ -1,0 +1,148 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:MessedUpSearchA.ViewModels"
+             x:Class="MessedUpSearchA.Views.BeatsView"
+             x:DataType="vm:BeatsViewModel">
+
+    <UserControl.Styles>
+        <StyleInclude Source="/Assets/Styles/MainWindowStyles.axaml"/>
+    </UserControl.Styles>
+
+    <Grid RowDefinitions="44,*,Auto" RowSpacing="20">
+
+        <!-- ============== ACTION BUTTONS ============== -->
+        <StackPanel Grid.Row="0"
+                    Orientation="Horizontal"
+                    HorizontalAlignment="Right"
+                    Spacing="12">
+            <Button Classes="action" Content="+ ADD BEAT"/>
+            <Button Classes="action" Content="IMPORT FOLDER"/>
+        </StackPanel>
+
+        <!-- ============== TABLE CARD ============== -->
+        <Border Grid.Row="1" Classes="card" ClipToBounds="True">
+            <Grid RowDefinitions="76,*"
+                  ColumnDefinitions="60,2.2*,2*,1*,1.2*,1.4*,1.8*">
+
+                <!-- vertical column dividers (span both rows) -->
+                <Border Grid.Row="0" Grid.RowSpan="2" Grid.Column="0" Classes="colDivider"/>
+                <Border Grid.Row="0" Grid.RowSpan="2" Grid.Column="1" Classes="colDivider"/>
+                <Border Grid.Row="0" Grid.RowSpan="2" Grid.Column="2" Classes="colDivider"/>
+                <Border Grid.Row="0" Grid.RowSpan="2" Grid.Column="3" Classes="colDivider"/>
+                <Border Grid.Row="0" Grid.RowSpan="2" Grid.Column="4" Classes="colDivider"/>
+                <Border Grid.Row="0" Grid.RowSpan="2" Grid.Column="5" Classes="colDivider"/>
+
+                <!-- header text -->
+                <TextBlock Grid.Row="0" Grid.Column="1" Classes="tableHeader" Text="BEAT NAME"/>
+                <TextBlock Grid.Row="0" Grid.Column="2" Classes="tableHeader" Text="TYPE / GENRE"/>
+                <TextBlock Grid.Row="0" Grid.Column="3" Classes="tableHeader" Text="BPM"/>
+                <TextBlock Grid.Row="0" Grid.Column="4" Classes="tableHeader" Text="KEY"/>
+                <TextBlock Grid.Row="0" Grid.Column="5" Classes="tableHeader" Text="ADDED"/>
+                <TextBlock Grid.Row="0" Grid.Column="6" Classes="tableHeader" Text="STATUS"/>
+
+                <!-- header underline -->
+                <Border Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="7" Classes="headerDivider"/>
+
+                <!-- body: empty for now -->
+                <ScrollViewer Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="7"
+                              HorizontalScrollBarVisibility="Disabled"
+                              VerticalScrollBarVisibility="Auto">
+                    <ItemsControl x:Name="BeatsList"/>
+                </ScrollViewer>
+            </Grid>
+        </Border>
+
+        <!-- ============== FILTERS + SEARCH ============== -->
+        <Grid Grid.Row="2" ColumnDefinitions="*,*,*,*,2*" ColumnSpacing="14" Height="72">
+
+            <!-- TYPE -->
+            <Border Grid.Column="0" Classes="filterBox">
+                <Grid RowDefinitions="Auto,*">
+                    <TextBlock Grid.Row="0" Classes="filterLabel" Text="TYPE"/>
+                    <ComboBox Grid.Row="1" Classes="filter" SelectedIndex="0">
+                        <ComboBoxItem>ALL</ComboBoxItem>
+                        <ComboBoxItem>Rage</ComboBoxItem>
+                        <ComboBoxItem>Plugg</ComboBoxItem>
+                        <ComboBoxItem>Jerk</ComboBoxItem>
+                        <ComboBoxItem>Cloud</ComboBoxItem>
+                        <ComboBoxItem>Phonk</ComboBoxItem>
+                        <ComboBoxItem>Dark</ComboBoxItem>
+                        <ComboBoxItem>Ambient</ComboBoxItem>
+                        <ComboBoxItem>Trap</ComboBoxItem>
+                        <ComboBoxItem>Sad</ComboBoxItem>
+                    </ComboBox>
+                </Grid>
+            </Border>
+
+            <!-- PLAYS -->
+            <Border Grid.Column="1" Classes="filterBox">
+                <Grid RowDefinitions="Auto,*">
+                    <TextBlock Grid.Row="0" Classes="filterLabel" Text="PLAYS"/>
+                    <Grid Grid.Row="1" ColumnDefinitions="*,Auto,*" VerticalAlignment="Center">
+                        <TextBlock Grid.Column="0" Classes="filterMuted" Text="min"/>
+                        <TextBlock Grid.Column="1" Classes="filterMuted" Text="—" Margin="8,0"/>
+                        <TextBlock Grid.Column="2" Classes="filterMuted" Text="max"/>
+                    </Grid>
+                </Grid>
+            </Border>
+
+            <!-- KEY -->
+            <Border Grid.Column="2" Classes="filterBox">
+                <Grid RowDefinitions="Auto,*">
+                    <TextBlock Grid.Row="0" Classes="filterLabel" Text="KEY"/>
+                    <ComboBox Grid.Row="1" Classes="filter" SelectedIndex="0">
+                        <ComboBoxItem>ALL</ComboBoxItem>
+                        <ComboBoxItem>C major</ComboBoxItem>
+                        <ComboBoxItem>C minor</ComboBoxItem>
+                        <ComboBoxItem>C# major</ComboBoxItem>
+                        <ComboBoxItem>C# minor</ComboBoxItem>
+                        <ComboBoxItem>D major</ComboBoxItem>
+                        <ComboBoxItem>D minor</ComboBoxItem>
+                        <ComboBoxItem>D# major</ComboBoxItem>
+                        <ComboBoxItem>D# minor</ComboBoxItem>
+                        <ComboBoxItem>E major</ComboBoxItem>
+                        <ComboBoxItem>E minor</ComboBoxItem>
+                        <ComboBoxItem>F major</ComboBoxItem>
+                        <ComboBoxItem>F minor</ComboBoxItem>
+                        <ComboBoxItem>F# major</ComboBoxItem>
+                        <ComboBoxItem>F# minor</ComboBoxItem>
+                        <ComboBoxItem>G major</ComboBoxItem>
+                        <ComboBoxItem>G minor</ComboBoxItem>
+                        <ComboBoxItem>G# major</ComboBoxItem>
+                        <ComboBoxItem>G# minor</ComboBoxItem>
+                        <ComboBoxItem>A major</ComboBoxItem>
+                        <ComboBoxItem>A minor</ComboBoxItem>
+                        <ComboBoxItem>A# major</ComboBoxItem>
+                        <ComboBoxItem>A# minor</ComboBoxItem>
+                        <ComboBoxItem>B major</ComboBoxItem>
+                        <ComboBoxItem>B minor</ComboBoxItem>
+                    </ComboBox>
+                </Grid>
+            </Border>
+
+            <!-- PERIOD -->
+            <Border Grid.Column="3" Classes="filterBox">
+                <Grid RowDefinitions="Auto,*">
+                    <TextBlock Grid.Row="0" Classes="filterLabel" Text="PERIOD"/>
+                    <ComboBox Grid.Row="1" Classes="filter" SelectedIndex="0">
+                        <ComboBoxItem>All time</ComboBoxItem>
+                        <ComboBoxItem>Today</ComboBoxItem>
+                        <ComboBoxItem>This week</ComboBoxItem>
+                        <ComboBoxItem>This month</ComboBoxItem>
+                        <ComboBoxItem>This year</ComboBoxItem>
+                    </ComboBox>
+                </Grid>
+            </Border>
+
+            <!-- SEARCH -->
+            <Border Grid.Column="4" Classes="filterBox" Padding="20,8">
+                <Grid ColumnDefinitions="*,Auto" VerticalAlignment="Center">
+                    <TextBox Grid.Column="0"
+                             Classes="search"
+                             PlaceholderText="SEARCH (KEY WORD)"/>
+                    <TextBlock Grid.Column="1" Classes="searchIcon" Text="🔍"/>
+                </Grid>
+            </Border>
+        </Grid>
+    </Grid>
+</UserControl>

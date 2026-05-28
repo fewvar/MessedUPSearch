@@ -1,0 +1,267 @@
+<Styles xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <!-- ============================================================
+         TABS (animated radio buttons styled as ovals)
+         ============================================================ -->
+
+    <!-- Base style: small + low (inactive position) -->
+    <Style Selector="RadioButton.tab">
+        <Setter Property="HorizontalAlignment" Value="Center"/>
+        <Setter Property="VerticalAlignment" Value="Top"/>
+        <Setter Property="Width" Value="360"/>
+        <Setter Property="Height" Value="58"/>
+        <Setter Property="FontSize" Value="22"/>
+        <Setter Property="FontWeight" Value="Bold"/>
+        <Setter Property="Foreground" Value="Black"/>
+        <Setter Property="Background" Value="White"/>
+        <Setter Property="Cursor" Value="Hand"/>
+        <Setter Property="Margin" Value="0,96,0,0"/>
+        <Setter Property="Padding" Value="0"/>
+        <Setter Property="Transitions">
+            <Transitions>
+                <DoubleTransition Property="Width"    Duration="0:0:0.25" Easing="CubicEaseInOut"/>
+                <DoubleTransition Property="Height"   Duration="0:0:0.25" Easing="CubicEaseInOut"/>
+                <DoubleTransition Property="FontSize" Duration="0:0:0.25" Easing="CubicEaseInOut"/>
+                <ThicknessTransition Property="Margin" Duration="0:0:0.25" Easing="CubicEaseInOut"/>
+            </Transitions>
+        </Setter>
+        <Setter Property="Template">
+            <ControlTemplate TargetType="RadioButton">
+                <Grid>
+                    <Ellipse Fill="{TemplateBinding Background}"/>
+                    <ContentPresenter HorizontalAlignment="Center"
+                                      VerticalAlignment="Center"
+                                      Content="{TemplateBinding Content}"
+                                      Foreground="{TemplateBinding Foreground}"/>
+                </Grid>
+            </ControlTemplate>
+        </Setter>
+    </Style>
+
+    <!-- LetterSpacing for the tab text (ContentPresenter wraps string in TextBlock) -->
+    <Style Selector="RadioButton.tab /template/ ContentPresenter">
+        <Setter Property="TextBlock.LetterSpacing" Value="2"/>
+    </Style>
+
+    <!-- Checked tab: big + top -->
+    <Style Selector="RadioButton.tab:checked">
+        <Setter Property="Width" Value="520"/>
+        <Setter Property="Height" Value="76"/>
+        <Setter Property="FontSize" Value="32"/>
+        <Setter Property="Margin" Value="0,0,0,0"/>
+    </Style>
+
+    <!-- ============================================================
+         TABLE
+         ============================================================ -->
+
+    <Style Selector="Border.card">
+        <Setter Property="Background" Value="White"/>
+        <Setter Property="CornerRadius" Value="4"/>
+    </Style>
+
+    <Style Selector="TextBlock.tableHeader">
+        <Setter Property="Foreground" Value="Black"/>
+        <Setter Property="FontSize" Value="16"/>
+        <Setter Property="FontWeight" Value="Bold"/>
+        <Setter Property="LetterSpacing" Value="1"/>
+        <Setter Property="VerticalAlignment" Value="Center"/>
+        <Setter Property="Margin" Value="14,0,0,0"/>
+    </Style>
+
+    <!-- Vertical column separator (stretches header + body) -->
+    <Style Selector="Border.colDivider">
+        <Setter Property="BorderBrush" Value="#22000000"/>
+        <Setter Property="BorderThickness" Value="0,0,1,0"/>
+        <Setter Property="IsHitTestVisible" Value="False"/>
+    </Style>
+
+    <!-- Horizontal divider under table header -->
+    <Style Selector="Border.headerDivider">
+        <Setter Property="Height" Value="1"/>
+        <Setter Property="Background" Value="#22000000"/>
+        <Setter Property="VerticalAlignment" Value="Bottom"/>
+        <Setter Property="IsHitTestVisible" Value="False"/>
+    </Style>
+
+    <!-- ============================================================
+         ACTION BUTTONS (ADD BEAT / IMPORT FOLDER)
+         Grey outline, no fill — turns white on hover.
+         ============================================================ -->
+
+    <Style Selector="Button.action">
+        <Setter Property="Background" Value="Transparent"/>
+        <Setter Property="BorderBrush" Value="#666666"/>
+        <Setter Property="BorderThickness" Value="1.5"/>
+        <Setter Property="Foreground" Value="#888888"/>
+        <Setter Property="Padding" Value="20,10"/>
+        <Setter Property="MinWidth" Value="170"/>
+        <Setter Property="FontSize" Value="14"/>
+        <Setter Property="FontWeight" Value="Bold"/>
+        <Setter Property="Cursor" Value="Hand"/>
+        <Setter Property="HorizontalContentAlignment" Value="Center"/>
+        <Setter Property="VerticalContentAlignment" Value="Center"/>
+        <Setter Property="Transitions">
+            <Transitions>
+                <BrushTransition Property="BorderBrush" Duration="0:0:0.15"/>
+                <BrushTransition Property="Foreground"  Duration="0:0:0.15"/>
+            </Transitions>
+        </Setter>
+        <Setter Property="Template">
+            <ControlTemplate TargetType="Button">
+                <Border BorderBrush="{TemplateBinding BorderBrush}"
+                        BorderThickness="1.5"
+                        Background="{TemplateBinding Background}"
+                        CornerRadius="4"
+                        Padding="20,10">
+                    <ContentPresenter Content="{TemplateBinding Content}"
+                                      HorizontalAlignment="Center"
+                                      VerticalAlignment="Center"
+                                      Foreground="{TemplateBinding Foreground}"/>
+                </Border>
+            </ControlTemplate>
+        </Setter>
+    </Style>
+
+    <Style Selector="Button.action:pointerover">
+        <Setter Property="BorderBrush" Value="White"/>
+        <Setter Property="Foreground"  Value="White"/>
+    </Style>
+
+    <!-- ============================================================
+         FILTER BOX (container for label + control)
+         ============================================================ -->
+
+    <Style Selector="Border.filterBox">
+        <Setter Property="Background" Value="White"/>
+        <Setter Property="CornerRadius" Value="4"/>
+        <Setter Property="Padding" Value="16,8"/>
+    </Style>
+
+    <Style Selector="TextBlock.filterLabel">
+        <Setter Property="Foreground" Value="Black"/>
+        <Setter Property="FontSize" Value="12"/>
+        <Setter Property="FontWeight" Value="Bold"/>
+        <Setter Property="LetterSpacing" Value="1"/>
+    </Style>
+
+    <Style Selector="TextBlock.filterMuted">
+        <Setter Property="Foreground" Value="Black"/>
+        <Setter Property="FontSize" Value="16"/>
+        <Setter Property="VerticalAlignment" Value="Center"/>
+    </Style>
+
+    <!-- ============================================================
+         SEARCH TEXTBOX
+         ============================================================ -->
+
+    <Style Selector="TextBox.search">
+        <Setter Property="Background" Value="Transparent"/>
+        <Setter Property="Foreground" Value="Black"/>
+        <Setter Property="CaretBrush" Value="Black"/>
+        <Setter Property="BorderThickness" Value="0"/>
+        <Setter Property="FontSize" Value="18"/>
+        <Setter Property="FontWeight" Value="Bold"/>
+        <Setter Property="Padding" Value="0"/>
+        <Setter Property="VerticalContentAlignment" Value="Center"/>
+        <Setter Property="VerticalAlignment" Value="Center"/>
+        <Setter Property="MinHeight" Value="0"/>
+    </Style>
+
+    <Style Selector="TextBox.search:pointerover /template/ Border#PART_BorderElement">
+        <Setter Property="Background" Value="Transparent"/>
+        <Setter Property="BorderBrush" Value="Transparent"/>
+    </Style>
+    <Style Selector="TextBox.search:focus /template/ Border#PART_BorderElement">
+        <Setter Property="Background" Value="Transparent"/>
+        <Setter Property="BorderBrush" Value="Transparent"/>
+    </Style>
+    <Style Selector="TextBox.search /template/ TextBlock#PART_Watermark">
+        <Setter Property="Foreground" Value="#88000000"/>
+        <Setter Property="FontWeight" Value="Bold"/>
+        <Setter Property="LetterSpacing" Value="1"/>
+    </Style>
+
+    <Style Selector="TextBlock.searchIcon">
+        <Setter Property="Foreground" Value="Black"/>
+        <Setter Property="FontSize" Value="22"/>
+        <Setter Property="VerticalAlignment" Value="Center"/>
+    </Style>
+
+    <!-- ============================================================
+         CUSTOM COMBOBOX (Type / Key / Period)
+         Fully restyled template — white card, black bold text, ▼ chevron.
+         ============================================================ -->
+
+    <Style Selector="ComboBox.filter">
+        <Setter Property="Background" Value="Transparent"/>
+        <Setter Property="Foreground" Value="Black"/>
+        <Setter Property="BorderThickness" Value="0"/>
+        <Setter Property="Padding" Value="0"/>
+        <Setter Property="MinHeight" Value="0"/>
+        <Setter Property="FontSize" Value="18"/>
+        <Setter Property="FontWeight" Value="Bold"/>
+        <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+        <Setter Property="VerticalContentAlignment" Value="Center"/>
+        <Setter Property="Cursor" Value="Hand"/>
+        <Setter Property="PlaceholderForeground" Value="Black"/>
+        <Setter Property="Template">
+            <ControlTemplate TargetType="ComboBox" x:CompileBindings="False">
+                <Grid x:Name="PART_Root" ColumnDefinitions="*,Auto">
+                    <ContentControl Grid.Column="0"
+                                    Content="{TemplateBinding SelectionBoxItem}"
+                                    ContentTemplate="{TemplateBinding ItemTemplate}"
+                                    HorizontalAlignment="Left"
+                                    VerticalAlignment="Center"
+                                    Foreground="{TemplateBinding Foreground}"
+                                    FontSize="18"
+                                    FontWeight="Bold"/>
+                    <TextBlock Grid.Column="1"
+                               Text="▼"
+                               FontSize="12"
+                               Foreground="Black"
+                               VerticalAlignment="Center"/>
+                    <Popup Name="PART_Popup"
+                           Grid.Column="0"
+                           Grid.ColumnSpan="2"
+                           WindowManagerAddShadowHint="False"
+                           IsOpen="{Binding $parent[ComboBox].IsDropDownOpen, Mode=TwoWay}"
+                           MinWidth="{Binding #PART_Root.Bounds.Width}"
+                           PlacementTarget="{Binding #PART_Root}">
+                        <Border Background="White"
+                                BorderBrush="#33000000"
+                                BorderThickness="1"
+                                CornerRadius="4"
+                                Padding="4"
+                                Margin="0,6,0,0">
+                            <ScrollViewer MaxHeight="280">
+                                <ItemsPresenter Name="PART_ItemsPresenter"
+                                                ItemsPanel="{TemplateBinding ItemsPanel}"/>
+                            </ScrollViewer>
+                        </Border>
+                    </Popup>
+                </Grid>
+            </ControlTemplate>
+        </Setter>
+    </Style>
+
+    <!-- Dropdown items inside ComboBox.filter -->
+    <Style Selector="ComboBox.filter ComboBoxItem">
+        <Setter Property="Foreground" Value="Black"/>
+        <Setter Property="Background" Value="Transparent"/>
+        <Setter Property="FontSize" Value="15"/>
+        <Setter Property="FontWeight" Value="Bold"/>
+        <Setter Property="Padding" Value="12,8"/>
+        <Setter Property="Cursor" Value="Hand"/>
+    </Style>
+    <Style Selector="ComboBox.filter ComboBoxItem:pointerover /template/ ContentPresenter">
+        <Setter Property="Background" Value="#11000000"/>
+        <Setter Property="TextBlock.Foreground" Value="Black"/>
+    </Style>
+    <Style Selector="ComboBox.filter ComboBoxItem:selected /template/ ContentPresenter">
+        <Setter Property="Background" Value="#1A000000"/>
+        <Setter Property="TextBlock.Foreground" Value="Black"/>
+    </Style>
+
+</Styles>

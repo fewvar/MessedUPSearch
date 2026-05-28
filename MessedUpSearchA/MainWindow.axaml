@@ -1,0 +1,33 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:vm="using:MessedUpSearchA.ViewModels"
+        mc:Ignorable="d" d:DesignWidth="1280" d:DesignHeight="960"
+        x:Class="MessedUpSearchA.MainWindow"
+        x:DataType="vm:MainWindowViewModel"
+        Title="MessedUpSearchApp"
+        Width="1280" Height="960"
+        MinWidth="1100" MinHeight="780"
+        Background="Black">
+
+    <Window.Styles>
+        <StyleInclude Source="/Assets/Styles/MainWindowStyles.axaml"/>
+    </Window.Styles>
+
+    <Grid Margin="48,32,48,32" RowDefinitions="180,*" RowSpacing="20">
+
+        <!-- ============== TABS (animated ovals) ============== -->
+        <Grid Grid.Row="0" x:CompileBindings="False">
+            <RadioButton Classes="tab"
+                         IsChecked="{Binding IsBeatsSelected, Mode=TwoWay}"
+                         Content="BEATS BASE"/>
+            <RadioButton Classes="tab"
+                         IsChecked="{Binding !IsBeatsSelected, Mode=TwoWay}"
+                         Content="ARTISTS"/>
+        </Grid>
+
+        <!-- ============== ACTIVE VIEW ============== -->
+        <ContentControl Grid.Row="1" Content="{Binding CurrentViewModel}"/>
+    </Grid>
+</Window>
