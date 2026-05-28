@@ -9,12 +9,13 @@
     <Style Selector="RadioButton.tab">
         <Setter Property="HorizontalAlignment" Value="Center"/>
         <Setter Property="VerticalAlignment" Value="Top"/>
-        <Setter Property="Width" Value="360"/>
-        <Setter Property="Height" Value="58"/>
-        <Setter Property="FontSize" Value="22"/>
+        <Setter Property="Width" Value="300"/>
+        <Setter Property="Height" Value="62"/>
+        <Setter Property="FontFamily" Value="{StaticResource HeadingFont}"/>
+        <Setter Property="FontSize" Value="19"/>
         <Setter Property="FontWeight" Value="Bold"/>
-        <Setter Property="Foreground" Value="Black"/>
-        <Setter Property="Background" Value="White"/>
+        <Setter Property="Foreground" Value="#2A2A2A"/>
+        <Setter Property="Background" Value="#9A9A9A"/>
         <Setter Property="Cursor" Value="Hand"/>
         <Setter Property="Margin" Value="0,96,0,0"/>
         <Setter Property="Padding" Value="0"/>
@@ -46,10 +47,12 @@
 
     <!-- Checked tab: big + top -->
     <Style Selector="RadioButton.tab:checked">
-        <Setter Property="Width" Value="520"/>
-        <Setter Property="Height" Value="76"/>
-        <Setter Property="FontSize" Value="32"/>
+        <Setter Property="Width" Value="460"/>
+        <Setter Property="Height" Value="84"/>
+        <Setter Property="FontSize" Value="28"/>
         <Setter Property="Margin" Value="0,0,0,0"/>
+        <Setter Property="Background" Value="{StaticResource SurfaceActive}"/>
+        <Setter Property="Foreground" Value="{StaticResource OnSurface}"/>
     </Style>
 
     <!-- ============================================================
@@ -57,12 +60,18 @@
          ============================================================ -->
 
     <Style Selector="Border.card">
-        <Setter Property="Background" Value="White"/>
+        <Setter Property="Background" Value="#E8E8E8"/>
         <Setter Property="CornerRadius" Value="4"/>
     </Style>
 
+    <!-- All text inside the table card defaults to dark on light. -->
+    <Style Selector="Border.card TextBlock">
+        <Setter Property="Foreground" Value="{StaticResource OnSurface}"/>
+    </Style>
+
     <Style Selector="TextBlock.tableHeader">
-        <Setter Property="Foreground" Value="Black"/>
+        <Setter Property="Foreground" Value="{StaticResource OnSurface}"/>
+        <Setter Property="FontFamily" Value="{StaticResource HeadingFont}"/>
         <Setter Property="FontSize" Value="16"/>
         <Setter Property="FontWeight" Value="Bold"/>
         <Setter Property="LetterSpacing" Value="1"/>
@@ -72,7 +81,7 @@
 
     <!-- Vertical column separator (stretches header + body) -->
     <Style Selector="Border.colDivider">
-        <Setter Property="BorderBrush" Value="#22000000"/>
+        <Setter Property="BorderBrush" Value="{StaticResource Divider}"/>
         <Setter Property="BorderThickness" Value="0,0,1,0"/>
         <Setter Property="IsHitTestVisible" Value="False"/>
     </Style>
@@ -80,9 +89,56 @@
     <!-- Horizontal divider under table header -->
     <Style Selector="Border.headerDivider">
         <Setter Property="Height" Value="1"/>
-        <Setter Property="Background" Value="#22000000"/>
+        <Setter Property="Background" Value="{StaticResource Divider}"/>
         <Setter Property="VerticalAlignment" Value="Bottom"/>
         <Setter Property="IsHitTestVisible" Value="False"/>
+    </Style>
+
+    <!-- ============================================================
+         MODAL OVERLAY (CRM / SETTINGS — in-app dialog)
+         ============================================================ -->
+
+    <Style Selector="Border.modal">
+        <Setter Property="Background" Value="{StaticResource AppBackground}"/>
+        <Setter Property="BorderBrush" Value="#33FFFFFF"/>
+        <Setter Property="BorderThickness" Value="1"/>
+        <Setter Property="CornerRadius" Value="6"/>
+        <Setter Property="HorizontalAlignment" Value="Center"/>
+        <Setter Property="VerticalAlignment" Value="Center"/>
+        <Setter Property="BoxShadow" Value="0 16 48 0 #80000000"/>
+    </Style>
+
+    <Style Selector="Button.modalClose">
+        <Setter Property="Background" Value="Transparent"/>
+        <Setter Property="Foreground" Value="{StaticResource OnBackgroundDim}"/>
+        <Setter Property="BorderThickness" Value="0"/>
+        <Setter Property="FontSize" Value="20"/>
+        <Setter Property="FontWeight" Value="Bold"/>
+        <Setter Property="Width" Value="38"/>
+        <Setter Property="Height" Value="38"/>
+        <Setter Property="Padding" Value="0"/>
+        <Setter Property="Cursor" Value="Hand"/>
+        <Setter Property="HorizontalContentAlignment" Value="Center"/>
+        <Setter Property="VerticalContentAlignment" Value="Center"/>
+        <Setter Property="Transitions">
+            <Transitions>
+                <BrushTransition Property="Foreground" Duration="0:0:0.15"/>
+            </Transitions>
+        </Setter>
+        <Setter Property="Template">
+            <ControlTemplate TargetType="Button">
+                <Border Background="{TemplateBinding Background}" CornerRadius="4">
+                    <ContentPresenter Content="{TemplateBinding Content}"
+                                      Foreground="{TemplateBinding Foreground}"
+                                      HorizontalAlignment="Center"
+                                      VerticalAlignment="Center"/>
+                </Border>
+            </ControlTemplate>
+        </Setter>
+    </Style>
+
+    <Style Selector="Button.modalClose:pointerover">
+        <Setter Property="Foreground" Value="{StaticResource OnBackground}"/>
     </Style>
 
     <!-- ============================================================
@@ -92,9 +148,9 @@
 
     <Style Selector="Button.action">
         <Setter Property="Background" Value="Transparent"/>
-        <Setter Property="BorderBrush" Value="#666666"/>
+        <Setter Property="BorderBrush" Value="{StaticResource OnBackgroundDim}"/>
         <Setter Property="BorderThickness" Value="1.5"/>
-        <Setter Property="Foreground" Value="#888888"/>
+        <Setter Property="Foreground" Value="{StaticResource OnBackgroundDim}"/>
         <Setter Property="Padding" Value="20,10"/>
         <Setter Property="MinWidth" Value="170"/>
         <Setter Property="FontSize" Value="14"/>
@@ -125,8 +181,8 @@
     </Style>
 
     <Style Selector="Button.action:pointerover">
-        <Setter Property="BorderBrush" Value="White"/>
-        <Setter Property="Foreground"  Value="White"/>
+        <Setter Property="BorderBrush" Value="{StaticResource OnBackground}"/>
+        <Setter Property="Foreground"  Value="{StaticResource OnBackground}"/>
     </Style>
 
     <!-- ============================================================
@@ -134,20 +190,20 @@
          ============================================================ -->
 
     <Style Selector="Border.filterBox">
-        <Setter Property="Background" Value="White"/>
+        <Setter Property="Background" Value="#E8E8E8"/>
         <Setter Property="CornerRadius" Value="4"/>
         <Setter Property="Padding" Value="16,8"/>
     </Style>
 
     <Style Selector="TextBlock.filterLabel">
-        <Setter Property="Foreground" Value="Black"/>
+        <Setter Property="Foreground" Value="{StaticResource OnSurface}"/>
         <Setter Property="FontSize" Value="12"/>
         <Setter Property="FontWeight" Value="Bold"/>
         <Setter Property="LetterSpacing" Value="1"/>
     </Style>
 
     <Style Selector="TextBlock.filterMuted">
-        <Setter Property="Foreground" Value="Black"/>
+        <Setter Property="Foreground" Value="{StaticResource OnSurfaceMuted}"/>
         <Setter Property="FontSize" Value="16"/>
         <Setter Property="VerticalAlignment" Value="Center"/>
     </Style>
@@ -158,8 +214,8 @@
 
     <Style Selector="TextBox.search">
         <Setter Property="Background" Value="Transparent"/>
-        <Setter Property="Foreground" Value="Black"/>
-        <Setter Property="CaretBrush" Value="Black"/>
+        <Setter Property="Foreground" Value="{StaticResource OnSurface}"/>
+        <Setter Property="CaretBrush" Value="{StaticResource OnSurface}"/>
         <Setter Property="BorderThickness" Value="0"/>
         <Setter Property="FontSize" Value="18"/>
         <Setter Property="FontWeight" Value="Bold"/>
@@ -184,7 +240,7 @@
     </Style>
 
     <Style Selector="TextBlock.searchIcon">
-        <Setter Property="Foreground" Value="Black"/>
+        <Setter Property="Foreground" Value="{StaticResource OnSurface}"/>
         <Setter Property="FontSize" Value="22"/>
         <Setter Property="VerticalAlignment" Value="Center"/>
     </Style>
@@ -196,7 +252,7 @@
 
     <Style Selector="ComboBox.filter">
         <Setter Property="Background" Value="Transparent"/>
-        <Setter Property="Foreground" Value="Black"/>
+        <Setter Property="Foreground" Value="{StaticResource OnSurface}"/>
         <Setter Property="BorderThickness" Value="0"/>
         <Setter Property="Padding" Value="0"/>
         <Setter Property="MinHeight" Value="0"/>
@@ -205,7 +261,7 @@
         <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
         <Setter Property="VerticalContentAlignment" Value="Center"/>
         <Setter Property="Cursor" Value="Hand"/>
-        <Setter Property="PlaceholderForeground" Value="Black"/>
+        <Setter Property="PlaceholderForeground" Value="{StaticResource OnSurface}"/>
         <Setter Property="Template">
             <ControlTemplate TargetType="ComboBox" x:CompileBindings="False">
                 <Grid x:Name="PART_Root" ColumnDefinitions="*,Auto">
@@ -220,7 +276,7 @@
                     <TextBlock Grid.Column="1"
                                Text="▼"
                                FontSize="12"
-                               Foreground="Black"
+                               Foreground="{StaticResource OnSurface}"
                                VerticalAlignment="Center"/>
                     <Popup Name="PART_Popup"
                            Grid.Column="0"
@@ -229,7 +285,7 @@
                            IsOpen="{Binding $parent[ComboBox].IsDropDownOpen, Mode=TwoWay}"
                            MinWidth="{Binding #PART_Root.Bounds.Width}"
                            PlacementTarget="{Binding #PART_Root}">
-                        <Border Background="White"
+                        <Border Background="{StaticResource Surface}"
                                 BorderBrush="#33000000"
                                 BorderThickness="1"
                                 CornerRadius="4"
@@ -248,7 +304,7 @@
 
     <!-- Dropdown items inside ComboBox.filter -->
     <Style Selector="ComboBox.filter ComboBoxItem">
-        <Setter Property="Foreground" Value="Black"/>
+        <Setter Property="Foreground" Value="{StaticResource OnSurface}"/>
         <Setter Property="Background" Value="Transparent"/>
         <Setter Property="FontSize" Value="15"/>
         <Setter Property="FontWeight" Value="Bold"/>
@@ -257,11 +313,11 @@
     </Style>
     <Style Selector="ComboBox.filter ComboBoxItem:pointerover /template/ ContentPresenter">
         <Setter Property="Background" Value="#11000000"/>
-        <Setter Property="TextBlock.Foreground" Value="Black"/>
+        <Setter Property="TextBlock.Foreground" Value="{StaticResource OnSurface}"/>
     </Style>
     <Style Selector="ComboBox.filter ComboBoxItem:selected /template/ ContentPresenter">
         <Setter Property="Background" Value="#1A000000"/>
-        <Setter Property="TextBlock.Foreground" Value="Black"/>
+        <Setter Property="TextBlock.Foreground" Value="{StaticResource OnSurface}"/>
     </Style>
 
 </Styles>

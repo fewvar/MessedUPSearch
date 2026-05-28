@@ -14,7 +14,42 @@
         </DataTemplate>
     </Application.DataTemplates>
 
+    <Application.Resources>
+        <!-- Заголовки -->
+        <FontFamily x:Key="HeadingFont">avares://MessedUpSearchA/Assets/Fonts/Oswald-VariableFont_wght.ttf#Oswald</FontFamily>
+        <!-- Обычный текст -->
+        <FontFamily x:Key="BodyFont">avares://MessedUpSearchA/Assets/Fonts/JetBrainsMono-VariableFont_wght.ttf#JetBrains Mono</FontFamily>
+
+        <!-- ==== Палитра: мягкая тёмная (без чистого #000/#FFF) ==== -->
+        <SolidColorBrush x:Key="AppBackground"   Color="#040506"/>  <!-- графит, фон окна -->
+        <SolidColorBrush x:Key="Surface"         Color="#C8C8C8"/>  <!-- светлые элементы -->
+        <SolidColorBrush x:Key="SurfaceActive"   Color="#E0E0E0"/>  <!-- активный таб -->
+        <SolidColorBrush x:Key="OnSurface"       Color="#1A1A1A"/>  <!-- текст на светлом -->
+        <SolidColorBrush x:Key="OnSurfaceMuted"  Color="#55585B"/>  <!-- второстепенный текст на светлом -->
+        <SolidColorBrush x:Key="OnBackground"    Color="#C8C8C8"/>  <!-- текст/лого на тёмном -->
+        <SolidColorBrush x:Key="OnBackgroundDim" Color="#6E7174"/>  <!-- приглушённый на тёмном -->
+        <SolidColorBrush x:Key="Divider"         Color="#26000000"/><!-- разделители на светлом -->
+
+        <!-- Лёгкая фактура (запечена в цвет палитры, низкий контраст).
+             FlipXY -> на стыке плиток шва не видно. -->
+        <ImageBrush x:Key="BackgroundTexture"
+                    Source="avares://MessedUpSearchA/Assets/Textures/TexturesV1.0/bg-texture.png"
+                    TileMode="FlipXY" Stretch="Fill" DestinationRect="0,0,1254,1254"
+                    Opacity="0.12"/>
+        <ImageBrush x:Key="WhiteTexture"
+                    Source="avares://MessedUpSearchA/Assets/Textures/TexturesV1.0/white-texture.png"
+                    TileMode="FlipXY" Stretch="Fill" DestinationRect="0,0,380,380"/>
+    </Application.Resources>
+
     <Application.Styles>
         <FluentTheme/>
+
+        <!-- Глобальный дефолт: весь обычный текст наследует JetBrains Mono -->
+        <Style Selector="Window">
+            <Setter Property="FontFamily" Value="{StaticResource BodyFont}"/>
+        </Style>
+        <Style Selector="UserControl">
+            <Setter Property="FontFamily" Value="{StaticResource BodyFont}"/>
+        </Style>
     </Application.Styles>
 </Application>

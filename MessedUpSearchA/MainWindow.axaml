@@ -9,16 +9,41 @@
         Title="MessedUpSearchApp"
         Width="1280" Height="960"
         MinWidth="1100" MinHeight="780"
-        Background="Black">
+        Background="{StaticResource AppBackground}">
 
     <Window.Styles>
         <StyleInclude Source="/Assets/Styles/MainWindowStyles.axaml"/>
     </Window.Styles>
 
-    <Grid Margin="48,32,48,32" RowDefinitions="180,*" RowSpacing="20">
+    <Grid>
 
-        <!-- ============== TABS (animated ovals) ============== -->
+        <!-- ============== BACKGROUND TEXTURE LAYER ============== -->
+        <Rectangle Fill="{StaticResource BackgroundTexture}"/>
+
+        <Grid Margin="72,40,72,40" RowDefinitions="180,*" RowSpacing="20">
+
+        <!-- ============== TOP BAR ============== -->
         <Grid Grid.Row="0" x:CompileBindings="False">
+
+            <!-- логотип + название (левый верхний угол) -->
+            <StackPanel Orientation="Horizontal"
+                        HorizontalAlignment="Left"
+                        VerticalAlignment="Top"
+                        Spacing="14"
+                        Margin="4,14,0,0">
+                <Image Source="/Assets/Icons/logo.png"
+                       Width="56" Height="56"
+                       VerticalAlignment="Center"/>
+                <TextBlock Text="MessedUpSearch"
+                           FontFamily="{StaticResource HeadingFont}"
+                           FontSize="30"
+                           FontWeight="Bold"
+                           LetterSpacing="1"
+                           Foreground="{StaticResource OnBackground}"
+                           VerticalAlignment="Center"/>
+            </StackPanel>
+
+            <!-- табы (анимированные овалы, по центру) -->
             <RadioButton Classes="tab"
                          IsChecked="{Binding IsBeatsSelected, Mode=TwoWay}"
                          Content="BEATS BASE"/>
@@ -29,5 +54,62 @@
 
         <!-- ============== ACTIVE VIEW ============== -->
         <ContentControl Grid.Row="1" Content="{Binding CurrentViewModel}"/>
+        </Grid>
+
+        <!-- ============== CRM OVERLAY ============== -->
+        <Grid IsVisible="{Binding IsCrmOpen}">
+            <Border Background="#B0000000" PointerPressed="OnBackdropClick"/>
+            <Border Classes="modal" Width="720" Height="540">
+                <Grid RowDefinitions="Auto,*">
+                    <Grid Grid.Row="0" Margin="28,18,18,0">
+                        <TextBlock Text="CRM"
+                                   FontFamily="{StaticResource HeadingFont}"
+                                   FontSize="22" FontWeight="Bold"
+                                   LetterSpacing="3"
+                                   Foreground="{StaticResource OnBackground}"
+                                   VerticalAlignment="Center"/>
+                        <Button Classes="modalClose" Content="✕"
+                                HorizontalAlignment="Right"
+                                Click="OnCloseOverlayClick"/>
+                    </Grid>
+                    <TextBlock Grid.Row="1"
+                               Text="COMING SOON"
+                               FontFamily="{StaticResource HeadingFont}"
+                               FontSize="38" FontWeight="Bold"
+                               LetterSpacing="6"
+                               Foreground="{StaticResource OnBackgroundDim}"
+                               HorizontalAlignment="Center"
+                               VerticalAlignment="Center"/>
+                </Grid>
+            </Border>
+        </Grid>
+
+        <!-- ============== SETTINGS OVERLAY ============== -->
+        <Grid IsVisible="{Binding IsSettingsOpen}">
+            <Border Background="#B0000000" PointerPressed="OnBackdropClick"/>
+            <Border Classes="modal" Width="720" Height="540">
+                <Grid RowDefinitions="Auto,*">
+                    <Grid Grid.Row="0" Margin="28,18,18,0">
+                        <TextBlock Text="SETTINGS"
+                                   FontFamily="{StaticResource HeadingFont}"
+                                   FontSize="22" FontWeight="Bold"
+                                   LetterSpacing="3"
+                                   Foreground="{StaticResource OnBackground}"
+                                   VerticalAlignment="Center"/>
+                        <Button Classes="modalClose" Content="✕"
+                                HorizontalAlignment="Right"
+                                Click="OnCloseOverlayClick"/>
+                    </Grid>
+                    <TextBlock Grid.Row="1"
+                               Text="COMING SOON"
+                               FontFamily="{StaticResource HeadingFont}"
+                               FontSize="38" FontWeight="Bold"
+                               LetterSpacing="6"
+                               Foreground="{StaticResource OnBackgroundDim}"
+                               HorizontalAlignment="Center"
+                               VerticalAlignment="Center"/>
+                </Grid>
+            </Border>
+        </Grid>
     </Grid>
 </Window>

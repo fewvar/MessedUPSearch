@@ -13,6 +13,12 @@ public partial class MainWindowViewModel : ViewModelBase
     [ObservableProperty]
     private bool? _isBeatsSelected = true;
 
+    [ObservableProperty]
+    private bool _isCrmOpen;
+
+    [ObservableProperty]
+    private bool _isSettingsOpen;
+
     public MainWindowViewModel()
     {
         _currentViewModel = _beatsVm;
@@ -21,5 +27,13 @@ public partial class MainWindowViewModel : ViewModelBase
     partial void OnIsBeatsSelectedChanged(bool? value)
     {
         CurrentViewModel = value == true ? _beatsVm : _artistsVm;
+    }
+
+    public void ShowCrm() => IsCrmOpen = true;
+    public void ShowSettings() => IsSettingsOpen = true;
+    public void CloseOverlays()
+    {
+        IsCrmOpen = false;
+        IsSettingsOpen = false;
     }
 }

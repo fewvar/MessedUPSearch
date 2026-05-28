@@ -6,6 +6,7 @@ public class Artist
     public string Nickname { get; set; } = string.Empty;
     public string ScLink { get; set; } = string.Empty;
     public string AvatarPath { get; set; } = string.Empty;
+    public string AvatarColor { get; set; } = "#888888";
     public string IgLink { get; set; } = string.Empty;
     public string SpotifyLink { get; set; } = string.Empty;
     public string LinktreeLink { get; set; } = string.Empty;

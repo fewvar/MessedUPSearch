@@ -1,6 +1,7 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:MessedUpSearchA.ViewModels"
+             xmlns:models="using:MessedUpSearchA.Models"
              x:Class="MessedUpSearchA.Views.BeatsView"
              x:DataType="vm:BeatsViewModel">
 
@@ -43,11 +44,65 @@
                 <!-- header underline -->
                 <Border Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="7" Classes="headerDivider"/>
 
-                <!-- body: empty for now -->
+                <!-- body -->
                 <ScrollViewer Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="7"
                               HorizontalScrollBarVisibility="Disabled"
                               VerticalScrollBarVisibility="Auto">
-                    <ItemsControl x:Name="BeatsList"/>
+                    <ItemsControl ItemsSource="{Binding Beats}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate DataType="models:Beat">
+                                <Grid Height="56"
+                                      ColumnDefinitions="60,2.2*,2*,1*,1.2*,1.4*,1.8*">
+                                    <Border Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="7"
+                                            BorderBrush="#22000000" BorderThickness="0,0,0,1"
+                                            VerticalAlignment="Bottom" IsHitTestVisible="False"/>
+
+                                    <Ellipse Grid.Column="0"
+                                             Width="22" Height="22"
+                                             Fill="{Binding StatusColor}"
+                                             HorizontalAlignment="Center"
+                                             VerticalAlignment="Center"/>
+
+                                    <TextBlock Grid.Column="1"
+                                               Text="{Binding BeatName}"
+                                               FontWeight="Bold" FontSize="15"
+                                               Margin="14,0,0,0"
+                                               VerticalAlignment="Center"/>
+
+                                    <TextBlock Grid.Column="2"
+                                               Text="{Binding AiTags}"
+                                               FontSize="14"
+                                               Margin="14,0,0,0"
+                                               VerticalAlignment="Center"/>
+
+                                    <TextBlock Grid.Column="3"
+                                               Text="{Binding Bpm}"
+                                               FontSize="14"
+                                               Margin="14,0,0,0"
+                                               VerticalAlignment="Center"/>
+
+                                    <TextBlock Grid.Column="4"
+                                               Text="{Binding Key}"
+                                               FontSize="14"
+                                               Margin="14,0,0,0"
+                                               VerticalAlignment="Center"/>
+
+                                    <TextBlock Grid.Column="5"
+                                               Text="{Binding Added}"
+                                               FontSize="14"
+                                               Margin="14,0,0,0"
+                                               VerticalAlignment="Center"/>
+
+                                    <TextBlock Grid.Column="6"
+                                               Text="{Binding Status}"
+                                               FontWeight="Bold" FontSize="13"
+                                               LetterSpacing="1"
+                                               Margin="14,0,0,0"
+                                               VerticalAlignment="Center"/>
+                                </Grid>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
                 </ScrollViewer>
             </Grid>
         </Border>
