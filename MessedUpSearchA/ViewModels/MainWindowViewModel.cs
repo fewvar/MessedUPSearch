@@ -7,6 +7,9 @@ public partial class MainWindowViewModel : ViewModelBase
     private readonly BeatsViewModel _beatsVm = new();
     private readonly ArtistsViewModel _artistsVm = new();
 
+    public BeatsViewModel BeatsVm => _beatsVm;
+    public ArtistsViewModel ArtistsVm => _artistsVm;
+
     [ObservableProperty]
     private ViewModelBase _currentViewModel;
 
@@ -18,6 +21,11 @@ public partial class MainWindowViewModel : ViewModelBase
 
     [ObservableProperty]
     private bool _isSettingsOpen;
+
+    [ObservableProperty]
+    private string _parserStatus = "Idle";
+
+    public string AppVersion => "v0.1";
 
     public MainWindowViewModel()
     {

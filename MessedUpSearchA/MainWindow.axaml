@@ -3,6 +3,7 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:vm="using:MessedUpSearchA.ViewModels"
+        xmlns:views="using:MessedUpSearchA.Views"
         mc:Ignorable="d" d:DesignWidth="1280" d:DesignHeight="960"
         x:Class="MessedUpSearchA.MainWindow"
         x:DataType="vm:MainWindowViewModel"
@@ -20,7 +21,7 @@
         <!-- ============== BACKGROUND TEXTURE LAYER ============== -->
         <Rectangle Fill="{StaticResource BackgroundTexture}"/>
 
-        <Grid Margin="72,40,72,40" RowDefinitions="180,*" RowSpacing="20">
+        <Grid Margin="72,40,72,16" RowDefinitions="180,*,Auto" RowSpacing="20">
 
         <!-- ============== TOP BAR ============== -->
         <Grid Grid.Row="0" x:CompileBindings="False">
@@ -54,62 +55,49 @@
 
         <!-- ============== ACTIVE VIEW ============== -->
         <ContentControl Grid.Row="1" Content="{Binding CurrentViewModel}"/>
+
+        <!-- ============== STATUS BAR ============== -->
+        <Border Grid.Row="2"
+                BorderBrush="#22FFFFFF"
+                BorderThickness="0,1,0,0"
+                Padding="4,8,4,4"
+                x:CompileBindings="False">
+            <Grid ColumnDefinitions="Auto,*,Auto">
+                <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="10">
+                    <TextBlock Text="{Binding ArtistsVm.Artists.Count, StringFormat='Artists: {0}'}"
+                               FontFamily="{StaticResource HeadingFont}"
+                               FontSize="11" LetterSpacing="1"
+                               Foreground="{StaticResource OnBackgroundDim}"/>
+                    <TextBlock Text="•"
+                               FontSize="11"
+                               Foreground="{StaticResource OnBackgroundDim}"/>
+                    <TextBlock Text="{Binding BeatsVm.Beats.Count, StringFormat='Beats: {0}'}"
+                               FontFamily="{StaticResource HeadingFont}"
+                               FontSize="11" LetterSpacing="1"
+                               Foreground="{StaticResource OnBackgroundDim}"/>
+                </StackPanel>
+
+                <TextBlock Grid.Column="1"
+                           Text="{Binding ParserStatus, StringFormat='PARSER: {0}'}"
+                           HorizontalAlignment="Center"
+                           FontFamily="{StaticResource HeadingFont}"
+                           FontSize="11" LetterSpacing="2"
+                           Foreground="{StaticResource OnBackgroundDim}"/>
+
+                <TextBlock Grid.Column="2"
+                           Text="{Binding AppVersion}"
+                           FontFamily="{StaticResource HeadingFont}"
+                           FontSize="10" LetterSpacing="1"
+                           Foreground="{StaticResource OnBackgroundDim}"
+                           Opacity="0.7"/>
+            </Grid>
+        </Border>
         </Grid>
 
-        <!-- ============== CRM OVERLAY ============== -->
-        <Grid IsVisible="{Binding IsCrmOpen}">
-            <Border Background="#B0000000" PointerPressed="OnBackdropClick"/>
-            <Border Classes="modal" Width="720" Height="540">
-                <Grid RowDefinitions="Auto,*">
-                    <Grid Grid.Row="0" Margin="28,18,18,0">
-                        <TextBlock Text="CRM"
-                                   FontFamily="{StaticResource HeadingFont}"
-                                   FontSize="22" FontWeight="Bold"
-                                   LetterSpacing="3"
-                                   Foreground="{StaticResource OnBackground}"
-                                   VerticalAlignment="Center"/>
-                        <Button Classes="modalClose" Content="✕"
-                                HorizontalAlignment="Right"
-                                Click="OnCloseOverlayClick"/>
-                    </Grid>
-                    <TextBlock Grid.Row="1"
-                               Text="COMING SOON"
-                               FontFamily="{StaticResource HeadingFont}"
-                               FontSize="38" FontWeight="Bold"
-                               LetterSpacing="6"
-                               Foreground="{StaticResource OnBackgroundDim}"
-                               HorizontalAlignment="Center"
-                               VerticalAlignment="Center"/>
-                </Grid>
-            </Border>
-        </Grid>
-
-        <!-- ============== SETTINGS OVERLAY ============== -->
-        <Grid IsVisible="{Binding IsSettingsOpen}">
-            <Border Background="#B0000000" PointerPressed="OnBackdropClick"/>
-            <Border Classes="modal" Width="720" Height="540">
-                <Grid RowDefinitions="Auto,*">
-                    <Grid Grid.Row="0" Margin="28,18,18,0">
-                        <TextBlock Text="SETTINGS"
-                                   FontFamily="{StaticResource HeadingFont}"
-                                   FontSize="22" FontWeight="Bold"
-                                   LetterSpacing="3"
-                                   Foreground="{StaticResource OnBackground}"
-                                   VerticalAlignment="Center"/>
-                        <Button Classes="modalClose" Content="✕"
-                                HorizontalAlignment="Right"
-                                Click="OnCloseOverlayClick"/>
-                    </Grid>
-                    <TextBlock Grid.Row="1"
-                               Text="COMING SOON"
-                               FontFamily="{StaticResource HeadingFont}"
-                               FontSize="38" FontWeight="Bold"
-                               LetterSpacing="6"
-                               Foreground="{StaticResource OnBackgroundDim}"
-                               HorizontalAlignment="Center"
-                               VerticalAlignment="Center"/>
-                </Grid>
-            </Border>
+        <!-- ============== OVERLAYS ============== -->
+        <Grid x:CompileBindings="False">
+            <views:CrmOverlay IsVisible="{Binding IsCrmOpen}"/>
+            <views:SettingsOverlay IsVisible="{Binding IsSettingsOpen}"/>
         </Grid>
     </Grid>
 </Window>

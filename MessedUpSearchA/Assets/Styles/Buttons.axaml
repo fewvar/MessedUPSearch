@@ -1,0 +1,93 @@
+<Styles xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <!-- ============================================================
+         ACTION BUTTONS (ADD BEAT / IMPORT FOLDER / CRM / SETTINGS)
+         Grey outline, no fill — turns white on hover.
+         ============================================================ -->
+
+    <Style Selector="Button.action">
+        <Setter Property="Background" Value="Transparent"/>
+        <Setter Property="BorderBrush" Value="{StaticResource OnBackgroundDim}"/>
+        <Setter Property="BorderThickness" Value="1.5"/>
+        <Setter Property="Foreground" Value="{StaticResource OnBackgroundDim}"/>
+        <Setter Property="Padding" Value="20,10"/>
+        <Setter Property="MinWidth" Value="170"/>
+        <Setter Property="FontSize" Value="14"/>
+        <Setter Property="FontWeight" Value="Bold"/>
+        <Setter Property="Cursor" Value="Hand"/>
+        <Setter Property="HorizontalContentAlignment" Value="Center"/>
+        <Setter Property="VerticalContentAlignment" Value="Center"/>
+        <Setter Property="Transitions">
+            <Transitions>
+                <BrushTransition Property="BorderBrush" Duration="0:0:0.15"/>
+                <BrushTransition Property="Foreground"  Duration="0:0:0.15"/>
+            </Transitions>
+        </Setter>
+        <Setter Property="Template">
+            <ControlTemplate TargetType="Button">
+                <Border BorderBrush="{TemplateBinding BorderBrush}"
+                        BorderThickness="1.5"
+                        Background="{TemplateBinding Background}"
+                        CornerRadius="4"
+                        Padding="20,10">
+                    <ContentPresenter Content="{TemplateBinding Content}"
+                                      HorizontalAlignment="Center"
+                                      VerticalAlignment="Center"
+                                      Foreground="{TemplateBinding Foreground}"/>
+                </Border>
+            </ControlTemplate>
+        </Setter>
+    </Style>
+
+    <Style Selector="Button.action:pointerover">
+        <Setter Property="BorderBrush" Value="{StaticResource OnBackground}"/>
+        <Setter Property="Foreground"  Value="{StaticResource OnBackground}"/>
+    </Style>
+
+    <!-- Tint nested icon in sync with the text on hover -->
+    <Style Selector="Button.action Border.icon">
+        <Setter Property="Background" Value="{StaticResource OnBackgroundDim}"/>
+    </Style>
+    <Style Selector="Button.action:pointerover Border.icon">
+        <Setter Property="Background" Value="{StaticResource OnBackground}"/>
+    </Style>
+
+    <!-- ============================================================
+         MODAL CLOSE BUTTON (✕ in CRM / Settings overlays)
+         ============================================================ -->
+
+    <Style Selector="Button.modalClose">
+        <Setter Property="Background" Value="Transparent"/>
+        <Setter Property="Foreground" Value="{StaticResource OnBackgroundDim}"/>
+        <Setter Property="BorderThickness" Value="0"/>
+        <Setter Property="FontSize" Value="20"/>
+        <Setter Property="FontWeight" Value="Bold"/>
+        <Setter Property="Width" Value="38"/>
+        <Setter Property="Height" Value="38"/>
+        <Setter Property="Padding" Value="0"/>
+        <Setter Property="Cursor" Value="Hand"/>
+        <Setter Property="HorizontalContentAlignment" Value="Center"/>
+        <Setter Property="VerticalContentAlignment" Value="Center"/>
+        <Setter Property="Transitions">
+            <Transitions>
+                <BrushTransition Property="Foreground" Duration="0:0:0.15"/>
+            </Transitions>
+        </Setter>
+        <Setter Property="Template">
+            <ControlTemplate TargetType="Button">
+                <Border Background="{TemplateBinding Background}" CornerRadius="4">
+                    <ContentPresenter Content="{TemplateBinding Content}"
+                                      Foreground="{TemplateBinding Foreground}"
+                                      HorizontalAlignment="Center"
+                                      VerticalAlignment="Center"/>
+                </Border>
+            </ControlTemplate>
+        </Setter>
+    </Style>
+
+    <Style Selector="Button.modalClose:pointerover">
+        <Setter Property="Foreground" Value="{StaticResource OnBackground}"/>
+    </Style>
+
+</Styles>

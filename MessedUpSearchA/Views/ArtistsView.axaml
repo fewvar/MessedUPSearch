@@ -16,8 +16,18 @@
                     Orientation="Horizontal"
                     HorizontalAlignment="Right"
                     Spacing="12">
-            <Button Classes="action" Content="CRM" Click="OnCrmClick"/>
-            <Button Classes="action" Content="SETTINGS" Click="OnSettingsClick"/>
+            <Button Classes="action" Click="OnCrmClick">
+                <StackPanel Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
+                    <Border Classes="icon icon-crm" Width="18" Height="18"/>
+                    <TextBlock Text="CRM" VerticalAlignment="Center"/>
+                </StackPanel>
+            </Button>
+            <Button Classes="action" Click="OnSettingsClick">
+                <StackPanel Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
+                    <Border Classes="icon icon-settings" Width="18" Height="18"/>
+                    <TextBlock Text="SETTINGS" VerticalAlignment="Center"/>
+                </StackPanel>
+            </Button>
         </StackPanel>
 
         <!-- ============== TABLE CARD ============== -->
@@ -55,7 +65,8 @@
                         <ItemsControl.ItemTemplate>
                             <DataTemplate DataType="models:Artist">
                                 <Grid Height="56"
-                                      ColumnDefinitions="60,1.8*,1.5*,1.3*,2.4*,1.2*">
+                                      ColumnDefinitions="60,1.8*,1.5*,1.3*,2.4*,1.2*"
+                                      x:CompileBindings="False">
                                     <Border Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="6"
                                             BorderBrush="#22000000" BorderThickness="0,0,0,1"
                                             VerticalAlignment="Bottom" IsHitTestVisible="False"/>
@@ -99,16 +110,17 @@
                                                    Text="{Binding Language}"
                                                    FontSize="14"
                                                    VerticalAlignment="Center"/>
-                                        <TextBlock Grid.Column="1"
-                                                   Text="★" FontSize="20" Margin="4,0"
-                                                   Foreground="#F1C40F"
-                                                   IsVisible="{Binding IsFavorite}"
-                                                   VerticalAlignment="Center"/>
-                                        <TextBlock Grid.Column="1"
-                                                   Text="★" FontSize="20" Margin="4,0"
-                                                   Foreground="#888888"
-                                                   IsVisible="{Binding !IsFavorite}"
-                                                   VerticalAlignment="Center"/>
+                                        <Border Grid.Column="1"
+                                                Classes="icon icon-star-filled"
+                                                Background="#F1C40F"
+                                                Width="20" Height="20" Margin="4,0"
+                                                IsVisible="{Binding IsFavorite}"
+                                                VerticalAlignment="Center"/>
+                                        <Border Grid.Column="1"
+                                                Classes="icon icon-star-outline surfaceMuted"
+                                                Width="20" Height="20" Margin="4,0"
+                                                IsVisible="{Binding !IsFavorite}"
+                                                VerticalAlignment="Center"/>
                                         <TextBlock Grid.Column="2"
                                                    Text="⚑" FontSize="18" Margin="4,0,0,0"
                                                    Foreground="#E74C3C"
@@ -129,7 +141,10 @@
             <!-- TYPE -->
             <Border Grid.Column="0" Classes="filterBox">
                 <Grid RowDefinitions="Auto,*">
-                    <TextBlock Grid.Row="0" Classes="filterLabel" Text="TYPE"/>
+                    <Grid Grid.Row="0" ColumnDefinitions="*,Auto" VerticalAlignment="Center">
+                        <TextBlock Grid.Column="0" Classes="filterLabel" Text="TYPE" VerticalAlignment="Center"/>
+                        <Border Grid.Column="1" Classes="icon icon-type onSurface" Width="20" Height="20" VerticalAlignment="Center"/>
+                    </Grid>
                     <ComboBox Grid.Row="1" Classes="filter" SelectedIndex="0">
                         <ComboBoxItem>ALL</ComboBoxItem>
                         <ComboBoxItem>Rage</ComboBoxItem>
@@ -149,7 +164,10 @@
             <!-- PLAYS min-max -->
             <Border Grid.Column="1" Classes="filterBox">
                 <Grid RowDefinitions="Auto,*">
-                    <TextBlock Grid.Row="0" Classes="filterLabel" Text="PLAYS"/>
+                    <Grid Grid.Row="0" ColumnDefinitions="*,Auto" VerticalAlignment="Center">
+                        <TextBlock Grid.Column="0" Classes="filterLabel" Text="PLAYS" VerticalAlignment="Center"/>
+                        <Border Grid.Column="1" Classes="icon icon-plays onSurface" Width="20" Height="20" VerticalAlignment="Center"/>
+                    </Grid>
                     <Grid Grid.Row="1" ColumnDefinitions="*,Auto,*" VerticalAlignment="Center">
                         <TextBlock Grid.Column="0" Classes="filterMuted" Text="min"/>
                         <TextBlock Grid.Column="1" Classes="filterMuted" Text="—" Margin="8,0"/>
@@ -161,7 +179,10 @@
             <!-- LANGUAGE -->
             <Border Grid.Column="2" Classes="filterBox">
                 <Grid RowDefinitions="Auto,*">
-                    <TextBlock Grid.Row="0" Classes="filterLabel" Text="LANGUAGE"/>
+                    <Grid Grid.Row="0" ColumnDefinitions="*,Auto" VerticalAlignment="Center">
+                        <TextBlock Grid.Column="0" Classes="filterLabel" Text="LANGUAGE" VerticalAlignment="Center"/>
+                        <Border Grid.Column="1" Classes="icon icon-language onSurface" Width="20" Height="20" VerticalAlignment="Center"/>
+                    </Grid>
                     <ComboBox Grid.Row="1" Classes="filter" SelectedIndex="0">
                         <ComboBoxItem>ALL</ComboBoxItem>
                         <ComboBoxItem>English</ComboBoxItem>
@@ -177,7 +198,10 @@
             <!-- PERIOD -->
             <Border Grid.Column="3" Classes="filterBox">
                 <Grid RowDefinitions="Auto,*">
-                    <TextBlock Grid.Row="0" Classes="filterLabel" Text="PERIOD"/>
+                    <Grid Grid.Row="0" ColumnDefinitions="*,Auto" VerticalAlignment="Center">
+                        <TextBlock Grid.Column="0" Classes="filterLabel" Text="PERIOD" VerticalAlignment="Center"/>
+                        <Border Grid.Column="1" Classes="icon icon-period onSurface" Width="20" Height="20" VerticalAlignment="Center"/>
+                    </Grid>
                     <ComboBox Grid.Row="1" Classes="filter" SelectedIndex="0">
                         <ComboBoxItem>All time</ComboBoxItem>
                         <ComboBoxItem>Today</ComboBoxItem>
@@ -194,7 +218,7 @@
                     <TextBox Grid.Column="0"
                              Classes="search"
                              PlaceholderText="SEARCH (KEY WORD)"/>
-                    <TextBlock Grid.Column="1" Classes="searchIcon" Text="🔍"/>
+                    <Border Grid.Column="1" Classes="icon icon-search onSurface" Width="20" Height="20"/>
                 </Grid>
             </Border>
         </Grid>

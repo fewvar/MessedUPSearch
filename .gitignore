@@ -1,0 +1,27 @@
+# macOS
+.DS_Store
+
+# Rider / JetBrains
+.idea/
+*.DotSettings.user
+*.user
+
+# Visual Studio / VS Code
+.vs/
+.vscode/
+
+# .NET build output
+bin/
+obj/
+*.pdb
+
+# Publish output
+publish/
+*.app/
+*.exe
+
+# Local plans / scratch
+tmp/
+
+# Texture / icon working sources (kept locally, not in repo)
+texture-sources/

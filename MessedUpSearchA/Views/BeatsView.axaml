@@ -52,7 +52,8 @@
                         <ItemsControl.ItemTemplate>
                             <DataTemplate DataType="models:Beat">
                                 <Grid Height="56"
-                                      ColumnDefinitions="60,2.2*,2*,1*,1.2*,1.4*,1.8*">
+                                      ColumnDefinitions="60,2.2*,2*,1*,1.2*,1.4*,1.8*"
+                                      x:CompileBindings="False">
                                     <Border Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="7"
                                             BorderBrush="#22000000" BorderThickness="0,0,0,1"
                                             VerticalAlignment="Bottom" IsHitTestVisible="False"/>
@@ -113,7 +114,10 @@
             <!-- TYPE -->
             <Border Grid.Column="0" Classes="filterBox">
                 <Grid RowDefinitions="Auto,*">
-                    <TextBlock Grid.Row="0" Classes="filterLabel" Text="TYPE"/>
+                    <Grid Grid.Row="0" ColumnDefinitions="*,Auto" VerticalAlignment="Center">
+                        <TextBlock Grid.Column="0" Classes="filterLabel" Text="TYPE" VerticalAlignment="Center"/>
+                        <Border Grid.Column="1" Classes="icon icon-type onSurface" Width="20" Height="20" VerticalAlignment="Center"/>
+                    </Grid>
                     <ComboBox Grid.Row="1" Classes="filter" SelectedIndex="0">
                         <ComboBoxItem>ALL</ComboBoxItem>
                         <ComboBoxItem>Rage</ComboBoxItem>
@@ -132,7 +136,10 @@
             <!-- PLAYS -->
             <Border Grid.Column="1" Classes="filterBox">
                 <Grid RowDefinitions="Auto,*">
-                    <TextBlock Grid.Row="0" Classes="filterLabel" Text="PLAYS"/>
+                    <Grid Grid.Row="0" ColumnDefinitions="*,Auto" VerticalAlignment="Center">
+                        <TextBlock Grid.Column="0" Classes="filterLabel" Text="PLAYS" VerticalAlignment="Center"/>
+                        <Border Grid.Column="1" Classes="icon icon-plays onSurface" Width="20" Height="20" VerticalAlignment="Center"/>
+                    </Grid>
                     <Grid Grid.Row="1" ColumnDefinitions="*,Auto,*" VerticalAlignment="Center">
                         <TextBlock Grid.Column="0" Classes="filterMuted" Text="min"/>
                         <TextBlock Grid.Column="1" Classes="filterMuted" Text="—" Margin="8,0"/>
@@ -178,7 +185,10 @@
             <!-- PERIOD -->
             <Border Grid.Column="3" Classes="filterBox">
                 <Grid RowDefinitions="Auto,*">
-                    <TextBlock Grid.Row="0" Classes="filterLabel" Text="PERIOD"/>
+                    <Grid Grid.Row="0" ColumnDefinitions="*,Auto" VerticalAlignment="Center">
+                        <TextBlock Grid.Column="0" Classes="filterLabel" Text="PERIOD" VerticalAlignment="Center"/>
+                        <Border Grid.Column="1" Classes="icon icon-period onSurface" Width="20" Height="20" VerticalAlignment="Center"/>
+                    </Grid>
                     <ComboBox Grid.Row="1" Classes="filter" SelectedIndex="0">
                         <ComboBoxItem>All time</ComboBoxItem>
                         <ComboBoxItem>Today</ComboBoxItem>
@@ -195,7 +205,7 @@
                     <TextBox Grid.Column="0"
                              Classes="search"
                              PlaceholderText="SEARCH (KEY WORD)"/>
-                    <TextBlock Grid.Column="1" Classes="searchIcon" Text="🔍"/>
+                    <Border Grid.Column="1" Classes="icon icon-search onSurface" Width="20" Height="20"/>
                 </Grid>
             </Border>
         </Grid>

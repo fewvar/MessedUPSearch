@@ -1,0 +1,58 @@
+<Styles xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <!-- ============================================================
+         TABS (animated radio buttons styled as ovals)
+         ============================================================ -->
+
+    <!-- Base style: small + low (inactive position) -->
+    <Style Selector="RadioButton.tab">
+        <Setter Property="HorizontalAlignment" Value="Center"/>
+        <Setter Property="VerticalAlignment" Value="Top"/>
+        <Setter Property="Width" Value="300"/>
+        <Setter Property="Height" Value="62"/>
+        <Setter Property="FontFamily" Value="{StaticResource HeadingFont}"/>
+        <Setter Property="FontSize" Value="19"/>
+        <Setter Property="FontWeight" Value="Bold"/>
+        <Setter Property="Foreground" Value="#2A2A2A"/>
+        <Setter Property="Background" Value="#9A9A9A"/>
+        <Setter Property="Cursor" Value="Hand"/>
+        <Setter Property="Margin" Value="0,96,0,0"/>
+        <Setter Property="Padding" Value="0"/>
+        <Setter Property="Transitions">
+            <Transitions>
+                <DoubleTransition Property="Width"    Duration="0:0:0.25" Easing="CubicEaseInOut"/>
+                <DoubleTransition Property="Height"   Duration="0:0:0.25" Easing="CubicEaseInOut"/>
+                <DoubleTransition Property="FontSize" Duration="0:0:0.25" Easing="CubicEaseInOut"/>
+                <ThicknessTransition Property="Margin" Duration="0:0:0.25" Easing="CubicEaseInOut"/>
+            </Transitions>
+        </Setter>
+        <Setter Property="Template">
+            <ControlTemplate TargetType="RadioButton">
+                <Grid>
+                    <Ellipse Fill="{TemplateBinding Background}"/>
+                    <ContentPresenter HorizontalAlignment="Center"
+                                      VerticalAlignment="Center"
+                                      Content="{TemplateBinding Content}"
+                                      Foreground="{TemplateBinding Foreground}"/>
+                </Grid>
+            </ControlTemplate>
+        </Setter>
+    </Style>
+
+    <!-- LetterSpacing for the tab text (ContentPresenter wraps string in TextBlock) -->
+    <Style Selector="RadioButton.tab /template/ ContentPresenter">
+        <Setter Property="TextBlock.LetterSpacing" Value="2"/>
+    </Style>
+
+    <!-- Checked tab: big + top -->
+    <Style Selector="RadioButton.tab:checked">
+        <Setter Property="Width" Value="460"/>
+        <Setter Property="Height" Value="84"/>
+        <Setter Property="FontSize" Value="28"/>
+        <Setter Property="Margin" Value="0,0,0,0"/>
+        <Setter Property="Background" Value="{StaticResource SurfaceActive}"/>
+        <Setter Property="Foreground" Value="{StaticResource OnSurface}"/>
+    </Style>
+
+</Styles>

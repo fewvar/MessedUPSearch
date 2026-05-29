@@ -1,0 +1,158 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:MessedUpSearchA.ViewModels"
+             x:Class="MessedUpSearchA.Views.SettingsOverlay"
+             x:DataType="vm:MainWindowViewModel">
+
+    <!-- Override FluentTheme accent palette for checkboxes inside this overlay only.
+         Keeps the rest of the app untouched. -->
+    <UserControl.Resources>
+        <SolidColorBrush x:Key="CheckBoxCheckBackgroundFillChecked"            Color="White"/>
+        <SolidColorBrush x:Key="CheckBoxCheckBackgroundStrokeChecked"          Color="White"/>
+        <SolidColorBrush x:Key="CheckBoxCheckGlyphForegroundChecked"           Color="#040506"/>
+        <SolidColorBrush x:Key="CheckBoxCheckBackgroundFillCheckedPointerOver" Color="#E8E8E8"/>
+        <SolidColorBrush x:Key="CheckBoxCheckBackgroundStrokeCheckedPointerOver" Color="#E8E8E8"/>
+        <SolidColorBrush x:Key="CheckBoxCheckGlyphForegroundCheckedPointerOver" Color="#040506"/>
+        <SolidColorBrush x:Key="CheckBoxCheckBackgroundFillCheckedPressed"     Color="#C8C8C8"/>
+        <SolidColorBrush x:Key="CheckBoxCheckBackgroundStrokeCheckedPressed"   Color="#C8C8C8"/>
+        <SolidColorBrush x:Key="CheckBoxCheckGlyphForegroundCheckedPressed"    Color="#040506"/>
+    </UserControl.Resources>
+
+    <Grid>
+        <Border Background="#B0000000" PointerPressed="OnBackdropClick"/>
+
+        <Border Classes="modal" Width="920" Height="700">
+            <Grid RowDefinitions="Auto,*">
+
+                <!-- ============== HEADER ============== -->
+                <Grid Grid.Row="0" Margin="28,18,18,4">
+                    <TextBlock Text="SETTINGS"
+                               FontFamily="{StaticResource HeadingFont}"
+                               FontSize="22" FontWeight="Bold"
+                               LetterSpacing="3"
+                               Foreground="{StaticResource OnBackground}"
+                               VerticalAlignment="Center"/>
+                    <Button Classes="modalClose" Content="✕"
+                            HorizontalAlignment="Right"
+                            Click="OnCloseClick"/>
+                </Grid>
+
+                <!-- ============== BODY ============== -->
+                <ScrollViewer Grid.Row="1"
+                              Padding="32,0,40,32"
+                              HorizontalScrollBarVisibility="Disabled"
+                              VerticalScrollBarVisibility="Auto">
+                    <StackPanel Margin="0,0,4,0">
+
+                        <!-- PARSER -->
+                        <Border Classes="settingsSection">
+                            <StackPanel>
+                                <TextBlock Classes="settingsHeader" Text="PARSER"/>
+
+                                <Grid ColumnDefinitions="*,Auto" Margin="0,0,0,12">
+                                    <StackPanel Grid.Column="0">
+                                        <TextBlock Classes="settingsLabel" Text="Scan interval"/>
+                                        <TextBlock Classes="settingsHint"
+                                                   Text="How often the parser checks SoundCloud for new tracks"/>
+                                    </StackPanel>
+                                    <ComboBox Grid.Column="1" Classes="settings" SelectedIndex="1"
+                                              VerticalAlignment="Center">
+                                        <ComboBoxItem>5 minutes</ComboBoxItem>
+                                        <ComboBoxItem>15 minutes</ComboBoxItem>
+                                        <ComboBoxItem>1 hour</ComboBoxItem>
+                                        <ComboBoxItem>6 hours</ComboBoxItem>
+                                        <ComboBoxItem>Off (manual only)</ComboBoxItem>
+                                    </ComboBox>
+                                </Grid>
+
+                                <Grid ColumnDefinitions="*,Auto">
+                                    <StackPanel Grid.Column="0">
+                                        <TextBlock Classes="settingsLabel" Text="Max artists per scan"/>
+                                        <TextBlock Classes="settingsHint"
+                                                   Text="Upper limit per single sweep, keeps requests reasonable"/>
+                                    </StackPanel>
+                                    <TextBox Grid.Column="1" Classes="settings" Text="50"
+                                             VerticalAlignment="Center"/>
+                                </Grid>
+                            </StackPanel>
+                        </Border>
+
+                        <!-- INTERFACE LANGUAGE -->
+                        <Border Classes="settingsSection">
+                            <StackPanel>
+                                <TextBlock Classes="settingsHeader" Text="LANGUAGE"/>
+                                <Grid ColumnDefinitions="*,Auto">
+                                    <StackPanel Grid.Column="0">
+                                        <TextBlock Classes="settingsLabel" Text="Interface language"/>
+                                        <TextBlock Classes="settingsHint"
+                                                   Text="Localization of the app UI"/>
+                                    </StackPanel>
+                                    <ComboBox Grid.Column="1" Classes="settings" SelectedIndex="0"
+                                              VerticalAlignment="Center">
+                                        <ComboBoxItem>English</ComboBoxItem>
+                                        <ComboBoxItem>Русский</ComboBoxItem>
+                                    </ComboBox>
+                                </Grid>
+                            </StackPanel>
+                        </Border>
+
+                        <!-- LOGS & DEBUG -->
+                        <Border Classes="settingsSection">
+                            <StackPanel>
+                                <TextBlock Classes="settingsHeader" Text="LOGS &amp; DEBUG"/>
+
+                                <CheckBox Classes="settings" Content="Enable parser logs"
+                                          IsChecked="True" Margin="0,0,0,8"/>
+                                <CheckBox Classes="settings" Content="Enable Avalonia DevTools (F12)"
+                                          IsChecked="True" Margin="0,0,0,8"/>
+                                <CheckBox Classes="settings" Content="Verbose HTTP logging"
+                                          Margin="0,0,0,12"/>
+
+                                <Grid ColumnDefinitions="*,Auto" Margin="0,4,0,0">
+                                    <StackPanel Grid.Column="0">
+                                        <TextBlock Classes="settingsLabel" Text="Log file"/>
+                                        <TextBlock Classes="settingsHint"
+                                                   Text="~/Library/Application Support/MessedUpSearch/app.log"/>
+                                    </StackPanel>
+                                    <Button Grid.Column="1" Classes="action"
+                                            Content="OPEN FOLDER"
+                                            VerticalAlignment="Center"/>
+                                </Grid>
+                            </StackPanel>
+                        </Border>
+
+                        <!-- ABOUT -->
+                        <Border Classes="settingsSection last">
+                            <StackPanel>
+                                <TextBlock Classes="settingsHeader" Text="ABOUT"/>
+
+                                <TextBlock Text="MessedUpSearch v0.1"
+                                           FontFamily="{StaticResource HeadingFont}"
+                                           FontSize="14" FontWeight="Bold"
+                                           LetterSpacing="2"
+                                           Foreground="{StaticResource OnBackground}"
+                                           Margin="0,0,0,8"/>
+
+                                <TextBlock Classes="settingsAbout"
+                                           TextWrapping="Wrap"
+                                           Text="Desktop tool for beatmakers — scrapes underground SoundCloud artists, classifies them by audio features, matches with your beats."/>
+                                <TextBlock Classes="settingsAbout"
+                                           TextWrapping="Wrap"
+                                           Text="Built with Avalonia 12 + .NET 9"
+                                           Margin="0,8,0,2"/>
+                                <TextBlock Classes="settingsAbout"
+                                           TextWrapping="Wrap"
+                                           Text="by @fewvar"/>
+                                <TextBlock Classes="settingsAbout"
+                                           TextWrapping="Wrap"
+                                           Text="github.com/fewvar/MessedUpSearchApp"
+                                           Margin="0,2,0,0"/>
+                            </StackPanel>
+                        </Border>
+
+                    </StackPanel>
+                </ScrollViewer>
+            </Grid>
+        </Border>
+    </Grid>
+</UserControl>

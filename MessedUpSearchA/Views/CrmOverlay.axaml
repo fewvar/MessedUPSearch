@@ -1,0 +1,34 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:MessedUpSearchA.ViewModels"
+             x:Class="MessedUpSearchA.Views.CrmOverlay"
+             x:DataType="vm:MainWindowViewModel">
+
+    <Grid>
+        <Border Background="#B0000000" PointerPressed="OnBackdropClick"/>
+
+        <Border Classes="modal" Width="880" Height="620">
+            <Grid RowDefinitions="Auto,*">
+                <Grid Grid.Row="0" Margin="28,18,18,0">
+                    <TextBlock Text="CRM"
+                               FontFamily="{StaticResource HeadingFont}"
+                               FontSize="22" FontWeight="Bold"
+                               LetterSpacing="3"
+                               Foreground="{StaticResource OnBackground}"
+                               VerticalAlignment="Center"/>
+                    <Button Classes="modalClose" Content="✕"
+                            HorizontalAlignment="Right"
+                            Click="OnCloseClick"/>
+                </Grid>
+                <TextBlock Grid.Row="1"
+                           Text="COMING SOON"
+                           FontFamily="{StaticResource HeadingFont}"
+                           FontSize="38" FontWeight="Bold"
+                           LetterSpacing="6"
+                           Foreground="{StaticResource OnBackgroundDim}"
+                           HorizontalAlignment="Center"
+                           VerticalAlignment="Center"/>
+            </Grid>
+        </Border>
+    </Grid>
+</UserControl>
