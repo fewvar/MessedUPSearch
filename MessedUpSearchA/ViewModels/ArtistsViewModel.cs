@@ -1,36 +1,26 @@
 using System.Collections.ObjectModel;
-using CommunityToolkit.Mvvm.ComponentModel;
+using System.Linq;
+using Avalonia.Controls;
+using MessedUpSearchA.Data;
 using MessedUpSearchA.Models;
 
 namespace MessedUpSearchA.ViewModels;
 
 public partial class ArtistsViewModel : ViewModelBase
 {
-    public ObservableCollection<Artist> Artists { get; } = new()
+    public ObservableCollection<Artist> Artists { get; } = new();
+
+    public ArtistsViewModel()
     {
-        new Artist
+        // В дизайнере Rider базы нет — показываем заглушку, чтобы XAML-превью не падало.
+        if (Design.IsDesignMode)
         {
-            Nickname = "KXSHDAMI",
-            AiGenreTags = "Rage, Plugg",
-            TotalPlays = 8120,
-            IgLink = "@kxshdami",
-            SpotifyLink = "23000",
-            Language = "ENG",
-            AvatarColor = "#E74C3C",
-            IsFavorite = true,
-            IsRedFlagged = false
-        },
-        new Artist
-        {
-            Nickname = "NIGHTTEARS",
-            AiGenreTags = "Sad, Cloud",
-            TotalPlays = 6890,
-            IgLink = "@night.tears",
-            SpotifyLink = "9400",
-            Language = "RU",
-            AvatarColor = "#5DADE2",
-            IsFavorite = false,
-            IsRedFlagged = true
+            Artists.Add(new Artist { Nickname = "PREVIEW", AiGenreTags = "Rage", TotalPlays = 8120, AvatarColor = "#E74C3C" });
+            return;
         }
-    };
+
+        using var db = new AppDbContext();
+        foreach (var artist in db.Artists.ToList())
+            Artists.Add(artist);
+    }
 }

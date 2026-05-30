@@ -2,6 +2,7 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:MessedUpSearchA.ViewModels"
              xmlns:views="using:MessedUpSearchA.Views"
+             xmlns:conv="using:MessedUpSearchA.Converters"
              x:Class="MessedUpSearchA.App"
              RequestedThemeVariant="Default">
 
@@ -15,6 +16,9 @@
     </Application.DataTemplates>
 
     <Application.Resources>
+        <!-- Конвертеры -->
+        <conv:StringToBrushConverter x:Key="StringToBrush"/>
+
         <!-- Заголовки -->
         <FontFamily x:Key="HeadingFont">avares://MessedUpSearchA/Assets/Fonts/Oswald-VariableFont_wght.ttf#Oswald</FontFamily>
         <!-- Обычный текст -->

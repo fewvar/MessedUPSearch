@@ -60,7 +60,7 @@
 
                                     <Ellipse Grid.Column="0"
                                              Width="22" Height="22"
-                                             Fill="{Binding StatusColor}"
+                                             Fill="{Binding StatusColor, Converter={StaticResource StringToBrush}}"
                                              HorizontalAlignment="Center"
                                              VerticalAlignment="Center"/>
 

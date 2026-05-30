@@ -73,7 +73,7 @@
 
                                     <Ellipse Grid.Column="0"
                                              Width="32" Height="32"
-                                             Fill="{Binding AvatarColor}"
+                                             Fill="{Binding AvatarColor, Converter={StaticResource StringToBrush}}"
                                              HorizontalAlignment="Center"
                                              VerticalAlignment="Center"/>
 
