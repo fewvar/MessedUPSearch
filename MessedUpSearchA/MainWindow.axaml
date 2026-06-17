@@ -98,6 +98,7 @@
         <Grid x:CompileBindings="False">
             <views:CrmOverlay IsVisible="{Binding IsCrmOpen}"/>
             <views:SettingsOverlay IsVisible="{Binding IsSettingsOpen}"/>
+            <views:ReminderOverlay IsVisible="{Binding IsReminderOpen}"/>
         </Grid>
     </Grid>
 </Window>

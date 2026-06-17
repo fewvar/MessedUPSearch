@@ -9,6 +9,7 @@
         <StyleInclude Source="/Assets/Styles/MainWindowStyles.axaml"/>
     </UserControl.Styles>
 
+    <Grid>
     <Grid RowDefinitions="44,*,Auto" RowSpacing="20">
 
         <!-- ============== ACTION BUTTONS ============== -->
@@ -16,6 +17,7 @@
                     Orientation="Horizontal"
                     HorizontalAlignment="Right"
                     Spacing="12">
+            <Button Classes="action" Content="+ ADD ARTIST" Click="OnAddArtistClick"/>
             <Button Classes="action" Click="OnCrmClick">
                 <StackPanel Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
                     <Border Classes="icon icon-crm" Width="18" Height="18"/>
@@ -66,6 +68,9 @@
                             <DataTemplate DataType="models:Artist">
                                 <Grid Height="56"
                                       ColumnDefinitions="60,1.8*,1.5*,1.3*,2.4*,1.2*"
+                                      Background="Transparent"
+                                      Cursor="Hand"
+                                      PointerPressed="OnArtistRowClick"
                                       x:CompileBindings="False">
                                     <Border Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="6"
                                             BorderBrush="#22000000" BorderThickness="0,0,0,1"
@@ -110,22 +115,39 @@
                                                    Text="{Binding Language}"
                                                    FontSize="14"
                                                    VerticalAlignment="Center"/>
-                                        <Border Grid.Column="1"
-                                                Classes="icon icon-star-filled"
-                                                Background="#F1C40F"
-                                                Width="20" Height="20" Margin="4,0"
-                                                IsVisible="{Binding IsFavorite}"
-                                                VerticalAlignment="Center"/>
-                                        <Border Grid.Column="1"
-                                                Classes="icon icon-star-outline surfaceMuted"
-                                                Width="20" Height="20" Margin="4,0"
-                                                IsVisible="{Binding !IsFavorite}"
-                                                VerticalAlignment="Center"/>
-                                        <TextBlock Grid.Column="2"
-                                                   Text="⚑" FontSize="18" Margin="4,0,0,0"
-                                                   Foreground="#E74C3C"
-                                                   IsVisible="{Binding IsRedFlagged}"
-                                                   VerticalAlignment="Center"/>
+
+                                        <!-- ★ favorite (кликабельно, всегда видно) -->
+                                        <Panel Grid.Column="1"
+                                               Background="Transparent" Cursor="Hand"
+                                               Width="28" Height="28" Margin="4,0"
+                                               VerticalAlignment="Center"
+                                               PointerPressed="OnToggleFavorite">
+                                            <Border Classes="icon icon-star-filled"
+                                                    Background="#F1C40F"
+                                                    Width="20" Height="20"
+                                                    HorizontalAlignment="Center" VerticalAlignment="Center"
+                                                    IsVisible="{Binding IsFavorite}"/>
+                                            <Border Classes="icon icon-star-outline surfaceMuted"
+                                                    Width="20" Height="20"
+                                                    HorizontalAlignment="Center" VerticalAlignment="Center"
+                                                    IsVisible="{Binding !IsFavorite}"/>
+                                        </Panel>
+
+                                        <!-- ⚑ red flag (кликабельно, приглушён когда не помечен) -->
+                                        <Panel Grid.Column="2"
+                                               Background="Transparent" Cursor="Hand"
+                                               Width="28" Height="28" Margin="4,0,0,0"
+                                               VerticalAlignment="Center"
+                                               PointerPressed="OnToggleRedFlag">
+                                            <TextBlock Text="⚑" FontSize="18"
+                                                       HorizontalAlignment="Center" VerticalAlignment="Center"
+                                                       Foreground="#E74C3C"
+                                                       IsVisible="{Binding IsRedFlagged}"/>
+                                            <TextBlock Text="⚑" FontSize="18"
+                                                       HorizontalAlignment="Center" VerticalAlignment="Center"
+                                                       Foreground="#55FFFFFF"
+                                                       IsVisible="{Binding !IsRedFlagged}"/>
+                                        </Panel>
                                     </Grid>
                                 </Grid>
                             </DataTemplate>
@@ -145,19 +167,9 @@
                         <TextBlock Grid.Column="0" Classes="filterLabel" Text="TYPE" VerticalAlignment="Center"/>
                         <Border Grid.Column="1" Classes="icon icon-type onSurface" Width="20" Height="20" VerticalAlignment="Center"/>
                     </Grid>
-                    <ComboBox Grid.Row="1" Classes="filter" SelectedIndex="0">
-                        <ComboBoxItem>ALL</ComboBoxItem>
-                        <ComboBoxItem>Rage</ComboBoxItem>
-                        <ComboBoxItem>Plugg</ComboBoxItem>
-                        <ComboBoxItem>Jerk</ComboBoxItem>
-                        <ComboBoxItem>Cloud</ComboBoxItem>
-                        <ComboBoxItem>Phonk</ComboBoxItem>
-                        <ComboBoxItem>Dark</ComboBoxItem>
-                        <ComboBoxItem>Ambient</ComboBoxItem>
-                        <ComboBoxItem>Trap</ComboBoxItem>
-                        <ComboBoxItem>Sad</ComboBoxItem>
-                        <ComboBoxItem>Emo</ComboBoxItem>
-                    </ComboBox>
+                    <ComboBox Grid.Row="1" Classes="filter"
+                              ItemsSource="{Binding TypeOptions}"
+                              SelectedItem="{Binding FilterType}"/>
                 </Grid>
             </Border>
 
@@ -169,9 +181,9 @@
                         <Border Grid.Column="1" Classes="icon icon-plays onSurface" Width="20" Height="20" VerticalAlignment="Center"/>
                     </Grid>
                     <Grid Grid.Row="1" ColumnDefinitions="*,Auto,*" VerticalAlignment="Center">
-                        <TextBlock Grid.Column="0" Classes="filterMuted" Text="min"/>
+                        <TextBox Grid.Column="0" Classes="search" Text="{Binding PlaysMin}" PlaceholderText="min"/>
                         <TextBlock Grid.Column="1" Classes="filterMuted" Text="—" Margin="8,0"/>
-                        <TextBlock Grid.Column="2" Classes="filterMuted" Text="max"/>
+                        <TextBox Grid.Column="2" Classes="search" Text="{Binding PlaysMax}" PlaceholderText="max"/>
                     </Grid>
                 </Grid>
             </Border>
@@ -183,15 +195,9 @@
                         <TextBlock Grid.Column="0" Classes="filterLabel" Text="LANGUAGE" VerticalAlignment="Center"/>
                         <Border Grid.Column="1" Classes="icon icon-language onSurface" Width="20" Height="20" VerticalAlignment="Center"/>
                     </Grid>
-                    <ComboBox Grid.Row="1" Classes="filter" SelectedIndex="0">
-                        <ComboBoxItem>ALL</ComboBoxItem>
-                        <ComboBoxItem>English</ComboBoxItem>
-                        <ComboBoxItem>Russian</ComboBoxItem>
-                        <ComboBoxItem>French</ComboBoxItem>
-                        <ComboBoxItem>Spanish</ComboBoxItem>
-                        <ComboBoxItem>German</ComboBoxItem>
-                        <ComboBoxItem>Unknown</ComboBoxItem>
-                    </ComboBox>
+                    <ComboBox Grid.Row="1" Classes="filter"
+                              ItemsSource="{Binding LanguageOptions}"
+                              SelectedItem="{Binding FilterLanguage}"/>
                 </Grid>
             </Border>
 
@@ -202,13 +208,9 @@
                         <TextBlock Grid.Column="0" Classes="filterLabel" Text="PERIOD" VerticalAlignment="Center"/>
                         <Border Grid.Column="1" Classes="icon icon-period onSurface" Width="20" Height="20" VerticalAlignment="Center"/>
                     </Grid>
-                    <ComboBox Grid.Row="1" Classes="filter" SelectedIndex="0">
-                        <ComboBoxItem>All time</ComboBoxItem>
-                        <ComboBoxItem>Today</ComboBoxItem>
-                        <ComboBoxItem>This week</ComboBoxItem>
-                        <ComboBoxItem>This month</ComboBoxItem>
-                        <ComboBoxItem>This year</ComboBoxItem>
-                    </ComboBox>
+                    <ComboBox Grid.Row="1" Classes="filter"
+                              ItemsSource="{Binding PeriodOptions}"
+                              SelectedItem="{Binding FilterPeriod}"/>
                 </Grid>
             </Border>
 
@@ -217,10 +219,117 @@
                 <Grid ColumnDefinitions="*,Auto" VerticalAlignment="Center">
                     <TextBox Grid.Column="0"
                              Classes="search"
+                             Text="{Binding SearchText}"
                              PlaceholderText="SEARCH (KEY WORD)"/>
                     <Border Grid.Column="1" Classes="icon icon-search onSurface" Width="20" Height="20"/>
                 </Grid>
             </Border>
         </Grid>
+    </Grid>
+
+    <!-- ============== ARTIST EDITOR MODAL ============== -->
+    <Grid IsVisible="{Binding IsEditorOpen}">
+        <Border Background="#B0000000"/>
+        <Border Classes="modal" Width="560" VerticalAlignment="Center" HorizontalAlignment="Center">
+            <StackPanel Margin="28,18,28,24" Spacing="12">
+
+                <Grid>
+                    <TextBlock Text="{Binding EditorTitle}"
+                               FontFamily="{StaticResource HeadingFont}"
+                               FontSize="20" FontWeight="Bold" LetterSpacing="3"
+                               Foreground="{StaticResource OnBackground}"
+                               VerticalAlignment="Center"/>
+                    <Button Classes="modalClose" Content="✕"
+                            HorizontalAlignment="Right"
+                            Command="{Binding CancelCommand}"/>
+                </Grid>
+
+                <Grid ColumnDefinitions="*,14,*">
+                    <StackPanel Grid.Column="0" Spacing="4">
+                        <TextBlock Classes="filterLabel" Text="NICKNAME"/>
+                        <TextBox Text="{Binding EditNickname}"/>
+                    </StackPanel>
+                    <StackPanel Grid.Column="2" Spacing="4">
+                        <TextBlock Classes="filterLabel" Text="SOUNDCLOUD LINK"/>
+                        <TextBox Text="{Binding EditScLink}" PlaceholderText="(можно пусто)"/>
+                    </StackPanel>
+                </Grid>
+
+                <Grid ColumnDefinitions="*,14,*">
+                    <StackPanel Grid.Column="0" Spacing="4">
+                        <TextBlock Classes="filterLabel" Text="TYPE / GENRE"/>
+                        <TextBox Text="{Binding EditGenreTags}" PlaceholderText="Rage, Plugg"/>
+                    </StackPanel>
+                    <StackPanel Grid.Column="2" Spacing="4">
+                        <TextBlock Classes="filterLabel" Text="PLAYS"/>
+                        <TextBox Text="{Binding EditTotalPlays}" PlaceholderText="8120"/>
+                    </StackPanel>
+                </Grid>
+
+                <Grid ColumnDefinitions="*,14,*">
+                    <StackPanel Grid.Column="0" Spacing="4">
+                        <TextBlock Classes="filterLabel" Text="INSTAGRAM"/>
+                        <TextBox Text="{Binding EditIgLink}" PlaceholderText="@nick"/>
+                    </StackPanel>
+                    <StackPanel Grid.Column="2" Spacing="4">
+                        <TextBlock Classes="filterLabel" Text="SPOTIFY"/>
+                        <TextBox Text="{Binding EditSpotifyLink}"/>
+                    </StackPanel>
+                </Grid>
+
+                <Grid ColumnDefinitions="*,14,*">
+                    <StackPanel Grid.Column="0" Spacing="4">
+                        <TextBlock Classes="filterLabel" Text="LANGUAGE"/>
+                        <TextBox Text="{Binding EditLanguage}" PlaceholderText="ENG / RU / ..."/>
+                    </StackPanel>
+                    <StackPanel Grid.Column="2" Spacing="4">
+                        <TextBlock Classes="filterLabel" Text="CRM STATUS"/>
+                        <ComboBox HorizontalAlignment="Stretch"
+                                  ItemsSource="{Binding CrmStatusOptions}"
+                                  SelectedItem="{Binding EditCrmStatus}"/>
+                    </StackPanel>
+                </Grid>
+
+                <StackPanel Spacing="4">
+                    <TextBlock Classes="filterLabel" Text="NOTES"/>
+                    <TextBox Text="{Binding EditNotes}"
+                             AcceptsReturn="True" TextWrapping="Wrap"
+                             Height="70"/>
+                </StackPanel>
+
+                <StackPanel Spacing="4" IsVisible="{Binding IsEditMode}">
+                    <TextBlock Classes="filterLabel" Text="ASSIGNED BEATS"/>
+                    <Border BorderBrush="#33FFFFFF" BorderThickness="1" CornerRadius="6" Padding="10,8">
+                        <ScrollViewer MaxHeight="110" VerticalScrollBarVisibility="Auto">
+                            <ItemsControl ItemsSource="{Binding AssignedBeats}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate DataType="models:Beat">
+                                        <Grid ColumnDefinitions="Auto,*" Margin="0,2">
+                                            <Ellipse Grid.Column="0" Width="10" Height="10"
+                                                     Margin="0,0,8,0" VerticalAlignment="Center"
+                                                     Fill="{Binding StatusColor, Converter={StaticResource StringToBrush}}"/>
+                                            <TextBlock Grid.Column="1" Text="{Binding BeatName}"
+                                                       FontSize="13" VerticalAlignment="Center"/>
+                                        </Grid>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </ScrollViewer>
+                    </Border>
+                </StackPanel>
+
+                <Grid Margin="0,8,0,0">
+                    <Button Classes="action" Content="DELETE"
+                            HorizontalAlignment="Left"
+                            IsVisible="{Binding IsEditMode}"
+                            Command="{Binding DeleteCommand}"/>
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Spacing="12">
+                        <Button Classes="action" Content="CANCEL" Command="{Binding CancelCommand}"/>
+                        <Button Classes="action" Content="SAVE" Command="{Binding SaveCommand}"/>
+                    </StackPanel>
+                </Grid>
+            </StackPanel>
+        </Border>
+    </Grid>
     </Grid>
 </UserControl>

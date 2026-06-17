@@ -14,5 +14,7 @@ public class SentBeatsLog
     public int BeatId { get; set; }
     public Beat? Beat { get; set; }
 
-    public string SentAt { get; set; } = string.Empty;   // ISO datetime отправки
+    public string AssignedAt { get; set; } = string.Empty; // когда бит привязан к артисту
+    public bool IsSent { get; set; }                        // отправлен ли вручную
+    public string SentAt { get; set; } = string.Empty;     // когда реально отправлен (пусто пока не отправлен)
 }

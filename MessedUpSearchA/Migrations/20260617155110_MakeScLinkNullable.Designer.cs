@@ -2,6 +2,7 @@
 using MessedUpSearchA.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -9,9 +10,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace MessedUpSearchA.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260617155110_MakeScLinkNullable")]
+    partial class MakeScLinkNullable
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "9.0.11");
@@ -153,14 +156,7 @@ namespace MessedUpSearchA.Migrations
                     b.Property<int>("ArtistId")
                         .HasColumnType("INTEGER");
 
-                    b.Property<string>("AssignedAt")
-                        .IsRequired()
-                        .HasColumnType("TEXT");
-
                     b.Property<int>("BeatId")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<bool>("IsSent")
                         .HasColumnType("INTEGER");
 
                     b.Property<string>("SentAt")

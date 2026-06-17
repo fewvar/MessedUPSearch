@@ -1,0 +1,69 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:MessedUpSearchA.ViewModels"
+             x:Class="MessedUpSearchA.Views.ReminderOverlay"
+             x:DataType="vm:MainWindowViewModel">
+
+    <Grid>
+        <Border Background="#B0000000" PointerPressed="OnBackdropClick"/>
+
+        <Border Classes="modal" Width="620" MaxHeight="560"
+                VerticalAlignment="Center" HorizontalAlignment="Center">
+            <Grid RowDefinitions="Auto,*,Auto">
+
+                <!-- HEADER -->
+                <Grid Grid.Row="0" Margin="28,18,18,8">
+                    <StackPanel>
+                        <TextBlock Text="ПОРА ОТПРАВИТЬ"
+                                   FontFamily="{StaticResource HeadingFont}"
+                                   FontSize="22" FontWeight="Bold" LetterSpacing="3"
+                                   Foreground="{StaticResource OnBackground}"/>
+                        <TextBlock Text="Эти биты привязаны, но ещё не отправлены"
+                                   FontSize="13" Margin="0,4,0,0"
+                                   Foreground="{StaticResource OnBackgroundDim}"/>
+                    </StackPanel>
+                    <Button Classes="modalClose" Content="✕"
+                            HorizontalAlignment="Right" VerticalAlignment="Top"
+                            Click="OnCloseClick"/>
+                </Grid>
+
+                <!-- LIST -->
+                <ScrollViewer Grid.Row="1" Margin="28,8,18,8"
+                              VerticalScrollBarVisibility="Auto">
+                    <ItemsControl ItemsSource="{Binding Reminders}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate DataType="vm:ReminderEntry">
+                                <Border Background="#14FFFFFF"
+                                        BorderBrush="#22FFFFFF" BorderThickness="1"
+                                        CornerRadius="8" Padding="16,12" Margin="0,0,8,10">
+                                    <StackPanel Spacing="4">
+                                        <Grid ColumnDefinitions="*,Auto">
+                                            <TextBlock Grid.Column="0" Text="{Binding Nickname}"
+                                                       FontWeight="Bold" FontSize="16"
+                                                       Foreground="{StaticResource OnBackground}"/>
+                                            <TextBlock Grid.Column="1" Text="{Binding Summary}"
+                                                       FontSize="12"
+                                                       Foreground="#F1C40F"
+                                                       VerticalAlignment="Center"/>
+                                        </Grid>
+                                        <TextBlock Text="{Binding BeatsLine}"
+                                                   FontSize="13" TextWrapping="Wrap"
+                                                   Foreground="{StaticResource OnBackgroundDim}"/>
+                                    </StackPanel>
+                                </Border>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </ScrollViewer>
+
+                <!-- BUTTONS -->
+                <StackPanel Grid.Row="2" Orientation="Horizontal"
+                            HorizontalAlignment="Right" Spacing="12"
+                            Margin="28,8,28,22">
+                    <Button Classes="action" Content="ПОЗЖЕ" Click="OnCloseClick"/>
+                    <Button Classes="action" Content="ОТКРЫТЬ CRM" Click="OnOpenCrmClick"/>
+                </StackPanel>
+            </Grid>
+        </Border>
+    </Grid>
+</UserControl>

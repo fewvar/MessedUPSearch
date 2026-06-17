@@ -44,6 +44,35 @@
                               VerticalScrollBarVisibility="Auto">
                     <StackPanel Margin="0,0,4,0">
 
+                        <!-- CRM REMINDERS -->
+                        <Border Classes="settingsSection">
+                            <StackPanel>
+                                <TextBlock Classes="settingsHeader" Text="CRM REMINDERS"/>
+                                <Grid ColumnDefinitions="*,Auto">
+                                    <StackPanel Grid.Column="0">
+                                        <TextBlock Classes="settingsLabel" Text="Remind after (days)"/>
+                                        <TextBlock Classes="settingsHint"
+                                                   Text="Через сколько дней напоминать о привязанном, но не отправленном бите"/>
+                                    </StackPanel>
+                                    <StackPanel Grid.Column="1" Orientation="Horizontal"
+                                                Spacing="14" VerticalAlignment="Center">
+                                        <Slider Width="220"
+                                                Minimum="1" Maximum="14"
+                                                TickFrequency="1" IsSnapToTickEnabled="True"
+                                                VerticalAlignment="Center"
+                                                x:CompileBindings="False"
+                                                Value="{Binding ReminderDays}"/>
+                                        <TextBlock Text="{Binding ReminderDays, StringFormat='{}{0} дн.'}"
+                                                   FontFamily="{StaticResource HeadingFont}"
+                                                   FontSize="15" FontWeight="Bold"
+                                                   MinWidth="48"
+                                                   Foreground="{StaticResource OnBackground}"
+                                                   VerticalAlignment="Center"/>
+                                    </StackPanel>
+                                </Grid>
+                            </StackPanel>
+                        </Border>
+
                         <!-- PARSER -->
                         <Border Classes="settingsSection">
                             <StackPanel>

@@ -35,9 +35,12 @@ public class AppDbContext : DbContext
     protected override void OnModelCreating(ModelBuilder b)
     {
         // Дедупликация артистов по ссылке на профиль (ТЗ §2).
+        // Фильтрованный индекс: UNIQUE применяется только когда ссылка задана —
+        // артистов, добавленных вручную без ScLink (NULL), может быть сколько угодно.
         b.Entity<Artist>()
             .HasIndex(a => a.ScLink)
-            .IsUnique();
+            .IsUnique()
+            .HasFilter("\"ScLink\" IS NOT NULL");
 
         // Связи лога отправок: при удалении артиста/бита — чистим записи лога.
         b.Entity<SentBeatsLog>()

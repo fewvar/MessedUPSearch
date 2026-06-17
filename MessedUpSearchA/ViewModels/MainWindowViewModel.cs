@@ -1,35 +1,50 @@
+using System;
+using System.Collections.ObjectModel;
+using System.Linq;
 using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
+using MessedUpSearchA.Data;
+using MessedUpSearchA.Models;
 
 namespace MessedUpSearchA.ViewModels;
 
 public partial class MainWindowViewModel : ViewModelBase
 {
+    private readonly AppSettings _settings = AppSettings.Load();
+
     private readonly BeatsViewModel _beatsVm = new();
     private readonly ArtistsViewModel _artistsVm = new();
 
     public BeatsViewModel BeatsVm => _beatsVm;
     public ArtistsViewModel ArtistsVm => _artistsVm;
 
-    [ObservableProperty]
-    private ViewModelBase _currentViewModel;
+    /// <summary>Карточки CRM (артисты с заданным CrmStatus). Заполняется при открытии окна.</summary>
+    public ObservableCollection<CrmEntry> CrmEntries { get; } = new();
 
-    [ObservableProperty]
-    private bool? _isBeatsSelected = true;
+    /// <summary>Напоминания о неотправленных битах. Собираются при старте.</summary>
+    public ObservableCollection<ReminderEntry> Reminders { get; } = new();
 
-    [ObservableProperty]
-    private bool _isCrmOpen;
+    [ObservableProperty] private bool _isCrmEmpty = true;
+    [ObservableProperty] private bool _isCrmOpen;
+    [ObservableProperty] private bool _isSettingsOpen;
+    [ObservableProperty] private bool _isReminderOpen;
 
-    [ObservableProperty]
-    private bool _isSettingsOpen;
+    [ObservableProperty] private ViewModelBase _currentViewModel;
+    [ObservableProperty] private bool? _isBeatsSelected = true;
+    [ObservableProperty] private string _parserStatus = "Idle";
 
-    [ObservableProperty]
-    private string _parserStatus = "Idle";
+    /// <summary>Через сколько дней напоминать (1–14). Привязан к ползунку в Settings.</summary>
+    [ObservableProperty] private int _reminderDays;
 
     public string AppVersion => "v0.1";
 
     public MainWindowViewModel()
     {
         _currentViewModel = _beatsVm;
+        _reminderDays = Math.Clamp(_settings.ReminderDays, 1, 14);
+
+        LoadReminders();
+        IsReminderOpen = Reminders.Count > 0;
     }
 
     partial void OnIsBeatsSelectedChanged(bool? value)
@@ -37,8 +52,128 @@ public partial class MainWindowViewModel : ViewModelBase
         CurrentViewModel = value == true ? _beatsVm : _artistsVm;
     }
 
-    public void ShowCrm() => IsCrmOpen = true;
+    partial void OnReminderDaysChanged(int value)
+    {
+        _settings.ReminderDays = Math.Clamp(value, 1, 14);
+        _settings.Save();
+    }
+
+    // ---- CRM ----
+
+    public void ShowCrm()
+    {
+        LoadCrm();
+        IsCrmOpen = true;
+    }
+
+    /// <summary>Собирает CRM-карточки: артисты с непустым CrmStatus + их привязанные биты.</summary>
+    private void LoadCrm()
+    {
+        CrmEntries.Clear();
+
+        using var db = new AppDbContext();
+        var artists = db.Artists
+            .Where(a => a.CrmStatus != "" && a.CrmStatus != null)
+            .OrderBy(a => a.Nickname)
+            .ToList();
+
+        foreach (var a in artists)
+        {
+            var logs = db.SentBeatsLog.Where(s => s.ArtistId == a.Id).ToList();
+            var beatById = db.Beats
+                .Where(b => logs.Select(l => l.BeatId).Contains(b.Id))
+                .ToDictionary(b => b.Id);
+
+            var items = logs
+                .Where(l => beatById.ContainsKey(l.BeatId))
+                .Select(l => new CrmBeatItem
+                {
+                    LogId = l.Id,
+                    BeatName = beatById[l.BeatId].BeatName,
+                    StatusColor = beatById[l.BeatId].StatusColor,
+                    IsSent = l.IsSent
+                })
+                .OrderBy(i => i.IsSent).ThenBy(i => i.BeatName)
+                .ToList();
+
+            CrmEntries.Add(new CrmEntry
+            {
+                Nickname = a.Nickname,
+                CrmStatus = a.CrmStatus,
+                Notes = a.Notes,
+                Beats = items
+            });
+        }
+
+        IsCrmEmpty = CrmEntries.Count == 0;
+    }
+
+    /// <summary>Отмечает привязку отправленной (по id записи лога) и обновляет CRM + напоминания.</summary>
+    [RelayCommand]
+    private void MarkSent(int logId)
+    {
+        using (var db = new AppDbContext())
+        {
+            var log = db.SentBeatsLog.FirstOrDefault(s => s.Id == logId);
+            if (log is not null && !log.IsSent)
+            {
+                log.IsSent = true;
+                log.SentAt = DateTime.Now.ToString("yyyy-MM-dd HH:mm");
+                db.SaveChanges();
+            }
+        }
+
+        LoadCrm();
+        LoadReminders();
+    }
+
+    // ---- Reminders ----
+
+    /// <summary>Собирает напоминания: неотправленные привязки старше ReminderDays, сгруппированные по артисту.</summary>
+    private void LoadReminders()
+    {
+        Reminders.Clear();
+
+        using var db = new AppDbContext();
+        var cutoff = DateTime.Now.AddDays(-ReminderDays);
+
+        var pending = db.SentBeatsLog.Where(s => !s.IsSent).ToList()
+            .Where(s => DateTime.TryParse(s.AssignedAt, out var d) && d <= cutoff)
+            .ToList();
+
+        if (pending.Count == 0)
+            return;
+
+        var artistById = db.Artists.ToDictionary(a => a.Id);
+        var beatById = db.Beats.ToDictionary(b => b.Id);
+
+        var groups = pending
+            .Where(s => artistById.ContainsKey(s.ArtistId) && beatById.ContainsKey(s.BeatId))
+            .GroupBy(s => s.ArtistId);
+
+        foreach (var g in groups)
+        {
+            Reminders.Add(new ReminderEntry
+            {
+                Nickname = artistById[g.Key].Nickname,
+                BeatNames = g.Select(s => beatById[s.BeatId].BeatName).OrderBy(n => n).ToList()
+            });
+        }
+    }
+
+    public void CloseReminders() => IsReminderOpen = false;
+
+    /// <summary>Из напоминания сразу открыть CRM, чтобы отметить отправку.</summary>
+    public void OpenCrmFromReminder()
+    {
+        IsReminderOpen = false;
+        ShowCrm();
+    }
+
+    // ---- overlays ----
+
     public void ShowSettings() => IsSettingsOpen = true;
+
     public void CloseOverlays()
     {
         IsCrmOpen = false;

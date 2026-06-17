@@ -4,7 +4,7 @@ public class Artist
 {
     public int Id { get; set; }
     public string Nickname { get; set; } = string.Empty;
-    public string ScLink { get; set; } = string.Empty;
+    public string? ScLink { get; set; }   // null = добавлен вручную без ссылки (UNIQUE только для не-null)
     public string AvatarPath { get; set; } = string.Empty;
     public string AvatarColor { get; set; } = "#888888";
     public string IgLink { get; set; } = string.Empty;

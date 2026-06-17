@@ -9,6 +9,7 @@
         <StyleInclude Source="/Assets/Styles/MainWindowStyles.axaml"/>
     </UserControl.Styles>
 
+    <Grid>
     <Grid RowDefinitions="44,*,Auto" RowSpacing="20">
 
         <!-- ============== ACTION BUTTONS ============== -->
@@ -16,8 +17,8 @@
                     Orientation="Horizontal"
                     HorizontalAlignment="Right"
                     Spacing="12">
-            <Button Classes="action" Content="+ ADD BEAT"/>
-            <Button Classes="action" Content="IMPORT FOLDER"/>
+            <Button Classes="action" Content="+ ADD BEAT" Click="OnAddBeatClick"/>
+            <Button Classes="action" Content="IMPORT FOLDER" Click="OnImportFolderClick"/>
         </StackPanel>
 
         <!-- ============== TABLE CARD ============== -->
@@ -53,6 +54,9 @@
                             <DataTemplate DataType="models:Beat">
                                 <Grid Height="56"
                                       ColumnDefinitions="60,2.2*,2*,1*,1.2*,1.4*,1.8*"
+                                      Background="Transparent"
+                                      Cursor="Hand"
+                                      PointerPressed="OnBeatRowClick"
                                       x:CompileBindings="False">
                                     <Border Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="7"
                                             BorderBrush="#22000000" BorderThickness="0,0,0,1"
@@ -118,32 +122,23 @@
                         <TextBlock Grid.Column="0" Classes="filterLabel" Text="TYPE" VerticalAlignment="Center"/>
                         <Border Grid.Column="1" Classes="icon icon-type onSurface" Width="20" Height="20" VerticalAlignment="Center"/>
                     </Grid>
-                    <ComboBox Grid.Row="1" Classes="filter" SelectedIndex="0">
-                        <ComboBoxItem>ALL</ComboBoxItem>
-                        <ComboBoxItem>Rage</ComboBoxItem>
-                        <ComboBoxItem>Plugg</ComboBoxItem>
-                        <ComboBoxItem>Jerk</ComboBoxItem>
-                        <ComboBoxItem>Cloud</ComboBoxItem>
-                        <ComboBoxItem>Phonk</ComboBoxItem>
-                        <ComboBoxItem>Dark</ComboBoxItem>
-                        <ComboBoxItem>Ambient</ComboBoxItem>
-                        <ComboBoxItem>Trap</ComboBoxItem>
-                        <ComboBoxItem>Sad</ComboBoxItem>
-                    </ComboBox>
+                    <ComboBox Grid.Row="1" Classes="filter"
+                              ItemsSource="{Binding TypeOptions}"
+                              SelectedItem="{Binding FilterType}"/>
                 </Grid>
             </Border>
 
-            <!-- PLAYS -->
+            <!-- BPM (у битов нет прослушиваний — фильтруем по темпу) -->
             <Border Grid.Column="1" Classes="filterBox">
                 <Grid RowDefinitions="Auto,*">
                     <Grid Grid.Row="0" ColumnDefinitions="*,Auto" VerticalAlignment="Center">
-                        <TextBlock Grid.Column="0" Classes="filterLabel" Text="PLAYS" VerticalAlignment="Center"/>
+                        <TextBlock Grid.Column="0" Classes="filterLabel" Text="BPM" VerticalAlignment="Center"/>
                         <Border Grid.Column="1" Classes="icon icon-plays onSurface" Width="20" Height="20" VerticalAlignment="Center"/>
                     </Grid>
                     <Grid Grid.Row="1" ColumnDefinitions="*,Auto,*" VerticalAlignment="Center">
-                        <TextBlock Grid.Column="0" Classes="filterMuted" Text="min"/>
+                        <TextBox Grid.Column="0" Classes="search" Text="{Binding BpmMin}" PlaceholderText="min"/>
                         <TextBlock Grid.Column="1" Classes="filterMuted" Text="—" Margin="8,0"/>
-                        <TextBlock Grid.Column="2" Classes="filterMuted" Text="max"/>
+                        <TextBox Grid.Column="2" Classes="search" Text="{Binding BpmMax}" PlaceholderText="max"/>
                     </Grid>
                 </Grid>
             </Border>
@@ -152,33 +147,9 @@
             <Border Grid.Column="2" Classes="filterBox">
                 <Grid RowDefinitions="Auto,*">
                     <TextBlock Grid.Row="0" Classes="filterLabel" Text="KEY"/>
-                    <ComboBox Grid.Row="1" Classes="filter" SelectedIndex="0">
-                        <ComboBoxItem>ALL</ComboBoxItem>
-                        <ComboBoxItem>C major</ComboBoxItem>
-                        <ComboBoxItem>C minor</ComboBoxItem>
-                        <ComboBoxItem>C# major</ComboBoxItem>
-                        <ComboBoxItem>C# minor</ComboBoxItem>
-                        <ComboBoxItem>D major</ComboBoxItem>
-                        <ComboBoxItem>D minor</ComboBoxItem>
-                        <ComboBoxItem>D# major</ComboBoxItem>
-                        <ComboBoxItem>D# minor</ComboBoxItem>
-                        <ComboBoxItem>E major</ComboBoxItem>
-                        <ComboBoxItem>E minor</ComboBoxItem>
-                        <ComboBoxItem>F major</ComboBoxItem>
-                        <ComboBoxItem>F minor</ComboBoxItem>
-                        <ComboBoxItem>F# major</ComboBoxItem>
-                        <ComboBoxItem>F# minor</ComboBoxItem>
-                        <ComboBoxItem>G major</ComboBoxItem>
-                        <ComboBoxItem>G minor</ComboBoxItem>
-                        <ComboBoxItem>G# major</ComboBoxItem>
-                        <ComboBoxItem>G# minor</ComboBoxItem>
-                        <ComboBoxItem>A major</ComboBoxItem>
-                        <ComboBoxItem>A minor</ComboBoxItem>
-                        <ComboBoxItem>A# major</ComboBoxItem>
-                        <ComboBoxItem>A# minor</ComboBoxItem>
-                        <ComboBoxItem>B major</ComboBoxItem>
-                        <ComboBoxItem>B minor</ComboBoxItem>
-                    </ComboBox>
+                    <ComboBox Grid.Row="1" Classes="filter"
+                              ItemsSource="{Binding KeyOptions}"
+                              SelectedItem="{Binding FilterKey}"/>
                 </Grid>
             </Border>
 
@@ -189,13 +160,9 @@
                         <TextBlock Grid.Column="0" Classes="filterLabel" Text="PERIOD" VerticalAlignment="Center"/>
                         <Border Grid.Column="1" Classes="icon icon-period onSurface" Width="20" Height="20" VerticalAlignment="Center"/>
                     </Grid>
-                    <ComboBox Grid.Row="1" Classes="filter" SelectedIndex="0">
-                        <ComboBoxItem>All time</ComboBoxItem>
-                        <ComboBoxItem>Today</ComboBoxItem>
-                        <ComboBoxItem>This week</ComboBoxItem>
-                        <ComboBoxItem>This month</ComboBoxItem>
-                        <ComboBoxItem>This year</ComboBoxItem>
-                    </ComboBox>
+                    <ComboBox Grid.Row="1" Classes="filter"
+                              ItemsSource="{Binding PeriodOptions}"
+                              SelectedItem="{Binding FilterPeriod}"/>
                 </Grid>
             </Border>
 
@@ -204,10 +171,93 @@
                 <Grid ColumnDefinitions="*,Auto" VerticalAlignment="Center">
                     <TextBox Grid.Column="0"
                              Classes="search"
+                             Text="{Binding SearchText}"
                              PlaceholderText="SEARCH (KEY WORD)"/>
                     <Border Grid.Column="1" Classes="icon icon-search onSurface" Width="20" Height="20"/>
                 </Grid>
             </Border>
         </Grid>
+    </Grid>
+
+    <!-- ============== BEAT EDITOR MODAL ============== -->
+    <Grid IsVisible="{Binding IsEditorOpen}">
+        <Border Background="#B0000000"/>
+        <Border Classes="modal" Width="520" VerticalAlignment="Center" HorizontalAlignment="Center">
+            <StackPanel Margin="28,18,28,24" Spacing="14">
+
+                <Grid>
+                    <TextBlock Text="{Binding EditorTitle}"
+                               FontFamily="{StaticResource HeadingFont}"
+                               FontSize="20" FontWeight="Bold" LetterSpacing="3"
+                               Foreground="{StaticResource OnBackground}"
+                               VerticalAlignment="Center"/>
+                    <Button Classes="modalClose" Content="✕"
+                            HorizontalAlignment="Right"
+                            Command="{Binding CancelCommand}"/>
+                </Grid>
+
+                <StackPanel Spacing="4">
+                    <TextBlock Classes="filterLabel" Text="BEAT NAME"/>
+                    <TextBox Text="{Binding EditName}"/>
+                </StackPanel>
+
+                <StackPanel Spacing="4">
+                    <TextBlock Classes="filterLabel" Text="TYPE / GENRE"/>
+                    <TextBox Text="{Binding EditTags}" PlaceholderText="Rage, Plugg"/>
+                </StackPanel>
+
+                <Grid ColumnDefinitions="*,14,*">
+                    <StackPanel Grid.Column="0" Spacing="4">
+                        <TextBlock Classes="filterLabel" Text="BPM"/>
+                        <TextBox Text="{Binding EditBpm}" PlaceholderText="145"/>
+                    </StackPanel>
+                    <StackPanel Grid.Column="2" Spacing="4">
+                        <TextBlock Classes="filterLabel" Text="KEY"/>
+                        <TextBox Text="{Binding EditKey}" PlaceholderText="C minor"/>
+                    </StackPanel>
+                </Grid>
+
+                <Grid ColumnDefinitions="*,14,*">
+                    <StackPanel Grid.Column="0" Spacing="4">
+                        <TextBlock Classes="filterLabel" Text="STATUS"/>
+                        <ComboBox HorizontalAlignment="Stretch"
+                                  ItemsSource="{Binding StatusOptions}"
+                                  SelectedItem="{Binding EditStatus}"/>
+                    </StackPanel>
+                    <StackPanel Grid.Column="2" Spacing="4">
+                        <TextBlock Classes="filterLabel" Text="LICENSE (IF SOLD)"/>
+                        <TextBox Text="{Binding EditLicense}" PlaceholderText="WAV Lease"/>
+                    </StackPanel>
+                </Grid>
+
+                <StackPanel Spacing="4">
+                    <TextBlock Classes="filterLabel" Text="ASSIGN TO ARTISTS"/>
+                    <Border BorderBrush="#33FFFFFF" BorderThickness="1" CornerRadius="6" Padding="10,8">
+                        <ScrollViewer MaxHeight="140" VerticalScrollBarVisibility="Auto">
+                            <ItemsControl ItemsSource="{Binding ArtistPicks}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate DataType="vm:ArtistPick">
+                                        <CheckBox Content="{Binding Nickname}"
+                                                  IsChecked="{Binding IsSelected, Mode=TwoWay}"/>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </ScrollViewer>
+                    </Border>
+                </StackPanel>
+
+                <Grid Margin="0,8,0,0">
+                    <Button Classes="action" Content="DELETE"
+                            HorizontalAlignment="Left"
+                            IsVisible="{Binding IsEditMode}"
+                            Command="{Binding DeleteCommand}"/>
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Spacing="12">
+                        <Button Classes="action" Content="CANCEL" Command="{Binding CancelCommand}"/>
+                        <Button Classes="action" Content="SAVE" Command="{Binding SaveCommand}"/>
+                    </StackPanel>
+                </Grid>
+            </StackPanel>
+        </Border>
+    </Grid>
     </Grid>
 </UserControl>
