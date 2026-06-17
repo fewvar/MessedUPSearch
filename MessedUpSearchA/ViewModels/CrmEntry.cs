@@ -2,7 +2,6 @@ using System.Collections.Generic;
 
 namespace MessedUpSearchA.ViewModels;
 
-/// <summary>Одна карточка в CRM-окне: артист, его статус, заметки и привязанные биты.</summary>
 public class CrmEntry
 {
     public string Nickname { get; init; } = string.Empty;
@@ -17,10 +16,9 @@ public class CrmEntry
     public string SentCountLabel => $"{SentCount}/{Beats.Count} sent";
 }
 
-/// <summary>Привязанный бит внутри CRM-карточки, с состоянием отправки.</summary>
 public class CrmBeatItem
 {
-    public int LogId { get; init; }          // id записи в SentBeatsLog — по нему отмечаем отправку
+    public int LogId { get; init; }
     public string BeatName { get; init; } = string.Empty;
     public string StatusColor { get; init; } = "#888888";
     public bool IsSent { get; init; }
@@ -28,7 +26,6 @@ public class CrmBeatItem
     public bool IsPending => !IsSent;
 }
 
-/// <summary>Строка напоминания: артист + сколько его битов ждут отправки.</summary>
 public class ReminderEntry
 {
     public string Nickname { get; init; } = string.Empty;

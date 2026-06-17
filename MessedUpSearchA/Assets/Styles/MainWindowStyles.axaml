@@ -1,9 +1,6 @@
 <Styles xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
 
-    <!-- Root style aggregator. Each module groups styles by component family.
-         Views include this single file; modules below are loaded transitively. -->
-
     <StyleInclude Source="/Assets/Styles/Tabs.axaml"/>
     <StyleInclude Source="/Assets/Styles/Tables.axaml"/>
     <StyleInclude Source="/Assets/Styles/Filters.axaml"/>

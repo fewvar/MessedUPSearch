@@ -4,10 +4,10 @@
 
 namespace MessedUpSearchA.Migrations
 {
-    /// <inheritdoc />
+
     public partial class AddReminderFieldsToSentBeatsLog : Migration
     {
-        /// <inheritdoc />
+
         protected override void Up(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.AddColumn<string>(
@@ -25,7 +25,6 @@ namespace MessedUpSearchA.Migrations
                 defaultValue: false);
         }
 
-        /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.DropColumn(

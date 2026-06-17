@@ -9,10 +9,9 @@
         <StyleInclude Source="/Assets/Styles/MainWindowStyles.axaml"/>
     </UserControl.Styles>
 
-    <Grid>
+    <Grid x:CompileBindings="False">
     <Grid RowDefinitions="44,*,Auto" RowSpacing="20">
 
-        <!-- ============== ACTION BUTTONS ============== -->
         <StackPanel Grid.Row="0"
                     Orientation="Horizontal"
                     HorizontalAlignment="Right"
@@ -32,19 +31,16 @@
             </Button>
         </StackPanel>
 
-        <!-- ============== TABLE CARD ============== -->
         <Border Grid.Row="1" Classes="card" ClipToBounds="True">
             <Grid RowDefinitions="76,*"
                   ColumnDefinitions="60,1.8*,1.5*,1.3*,2.4*,1.2*">
 
-                <!-- vertical column dividers (span both rows) -->
                 <Border Grid.Row="0" Grid.RowSpan="2" Grid.Column="0" Classes="colDivider"/>
                 <Border Grid.Row="0" Grid.RowSpan="2" Grid.Column="1" Classes="colDivider"/>
                 <Border Grid.Row="0" Grid.RowSpan="2" Grid.Column="2" Classes="colDivider"/>
                 <Border Grid.Row="0" Grid.RowSpan="2" Grid.Column="3" Classes="colDivider"/>
                 <Border Grid.Row="0" Grid.RowSpan="2" Grid.Column="4" Classes="colDivider"/>
 
-                <!-- header text -->
                 <TextBlock Grid.Row="0" Grid.Column="1" Classes="tableHeader" Text="NICKNAME"/>
                 <TextBlock Grid.Row="0" Grid.Column="2" Classes="tableHeader" Text="TYPE / GENRE"/>
                 <TextBlock Grid.Row="0" Grid.Column="3" Classes="tableHeader"
@@ -56,10 +52,8 @@
                            Margin="14,0,14,0"/>
                 <TextBlock Grid.Row="0" Grid.Column="5" Classes="tableHeader" Text="LANGUAGE"/>
 
-                <!-- header underline -->
                 <Border Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="6" Classes="headerDivider"/>
 
-                <!-- body -->
                 <ScrollViewer Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="6"
                               HorizontalScrollBarVisibility="Disabled"
                               VerticalScrollBarVisibility="Auto">
@@ -70,8 +64,7 @@
                                       ColumnDefinitions="60,1.8*,1.5*,1.3*,2.4*,1.2*"
                                       Background="Transparent"
                                       Cursor="Hand"
-                                      PointerPressed="OnArtistRowClick"
-                                      x:CompileBindings="False">
+                                      PointerPressed="OnArtistRowClick">
                                     <Border Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="6"
                                             BorderBrush="#22000000" BorderThickness="0,0,0,1"
                                             VerticalAlignment="Bottom" IsHitTestVisible="False"/>
@@ -116,7 +109,6 @@
                                                    FontSize="14"
                                                    VerticalAlignment="Center"/>
 
-                                        <!-- ★ favorite (кликабельно, всегда видно) -->
                                         <Panel Grid.Column="1"
                                                Background="Transparent" Cursor="Hand"
                                                Width="28" Height="28" Margin="4,0"
@@ -133,7 +125,6 @@
                                                     IsVisible="{Binding !IsFavorite}"/>
                                         </Panel>
 
-                                        <!-- ⚑ red flag (кликабельно, приглушён когда не помечен) -->
                                         <Panel Grid.Column="2"
                                                Background="Transparent" Cursor="Hand"
                                                Width="28" Height="28" Margin="4,0,0,0"
@@ -154,13 +145,46 @@
                         </ItemsControl.ItemTemplate>
                     </ItemsControl>
                 </ScrollViewer>
+
+                <Grid Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="6"
+                      IsVisible="{Binding IsPreviewVisible}"
+                      IsHitTestVisible="False">
+                    <StackPanel VerticalAlignment="Top" Opacity="0.30">
+                        <Grid Height="56" ColumnDefinitions="60,1.8*,1.5*,1.3*,2.4*,1.2*">
+                            <Ellipse Grid.Column="0" Width="32" Height="32" Fill="#E74C3C" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            <TextBlock Grid.Column="1" Text="KXSHDAMI" FontWeight="Bold" FontSize="15" Margin="14,0,0,0" VerticalAlignment="Center"/>
+                            <TextBlock Grid.Column="2" Text="Rage, Plugg" FontSize="14" Margin="14,0,0,0" VerticalAlignment="Center"/>
+                            <TextBlock Grid.Column="3" Text="8120" FontSize="14" Margin="14,0,0,0" VerticalAlignment="Center"/>
+                            <StackPanel Grid.Column="4" Margin="14,0,14,0" VerticalAlignment="Center">
+                                <TextBlock Text="inst: @kxshdami" FontSize="13"/>
+                                <TextBlock Text="spotify: 23000" FontSize="13"/>
+                            </StackPanel>
+                            <TextBlock Grid.Column="5" Text="ENG" FontSize="14" Margin="14,0,0,0" VerticalAlignment="Center"/>
+                        </Grid>
+                        <Grid Height="56" ColumnDefinitions="60,1.8*,1.5*,1.3*,2.4*,1.2*">
+                            <Ellipse Grid.Column="0" Width="32" Height="32" Fill="#5DADE2" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            <TextBlock Grid.Column="1" Text="NIGHTTEARS" FontWeight="Bold" FontSize="15" Margin="14,0,0,0" VerticalAlignment="Center"/>
+                            <TextBlock Grid.Column="2" Text="Sad, Cloud" FontSize="14" Margin="14,0,0,0" VerticalAlignment="Center"/>
+                            <TextBlock Grid.Column="3" Text="6890" FontSize="14" Margin="14,0,0,0" VerticalAlignment="Center"/>
+                            <StackPanel Grid.Column="4" Margin="14,0,14,0" VerticalAlignment="Center">
+                                <TextBlock Text="inst: @night.tears" FontSize="13"/>
+                                <TextBlock Text="spotify: 9400" FontSize="13"/>
+                            </StackPanel>
+                            <TextBlock Grid.Column="5" Text="RU" FontSize="14" Margin="14,0,0,0" VerticalAlignment="Center"/>
+                        </Grid>
+                    </StackPanel>
+
+                    <TextBlock Text="ПРИМЕР — здесь появятся артисты. Нажми + ADD ARTIST"
+                               FontFamily="{StaticResource HeadingFont}"
+                               FontSize="15" LetterSpacing="1"
+                               Foreground="{StaticResource OnSurfaceMuted}"
+                               HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                </Grid>
             </Grid>
         </Border>
 
-        <!-- ============== FILTERS + SEARCH ============== -->
         <Grid Grid.Row="2" ColumnDefinitions="*,*,*,*,2*" ColumnSpacing="14" Height="72">
 
-            <!-- TYPE -->
             <Border Grid.Column="0" Classes="filterBox">
                 <Grid RowDefinitions="Auto,*">
                     <Grid Grid.Row="0" ColumnDefinitions="*,Auto" VerticalAlignment="Center">
@@ -173,7 +197,6 @@
                 </Grid>
             </Border>
 
-            <!-- PLAYS min-max -->
             <Border Grid.Column="1" Classes="filterBox">
                 <Grid RowDefinitions="Auto,*">
                     <Grid Grid.Row="0" ColumnDefinitions="*,Auto" VerticalAlignment="Center">
@@ -188,7 +211,6 @@
                 </Grid>
             </Border>
 
-            <!-- LANGUAGE -->
             <Border Grid.Column="2" Classes="filterBox">
                 <Grid RowDefinitions="Auto,*">
                     <Grid Grid.Row="0" ColumnDefinitions="*,Auto" VerticalAlignment="Center">
@@ -201,7 +223,6 @@
                 </Grid>
             </Border>
 
-            <!-- PERIOD -->
             <Border Grid.Column="3" Classes="filterBox">
                 <Grid RowDefinitions="Auto,*">
                     <Grid Grid.Row="0" ColumnDefinitions="*,Auto" VerticalAlignment="Center">
@@ -214,7 +235,6 @@
                 </Grid>
             </Border>
 
-            <!-- SEARCH -->
             <Border Grid.Column="4" Classes="filterBox" Padding="20,8">
                 <Grid ColumnDefinitions="*,Auto" VerticalAlignment="Center">
                     <TextBox Grid.Column="0"
@@ -227,11 +247,16 @@
         </Grid>
     </Grid>
 
-    <!-- ============== ARTIST EDITOR MODAL ============== -->
     <Grid IsVisible="{Binding IsEditorOpen}">
         <Border Background="#B0000000"/>
         <Border Classes="modal" Width="560" VerticalAlignment="Center" HorizontalAlignment="Center">
             <StackPanel Margin="28,18,28,24" Spacing="12">
+                <StackPanel.Styles>
+
+                    <Style Selector="TextBlock.filterLabel">
+                        <Setter Property="Foreground" Value="{StaticResource OnBackground}"/>
+                    </Style>
+                </StackPanel.Styles>
 
                 <Grid>
                     <TextBlock Text="{Binding EditorTitle}"
@@ -318,12 +343,12 @@
                     </Border>
                 </StackPanel>
 
-                <Grid Margin="0,8,0,0">
-                    <Button Classes="action" Content="DELETE"
+                <Grid Margin="0,8,0,0" ColumnDefinitions="Auto,*,Auto">
+                    <Button Grid.Column="0" Classes="action" Content="DELETE"
                             HorizontalAlignment="Left"
                             IsVisible="{Binding IsEditMode}"
                             Command="{Binding DeleteCommand}"/>
-                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Spacing="12">
+                    <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="12">
                         <Button Classes="action" Content="CANCEL" Command="{Binding CancelCommand}"/>
                         <Button Classes="action" Content="SAVE" Command="{Binding SaveCommand}"/>
                     </StackPanel>

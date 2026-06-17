@@ -1,10 +1,6 @@
 <Styles xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
 
-    <!-- ============================================================
-         MODAL OVERLAY SHELL (CRM / SETTINGS — in-app dialog)
-         ============================================================ -->
-
     <Style Selector="Border.modal">
         <Setter Property="Background" Value="{StaticResource AppBackground}"/>
         <Setter Property="BorderBrush" Value="#33FFFFFF"/>
@@ -16,10 +12,6 @@
         <Setter Property="BoxShadow" Value="0 16 48 0 #B0000000"/>
     </Style>
 
-    <!-- ============================================================
-         SETTINGS OVERLAY (sections + form controls)
-         ============================================================ -->
-
     <Style Selector="Border.settingsSection">
         <Setter Property="Background" Value="Transparent"/>
         <Setter Property="BorderBrush" Value="#22FFFFFF"/>
@@ -27,7 +19,6 @@
         <Setter Property="Padding" Value="0,14,0,18"/>
     </Style>
 
-    <!-- Last section: no bottom divider -->
     <Style Selector="Border.settingsSection.last">
         <Setter Property="BorderThickness" Value="0"/>
     </Style>

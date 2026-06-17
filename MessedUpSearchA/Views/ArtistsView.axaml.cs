@@ -40,7 +40,7 @@ public partial class ArtistsView : UserControl
     {
         if (sender is Control { DataContext: Artist artist } && DataContext is ArtistsViewModel vm)
             vm.ToggleFavorite(artist);
-        e.Handled = true;   // не открывать редактор строки
+        e.Handled = true;
     }
 
     private void OnToggleRedFlag(object? sender, PointerPressedEventArgs e)

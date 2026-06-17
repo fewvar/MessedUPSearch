@@ -6,7 +6,7 @@
              x:Name="CrmRoot"
              x:DataType="vm:MainWindowViewModel">
 
-    <Grid>
+    <Grid x:CompileBindings="False">
         <Border Background="#B0000000" PointerPressed="OnBackdropClick"/>
 
         <Border Classes="modal" Width="880" Height="620">
@@ -24,7 +24,6 @@
                 </Grid>
                 <Grid Grid.Row="1" Margin="28,16,18,22">
 
-                    <!-- пустое состояние -->
                     <TextBlock IsVisible="{Binding IsCrmEmpty}"
                                Text="Пометь артистам CRM-статус на вкладке ARTISTS — они появятся здесь"
                                FontFamily="{StaticResource HeadingFont}"
@@ -35,7 +34,6 @@
                                VerticalAlignment="Center"
                                TextAlignment="Center"/>
 
-                    <!-- список CRM-карточек -->
                     <ScrollViewer IsVisible="{Binding !IsCrmEmpty}"
                                   VerticalScrollBarVisibility="Auto">
                         <ItemsControl ItemsSource="{Binding CrmEntries}">
@@ -46,7 +44,6 @@
                                             CornerRadius="8" Padding="16,12" Margin="0,0,8,12">
                                         <StackPanel Spacing="8">
 
-                                            <!-- ник + кол-во + статус -->
                                             <Grid ColumnDefinitions="*,Auto,Auto">
                                                 <TextBlock Grid.Column="0"
                                                            Text="{Binding Nickname}"
@@ -69,13 +66,11 @@
                                                 </Border>
                                             </Grid>
 
-                                            <!-- заметки -->
                                             <TextBlock Text="{Binding Notes}"
                                                        IsVisible="{Binding HasNotes}"
                                                        FontSize="13" TextWrapping="Wrap"
                                                        Foreground="{StaticResource OnBackgroundDim}"/>
 
-                                            <!-- привязанные биты со статусом отправки -->
                                             <ItemsControl ItemsSource="{Binding Beats}"
                                                           IsVisible="{Binding HasBeats}">
                                                 <ItemsControl.ItemTemplate>
@@ -88,14 +83,12 @@
                                                                        FontSize="13" VerticalAlignment="Center"
                                                                        Foreground="{StaticResource OnBackground}"/>
 
-                                                            <!-- ✅ отправлен -->
                                                             <TextBlock Grid.Column="2" Text="✓ sent"
                                                                        FontSize="12" FontWeight="Bold"
                                                                        Margin="8,0" VerticalAlignment="Center"
                                                                        Foreground="#2ECC71"
                                                                        IsVisible="{Binding IsSent}"/>
 
-                                                            <!-- ⏳ ждёт + кнопка отметки -->
                                                             <TextBlock Grid.Column="2" Text="⏳ pending"
                                                                        FontSize="12"
                                                                        Margin="8,0" VerticalAlignment="Center"

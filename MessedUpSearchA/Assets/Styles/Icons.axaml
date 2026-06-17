@@ -1,13 +1,6 @@
 <Styles xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
 
-    <!-- ============================================================
-         ICON (PNG tinted via OpacityMask)
-         Usage: <Border Classes="icon icon-search"/>
-         Color is set per-context: default = OnBackground (light) for dark bg,
-         .onSurface for light bg, .dim for muted.
-         ============================================================ -->
-
     <Style Selector="Border.icon">
         <Setter Property="Width" Value="18"/>
         <Setter Property="Height" Value="18"/>
@@ -20,7 +13,6 @@
         </Setter>
     </Style>
 
-    <!-- Color modifiers -->
     <Style Selector="Border.icon.onSurface">
         <Setter Property="Background" Value="{StaticResource OnSurface}"/>
     </Style>
@@ -31,7 +23,6 @@
         <Setter Property="Background" Value="{StaticResource OnSurfaceMuted}"/>
     </Style>
 
-    <!-- Masks (one per icon) -->
     <Style Selector="Border.icon.icon-search">
         <Setter Property="OpacityMask">
             <ImageBrush Source="/Assets/Icons/Buttons/Search.png" Stretch="Uniform"/>

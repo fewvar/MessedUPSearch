@@ -18,10 +18,8 @@ public partial class MainWindowViewModel : ViewModelBase
     public BeatsViewModel BeatsVm => _beatsVm;
     public ArtistsViewModel ArtistsVm => _artistsVm;
 
-    /// <summary>Карточки CRM (артисты с заданным CrmStatus). Заполняется при открытии окна.</summary>
     public ObservableCollection<CrmEntry> CrmEntries { get; } = new();
 
-    /// <summary>Напоминания о неотправленных битах. Собираются при старте.</summary>
     public ObservableCollection<ReminderEntry> Reminders { get; } = new();
 
     [ObservableProperty] private bool _isCrmEmpty = true;
@@ -33,7 +31,6 @@ public partial class MainWindowViewModel : ViewModelBase
     [ObservableProperty] private bool? _isBeatsSelected = true;
     [ObservableProperty] private string _parserStatus = "Idle";
 
-    /// <summary>Через сколько дней напоминать (1–14). Привязан к ползунку в Settings.</summary>
     [ObservableProperty] private int _reminderDays;
 
     public string AppVersion => "v0.1";
@@ -58,15 +55,12 @@ public partial class MainWindowViewModel : ViewModelBase
         _settings.Save();
     }
 
-    // ---- CRM ----
-
     public void ShowCrm()
     {
         LoadCrm();
         IsCrmOpen = true;
     }
 
-    /// <summary>Собирает CRM-карточки: артисты с непустым CrmStatus + их привязанные биты.</summary>
     private void LoadCrm()
     {
         CrmEntries.Clear();
@@ -108,7 +102,6 @@ public partial class MainWindowViewModel : ViewModelBase
         IsCrmEmpty = CrmEntries.Count == 0;
     }
 
-    /// <summary>Отмечает привязку отправленной (по id записи лога) и обновляет CRM + напоминания.</summary>
     [RelayCommand]
     private void MarkSent(int logId)
     {
@@ -127,9 +120,6 @@ public partial class MainWindowViewModel : ViewModelBase
         LoadReminders();
     }
 
-    // ---- Reminders ----
-
-    /// <summary>Собирает напоминания: неотправленные привязки старше ReminderDays, сгруппированные по артисту.</summary>
     private void LoadReminders()
     {
         Reminders.Clear();
@@ -163,14 +153,11 @@ public partial class MainWindowViewModel : ViewModelBase
 
     public void CloseReminders() => IsReminderOpen = false;
 
-    /// <summary>Из напоминания сразу открыть CRM, чтобы отметить отправку.</summary>
     public void OpenCrmFromReminder()
     {
         IsReminderOpen = false;
         ShowCrm();
     }
-
-    // ---- overlays ----
 
     public void ShowSettings() => IsSettingsOpen = true;
 

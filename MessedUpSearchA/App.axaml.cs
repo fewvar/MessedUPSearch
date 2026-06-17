@@ -16,11 +16,10 @@ public partial class App : Application
 
     public override void OnFrameworkInitializationCompleted()
     {
-        // Создаём/обновляем app.db по миграциям и заполняем тестовыми данными при первом запуске.
+
         using (var db = new AppDbContext())
         {
             db.Database.Migrate();
-            DatabaseSeeder.Seed(db);
         }
 
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)

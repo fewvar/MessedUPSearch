@@ -8,7 +8,7 @@ namespace MessedUpSearchA.Views;
 public partial class CrmOverlay : UserControl
 {
     public CrmOverlay()
-    {             
+    {
         InitializeComponent();
     }
 

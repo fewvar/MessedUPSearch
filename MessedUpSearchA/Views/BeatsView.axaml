@@ -9,10 +9,9 @@
         <StyleInclude Source="/Assets/Styles/MainWindowStyles.axaml"/>
     </UserControl.Styles>
 
-    <Grid>
+    <Grid x:CompileBindings="False">
     <Grid RowDefinitions="44,*,Auto" RowSpacing="20">
 
-        <!-- ============== ACTION BUTTONS ============== -->
         <StackPanel Grid.Row="0"
                     Orientation="Horizontal"
                     HorizontalAlignment="Right"
@@ -21,12 +20,10 @@
             <Button Classes="action" Content="IMPORT FOLDER" Click="OnImportFolderClick"/>
         </StackPanel>
 
-        <!-- ============== TABLE CARD ============== -->
         <Border Grid.Row="1" Classes="card" ClipToBounds="True">
             <Grid RowDefinitions="76,*"
                   ColumnDefinitions="60,2.2*,2*,1*,1.2*,1.4*,1.8*">
 
-                <!-- vertical column dividers (span both rows) -->
                 <Border Grid.Row="0" Grid.RowSpan="2" Grid.Column="0" Classes="colDivider"/>
                 <Border Grid.Row="0" Grid.RowSpan="2" Grid.Column="1" Classes="colDivider"/>
                 <Border Grid.Row="0" Grid.RowSpan="2" Grid.Column="2" Classes="colDivider"/>
@@ -34,7 +31,6 @@
                 <Border Grid.Row="0" Grid.RowSpan="2" Grid.Column="4" Classes="colDivider"/>
                 <Border Grid.Row="0" Grid.RowSpan="2" Grid.Column="5" Classes="colDivider"/>
 
-                <!-- header text -->
                 <TextBlock Grid.Row="0" Grid.Column="1" Classes="tableHeader" Text="BEAT NAME"/>
                 <TextBlock Grid.Row="0" Grid.Column="2" Classes="tableHeader" Text="TYPE / GENRE"/>
                 <TextBlock Grid.Row="0" Grid.Column="3" Classes="tableHeader" Text="BPM"/>
@@ -42,10 +38,8 @@
                 <TextBlock Grid.Row="0" Grid.Column="5" Classes="tableHeader" Text="ADDED"/>
                 <TextBlock Grid.Row="0" Grid.Column="6" Classes="tableHeader" Text="STATUS"/>
 
-                <!-- header underline -->
                 <Border Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="7" Classes="headerDivider"/>
 
-                <!-- body -->
                 <ScrollViewer Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="7"
                               HorizontalScrollBarVisibility="Disabled"
                               VerticalScrollBarVisibility="Auto">
@@ -56,8 +50,7 @@
                                       ColumnDefinitions="60,2.2*,2*,1*,1.2*,1.4*,1.8*"
                                       Background="Transparent"
                                       Cursor="Hand"
-                                      PointerPressed="OnBeatRowClick"
-                                      x:CompileBindings="False">
+                                      PointerPressed="OnBeatRowClick">
                                     <Border Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="7"
                                             BorderBrush="#22000000" BorderThickness="0,0,0,1"
                                             VerticalAlignment="Bottom" IsHitTestVisible="False"/>
@@ -109,13 +102,51 @@
                         </ItemsControl.ItemTemplate>
                     </ItemsControl>
                 </ScrollViewer>
+
+                <Grid Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="7"
+                      IsVisible="{Binding IsPreviewVisible}"
+                      IsHitTestVisible="False">
+                    <StackPanel VerticalAlignment="Top" Opacity="0.30">
+                        <Grid Height="56" ColumnDefinitions="60,2.2*,2*,1*,1.2*,1.4*,1.8*">
+                            <Ellipse Grid.Column="0" Width="22" Height="22" Fill="#F1C40F" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            <TextBlock Grid.Column="1" Text="VOODOO" FontWeight="Bold" FontSize="15" Margin="14,0,0,0" VerticalAlignment="Center"/>
+                            <TextBlock Grid.Column="2" Text="Rage" FontSize="14" Margin="14,0,0,0" VerticalAlignment="Center"/>
+                            <TextBlock Grid.Column="3" Text="145" FontSize="14" Margin="14,0,0,0" VerticalAlignment="Center"/>
+                            <TextBlock Grid.Column="4" Text="C minor" FontSize="14" Margin="14,0,0,0" VerticalAlignment="Center"/>
+                            <TextBlock Grid.Column="5" Text="2026-05-24" FontSize="14" Margin="14,0,0,0" VerticalAlignment="Center"/>
+                            <TextBlock Grid.Column="6" Text="POTENTIAL" FontWeight="Bold" FontSize="13" Margin="14,0,0,0" VerticalAlignment="Center"/>
+                        </Grid>
+                        <Grid Height="56" ColumnDefinitions="60,2.2*,2*,1*,1.2*,1.4*,1.8*">
+                            <Ellipse Grid.Column="0" Width="22" Height="22" Fill="#2ECC71" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            <TextBlock Grid.Column="1" Text="LATE NIGHT" FontWeight="Bold" FontSize="15" Margin="14,0,0,0" VerticalAlignment="Center"/>
+                            <TextBlock Grid.Column="2" Text="Cloud, Sad" FontSize="14" Margin="14,0,0,0" VerticalAlignment="Center"/>
+                            <TextBlock Grid.Column="3" Text="120" FontSize="14" Margin="14,0,0,0" VerticalAlignment="Center"/>
+                            <TextBlock Grid.Column="4" Text="F# minor" FontSize="14" Margin="14,0,0,0" VerticalAlignment="Center"/>
+                            <TextBlock Grid.Column="5" Text="2026-05-20" FontSize="14" Margin="14,0,0,0" VerticalAlignment="Center"/>
+                            <TextBlock Grid.Column="6" Text="SOLD" FontWeight="Bold" FontSize="13" Margin="14,0,0,0" VerticalAlignment="Center"/>
+                        </Grid>
+                        <Grid Height="56" ColumnDefinitions="60,2.2*,2*,1*,1.2*,1.4*,1.8*">
+                            <Ellipse Grid.Column="0" Width="22" Height="22" Fill="#1A1A1A" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            <TextBlock Grid.Column="1" Text="NEON" FontWeight="Bold" FontSize="15" Margin="14,0,0,0" VerticalAlignment="Center"/>
+                            <TextBlock Grid.Column="2" Text="Plugg" FontSize="14" Margin="14,0,0,0" VerticalAlignment="Center"/>
+                            <TextBlock Grid.Column="3" Text="160" FontSize="14" Margin="14,0,0,0" VerticalAlignment="Center"/>
+                            <TextBlock Grid.Column="4" Text="A minor" FontSize="14" Margin="14,0,0,0" VerticalAlignment="Center"/>
+                            <TextBlock Grid.Column="5" Text="2026-05-18" FontSize="14" Margin="14,0,0,0" VerticalAlignment="Center"/>
+                            <TextBlock Grid.Column="6" Text="FREE" FontWeight="Bold" FontSize="13" Margin="14,0,0,0" VerticalAlignment="Center"/>
+                        </Grid>
+                    </StackPanel>
+
+                    <TextBlock Text="ПРИМЕР — здесь появятся твои биты. Нажми + ADD BEAT"
+                               FontFamily="{StaticResource HeadingFont}"
+                               FontSize="15" LetterSpacing="1"
+                               Foreground="{StaticResource OnSurfaceMuted}"
+                               HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                </Grid>
             </Grid>
         </Border>
 
-        <!-- ============== FILTERS + SEARCH ============== -->
         <Grid Grid.Row="2" ColumnDefinitions="*,*,*,*,2*" ColumnSpacing="14" Height="72">
 
-            <!-- TYPE -->
             <Border Grid.Column="0" Classes="filterBox">
                 <Grid RowDefinitions="Auto,*">
                     <Grid Grid.Row="0" ColumnDefinitions="*,Auto" VerticalAlignment="Center">
@@ -128,7 +159,6 @@
                 </Grid>
             </Border>
 
-            <!-- BPM (у битов нет прослушиваний — фильтруем по темпу) -->
             <Border Grid.Column="1" Classes="filterBox">
                 <Grid RowDefinitions="Auto,*">
                     <Grid Grid.Row="0" ColumnDefinitions="*,Auto" VerticalAlignment="Center">
@@ -143,7 +173,6 @@
                 </Grid>
             </Border>
 
-            <!-- KEY -->
             <Border Grid.Column="2" Classes="filterBox">
                 <Grid RowDefinitions="Auto,*">
                     <TextBlock Grid.Row="0" Classes="filterLabel" Text="KEY"/>
@@ -153,7 +182,6 @@
                 </Grid>
             </Border>
 
-            <!-- PERIOD -->
             <Border Grid.Column="3" Classes="filterBox">
                 <Grid RowDefinitions="Auto,*">
                     <Grid Grid.Row="0" ColumnDefinitions="*,Auto" VerticalAlignment="Center">
@@ -166,7 +194,6 @@
                 </Grid>
             </Border>
 
-            <!-- SEARCH -->
             <Border Grid.Column="4" Classes="filterBox" Padding="20,8">
                 <Grid ColumnDefinitions="*,Auto" VerticalAlignment="Center">
                     <TextBox Grid.Column="0"
@@ -179,11 +206,16 @@
         </Grid>
     </Grid>
 
-    <!-- ============== BEAT EDITOR MODAL ============== -->
     <Grid IsVisible="{Binding IsEditorOpen}">
         <Border Background="#B0000000"/>
         <Border Classes="modal" Width="520" VerticalAlignment="Center" HorizontalAlignment="Center">
             <StackPanel Margin="28,18,28,24" Spacing="14">
+                <StackPanel.Styles>
+
+                    <Style Selector="TextBlock.filterLabel">
+                        <Setter Property="Foreground" Value="{StaticResource OnBackground}"/>
+                    </Style>
+                </StackPanel.Styles>
 
                 <Grid>
                     <TextBlock Text="{Binding EditorTitle}"
@@ -246,12 +278,12 @@
                     </Border>
                 </StackPanel>
 
-                <Grid Margin="0,8,0,0">
-                    <Button Classes="action" Content="DELETE"
+                <Grid Margin="0,8,0,0" ColumnDefinitions="Auto,*,Auto">
+                    <Button Grid.Column="0" Classes="action" Content="DELETE"
                             HorizontalAlignment="Left"
                             IsVisible="{Binding IsEditMode}"
                             Command="{Binding DeleteCommand}"/>
-                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Spacing="12">
+                    <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="12">
                         <Button Classes="action" Content="CANCEL" Command="{Binding CancelCommand}"/>
                         <Button Classes="action" Content="SAVE" Command="{Binding SaveCommand}"/>
                     </StackPanel>

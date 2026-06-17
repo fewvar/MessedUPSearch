@@ -1,11 +1,6 @@
 <Styles xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
 
-    <!-- ============================================================
-         TABS (animated radio buttons styled as ovals)
-         ============================================================ -->
-
-    <!-- Base style: small + low (inactive position) -->
     <Style Selector="RadioButton.tab">
         <Setter Property="HorizontalAlignment" Value="Center"/>
         <Setter Property="VerticalAlignment" Value="Top"/>
@@ -40,12 +35,10 @@
         </Setter>
     </Style>
 
-    <!-- LetterSpacing for the tab text (ContentPresenter wraps string in TextBlock) -->
     <Style Selector="RadioButton.tab /template/ ContentPresenter">
         <Setter Property="TextBlock.LetterSpacing" Value="2"/>
     </Style>
 
-    <!-- Checked tab: big + top -->
     <Style Selector="RadioButton.tab:checked">
         <Setter Property="Width" Value="460"/>
         <Setter Property="Height" Value="84"/>

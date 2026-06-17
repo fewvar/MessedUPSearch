@@ -4,10 +4,10 @@
 
 namespace MessedUpSearchA.Migrations
 {
-    /// <inheritdoc />
+
     public partial class MakeScLinkNullable : Migration
     {
-        /// <inheritdoc />
+
         protected override void Up(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.DropIndex(
@@ -30,7 +30,6 @@ namespace MessedUpSearchA.Migrations
                 filter: "\"ScLink\" IS NOT NULL");
         }
 
-        /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.DropIndex(

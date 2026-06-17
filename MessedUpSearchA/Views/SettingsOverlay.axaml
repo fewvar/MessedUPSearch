@@ -4,8 +4,6 @@
              x:Class="MessedUpSearchA.Views.SettingsOverlay"
              x:DataType="vm:MainWindowViewModel">
 
-    <!-- Override FluentTheme accent palette for checkboxes inside this overlay only.
-         Keeps the rest of the app untouched. -->
     <UserControl.Resources>
         <SolidColorBrush x:Key="CheckBoxCheckBackgroundFillChecked"            Color="White"/>
         <SolidColorBrush x:Key="CheckBoxCheckBackgroundStrokeChecked"          Color="White"/>
@@ -24,7 +22,6 @@
         <Border Classes="modal" Width="920" Height="700">
             <Grid RowDefinitions="Auto,*">
 
-                <!-- ============== HEADER ============== -->
                 <Grid Grid.Row="0" Margin="28,18,18,4">
                     <TextBlock Text="SETTINGS"
                                FontFamily="{StaticResource HeadingFont}"
@@ -37,14 +34,12 @@
                             Click="OnCloseClick"/>
                 </Grid>
 
-                <!-- ============== BODY ============== -->
                 <ScrollViewer Grid.Row="1"
                               Padding="32,0,40,32"
                               HorizontalScrollBarVisibility="Disabled"
                               VerticalScrollBarVisibility="Auto">
                     <StackPanel Margin="0,0,4,0">
 
-                        <!-- CRM REMINDERS -->
                         <Border Classes="settingsSection">
                             <StackPanel>
                                 <TextBlock Classes="settingsHeader" Text="CRM REMINDERS"/>
@@ -73,7 +68,6 @@
                             </StackPanel>
                         </Border>
 
-                        <!-- PARSER -->
                         <Border Classes="settingsSection">
                             <StackPanel>
                                 <TextBlock Classes="settingsHeader" Text="PARSER"/>
@@ -106,7 +100,6 @@
                             </StackPanel>
                         </Border>
 
-                        <!-- INTERFACE LANGUAGE -->
                         <Border Classes="settingsSection">
                             <StackPanel>
                                 <TextBlock Classes="settingsHeader" Text="LANGUAGE"/>
@@ -125,7 +118,6 @@
                             </StackPanel>
                         </Border>
 
-                        <!-- LOGS & DEBUG -->
                         <Border Classes="settingsSection">
                             <StackPanel>
                                 <TextBlock Classes="settingsHeader" Text="LOGS &amp; DEBUG"/>
@@ -150,7 +142,6 @@
                             </StackPanel>
                         </Border>
 
-                        <!-- ABOUT -->
                         <Border Classes="settingsSection last">
                             <StackPanel>
                                 <TextBlock Classes="settingsHeader" Text="ABOUT"/>

@@ -14,14 +14,11 @@ public partial class ArtistsViewModel : ViewModelBase
 {
     public ObservableCollection<Artist> Artists { get; } = new();
 
-    /// <summary>Биты, назначенные текущему артисту (read-only список в модалке).</summary>
     public ObservableCollection<Beat> AssignedBeats { get; } = new();
 
-    /// <summary>Статусы CRM (бриф: не ответил / ок / выложил фри). Пустой = не задан.</summary>
     public IReadOnlyList<string> CrmStatusOptions { get; } =
         new[] { "", "NO REPLY", "OK", "POSTED FREE" };
 
-    // ---- фильтры (панель снизу) ----
     public IReadOnlyList<string> TypeOptions { get; } =
         new[] { "ALL", "Rage", "Plugg", "Jerk", "Cloud", "Phonk", "Dark", "Ambient", "Trap", "Sad", "Emo" };
     public IReadOnlyList<string> LanguageOptions { get; } =
@@ -36,6 +33,8 @@ public partial class ArtistsViewModel : ViewModelBase
     [ObservableProperty] private string _playsMax = string.Empty;
     [ObservableProperty] private string _searchText = string.Empty;
 
+    [ObservableProperty] private bool _isPreviewVisible;
+
     private readonly List<Artist> _allArtists = new();
 
     partial void OnFilterTypeChanged(string value) => ApplyFilter();
@@ -45,7 +44,6 @@ public partial class ArtistsViewModel : ViewModelBase
     partial void OnPlaysMaxChanged(string value) => ApplyFilter();
     partial void OnSearchTextChanged(string value) => ApplyFilter();
 
-    // ---- состояние модалки-редактора ----
     [ObservableProperty] private bool _isEditorOpen;
     [ObservableProperty] private bool _isEditMode;
     [ObservableProperty] private string _editorTitle = "ADD ARTIST";
@@ -60,11 +58,11 @@ public partial class ArtistsViewModel : ViewModelBase
     [ObservableProperty] private string _editCrmStatus = string.Empty;
     [ObservableProperty] private string _editNotes = string.Empty;
 
-    private int _editingId;   // 0 = новый
+    private int _editingId;
 
     public ArtistsViewModel()
     {
-        // В дизайнере Rider базы нет — показываем заглушку, чтобы XAML-превью не падало.
+
         if (Design.IsDesignMode)
         {
             Artists.Add(new Artist { Nickname = "PREVIEW", AiGenreTags = "Rage", TotalPlays = 8120, AvatarColor = "#E74C3C" });
@@ -74,16 +72,15 @@ public partial class ArtistsViewModel : ViewModelBase
         LoadArtists();
     }
 
-    /// <summary>Перечитывает артистов из базы и применяет текущие фильтры.</summary>
     public void LoadArtists()
     {
         using var db = new AppDbContext();
         _allArtists.Clear();
         _allArtists.AddRange(db.Artists.OrderByDescending(a => a.Id).ToList());
+        IsPreviewVisible = _allArtists.Count == 0;
         ApplyFilter();
     }
 
-    /// <summary>Пересобирает видимую коллекцию из _allArtists по активным фильтрам.</summary>
     private void ApplyFilter()
     {
         const StringComparison oic = StringComparison.OrdinalIgnoreCase;
@@ -116,7 +113,6 @@ public partial class ArtistsViewModel : ViewModelBase
             Artists.Add(a);
     }
 
-    /// <summary>Короткий код языка для совпадения с данными вроде "ENG"/"RU".</summary>
     private static string LangShort(string full) => full switch
     {
         "English" => "ENG",
@@ -163,7 +159,6 @@ public partial class ArtistsViewModel : ViewModelBase
         IsEditorOpen = true;
     }
 
-    /// <summary>Подтягивает биты, назначенные артисту, через SentBeatsLog.</summary>
     private void LoadAssignedBeats(int artistId)
     {
         AssignedBeats.Clear();
@@ -177,7 +172,7 @@ public partial class ArtistsViewModel : ViewModelBase
     private void Save()
     {
         if (string.IsNullOrWhiteSpace(EditNickname))
-            return; // ник обязателен
+            return;
 
         int.TryParse(EditTotalPlays, out var plays);
 
@@ -199,7 +194,7 @@ public partial class ArtistsViewModel : ViewModelBase
         }
 
         artist.Nickname = EditNickname.Trim();
-        // Пустую ссылку храним как NULL — иначе несколько пустых нарушат UNIQUE-индекс.
+
         var link = EditScLink.Trim();
         artist.ScLink = string.IsNullOrWhiteSpace(link) ? null : link;
         artist.AiGenreTags = EditGenreTags.Trim();
@@ -228,7 +223,7 @@ public partial class ArtistsViewModel : ViewModelBase
             var artist = db.Artists.FirstOrDefault(a => a.Id == _editingId);
             if (artist is not null)
             {
-                db.Artists.Remove(artist);   // связанные SentBeatsLog уйдут каскадом
+                db.Artists.Remove(artist);
                 db.SaveChanges();
             }
         }
@@ -237,10 +232,8 @@ public partial class ArtistsViewModel : ViewModelBase
         LoadArtists();
     }
 
-    /// <summary>Переключает «избранное» прямо по клику на звезду в таблице.</summary>
     public void ToggleFavorite(Artist artist) => ToggleFlag(artist.Id, fav: true);
 
-    /// <summary>Переключает «ред флаг» по клику на флаг в таблице.</summary>
     public void ToggleRedFlag(Artist artist) => ToggleFlag(artist.Id, fav: false);
 
     private void ToggleFlag(int id, bool fav)
@@ -257,7 +250,6 @@ public partial class ArtistsViewModel : ViewModelBase
         LoadArtists();
     }
 
-    /// <summary>Случайный цвет аватара для нового артиста (аватарок без парсера нет).</summary>
     private static string RandomColor()
     {
         string[] palette = { "#E74C3C", "#5DADE2", "#2ECC71", "#F1C40F", "#9B59B6", "#E67E22", "#1ABC9C" };

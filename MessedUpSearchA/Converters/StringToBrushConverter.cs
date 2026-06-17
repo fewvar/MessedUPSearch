@@ -5,10 +5,6 @@ using Avalonia.Media;
 
 namespace MessedUpSearchA.Converters;
 
-/// <summary>
-/// Превращает строку с цветом ("#888888", "Red", "#F1C40F") в IBrush для Fill/Background.
-/// Модели хранят цвет строкой (так удобнее для SQLite) — конвертер живёт в UI-слое.
-/// </summary>
 public class StringToBrushConverter : IValueConverter
 {
     public static readonly StringToBrushConverter Instance = new();

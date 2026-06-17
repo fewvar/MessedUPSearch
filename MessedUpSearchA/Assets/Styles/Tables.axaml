@@ -1,16 +1,11 @@
 <Styles xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
 
-    <!-- ============================================================
-         TABLE (artists + beats — shared card, headers, dividers)
-         ============================================================ -->
-
     <Style Selector="Border.card">
         <Setter Property="Background" Value="#E8E8E8"/>
         <Setter Property="CornerRadius" Value="4"/>
     </Style>
 
-    <!-- All text inside the table card defaults to dark on light. -->
     <Style Selector="Border.card TextBlock">
         <Setter Property="Foreground" Value="{StaticResource OnSurface}"/>
     </Style>
@@ -25,14 +20,12 @@
         <Setter Property="Margin" Value="14,0,0,0"/>
     </Style>
 
-    <!-- Vertical column separator (stretches header + body) -->
     <Style Selector="Border.colDivider">
         <Setter Property="BorderBrush" Value="{StaticResource Divider}"/>
         <Setter Property="BorderThickness" Value="0,0,1,0"/>
         <Setter Property="IsHitTestVisible" Value="False"/>
     </Style>
 
-    <!-- Horizontal divider under table header -->
     <Style Selector="Border.headerDivider">
         <Setter Property="Height" Value="1"/>
         <Setter Property="Background" Value="{StaticResource Divider}"/>

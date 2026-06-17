@@ -1,11 +1,6 @@
 <Styles xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
 
-    <!-- ============================================================
-         ACTION BUTTONS (ADD BEAT / IMPORT FOLDER / CRM / SETTINGS)
-         Grey outline, no fill — turns white on hover.
-         ============================================================ -->
-
     <Style Selector="Button.action">
         <Setter Property="Background" Value="Transparent"/>
         <Setter Property="BorderBrush" Value="{StaticResource OnBackgroundDim}"/>
@@ -45,17 +40,12 @@
         <Setter Property="Foreground"  Value="{StaticResource OnBackground}"/>
     </Style>
 
-    <!-- Tint nested icon in sync with the text on hover -->
     <Style Selector="Button.action Border.icon">
         <Setter Property="Background" Value="{StaticResource OnBackgroundDim}"/>
     </Style>
     <Style Selector="Button.action:pointerover Border.icon">
         <Setter Property="Background" Value="{StaticResource OnBackground}"/>
     </Style>
-
-    <!-- ============================================================
-         MODAL CLOSE BUTTON (✕ in CRM / Settings overlays)
-         ============================================================ -->
 
     <Style Selector="Button.modalClose">
         <Setter Property="Background" Value="Transparent"/>
