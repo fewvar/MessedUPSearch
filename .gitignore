@@ -25,3 +25,7 @@ tmp/
 
 # Texture / icon working sources (kept locally, not in repo)
 texture-sources/
+
+# Claude Code (локальные доки и инструкции — не для публики)
+.claude/
+CLAUDE.md
