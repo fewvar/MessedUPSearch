@@ -17,6 +17,7 @@
                     HorizontalAlignment="Right"
                     Spacing="12">
             <Button Classes="action" Content="+ ADD ARTIST" Click="OnAddArtistClick"/>
+            <Button Classes="action" Content="⌕ PARSER" Click="OnParserClick"/>
             <Button Classes="action" Click="OnCrmClick">
                 <StackPanel Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
                     <Border Classes="icon icon-crm" Width="18" Height="18"/>
@@ -97,9 +98,11 @@
                                                 Margin="14,0,14,0"
                                                 VerticalAlignment="Center">
                                         <TextBlock Text="{Binding IgLink, StringFormat='inst: {0}'}"
-                                                   FontSize="13"/>
+                                                   FontSize="13" Cursor="Hand"
+                                                   PointerPressed="OnIgLinkClick"/>
                                         <TextBlock Text="{Binding SpotifyLink, StringFormat='spotify: {0}'}"
-                                                   FontSize="13"/>
+                                                   FontSize="13" Cursor="Hand"
+                                                   PointerPressed="OnSpotifyLinkClick"/>
                                     </StackPanel>
 
                                     <Grid Grid.Column="5" ColumnDefinitions="*,Auto,Auto"

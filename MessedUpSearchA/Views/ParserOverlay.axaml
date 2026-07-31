@@ -1,0 +1,279 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:MessedUpSearchA.ViewModels"
+             x:Class="MessedUpSearchA.Views.ParserOverlay"
+             x:DataType="vm:MainWindowViewModel">
+
+    <UserControl.Resources>
+        <SolidColorBrush x:Key="CheckBoxCheckBackgroundFillChecked"              Color="White"/>
+        <SolidColorBrush x:Key="CheckBoxCheckBackgroundStrokeChecked"            Color="White"/>
+        <SolidColorBrush x:Key="CheckBoxCheckGlyphForegroundChecked"             Color="#040506"/>
+        <SolidColorBrush x:Key="CheckBoxCheckBackgroundFillCheckedPointerOver"   Color="#E8E8E8"/>
+        <SolidColorBrush x:Key="CheckBoxCheckBackgroundStrokeCheckedPointerOver" Color="#E8E8E8"/>
+        <SolidColorBrush x:Key="CheckBoxCheckGlyphForegroundCheckedPointerOver"  Color="#040506"/>
+    </UserControl.Resources>
+
+    <Grid>
+        <Border Background="#B0000000" PointerPressed="OnBackdropClick"/>
+
+        <Border Classes="modal" Width="920" Height="680">
+            <Grid RowDefinitions="Auto,*,Auto" DataContext="{Binding ParserVm}"
+                  x:DataType="vm:ParserViewModel">
+
+                <Grid Grid.Row="0" Margin="28,18,18,4">
+                    <StackPanel Orientation="Horizontal" Spacing="14" VerticalAlignment="Center">
+                        <TextBlock Text="PARSER"
+                                   FontFamily="{StaticResource HeadingFont}"
+                                   FontSize="22" FontWeight="Bold"
+                                   LetterSpacing="3"
+                                   Foreground="{StaticResource OnBackground}"
+                                   VerticalAlignment="Center"/>
+                        <TextBlock Text="{Binding FoundLabel}"
+                                   IsVisible="{Binding IsResultsStep}"
+                                   FontSize="12" LetterSpacing="1"
+                                   Foreground="{StaticResource OnBackgroundDim}"
+                                   VerticalAlignment="Center"/>
+                    </StackPanel>
+                    <Button Classes="modalClose" Content="✕"
+                            HorizontalAlignment="Right"
+                            Click="OnCloseClick"/>
+                </Grid>
+
+                <!-- ШАГ 1: критерии -->
+                <ScrollViewer Grid.Row="1"
+                              IsVisible="{Binding IsCriteriaStep}"
+                              Padding="32,8,40,8"
+                              HorizontalScrollBarVisibility="Disabled"
+                              VerticalScrollBarVisibility="Auto">
+                    <StackPanel Margin="0,0,4,0">
+
+                        <Border Classes="settingsSection">
+                            <StackPanel>
+                                <TextBlock Classes="settingsHeader" Text="ЧТО ИСКАТЬ"/>
+                                <Grid ColumnDefinitions="*,Auto">
+                                    <StackPanel Grid.Column="0">
+                                        <TextBlock Classes="settingsLabel" Text="Жанр / тег"/>
+                                        <TextBlock Classes="settingsHint"
+                                                   Text="Ищется как тег трека: rage, plugg, jerk, phonk. Пусто — берём популярное"/>
+                                    </StackPanel>
+                                    <ComboBox Grid.Column="1" Classes="settings"
+                                              IsEditable="True"
+                                              ItemsSource="{Binding GenreOptions}"
+                                              Text="{Binding GenreTag}"
+                                              VerticalAlignment="Center"/>
+                                </Grid>
+                            </StackPanel>
+                        </Border>
+
+                        <Border Classes="settingsSection">
+                            <StackPanel>
+                                <TextBlock Classes="settingsHeader" Text="ОТСЕВ"/>
+
+                                <Grid ColumnDefinitions="*,Auto" Margin="0,0,0,16">
+                                    <StackPanel Grid.Column="0">
+                                        <TextBlock Classes="settingsLabel" Text="Прослушивания"/>
+                                        <TextBlock Classes="settingsHint"
+                                                   Text="Bandcamp прослушивания не отдаёт — для него фильтр не применяется"/>
+                                    </StackPanel>
+                                    <StackPanel Grid.Column="1" Orientation="Horizontal"
+                                                Spacing="10" VerticalAlignment="Center">
+                                        <TextBox Classes="settings" Width="110"
+                                                 Text="{Binding PlaysMin}" PlaceholderText="от"/>
+                                        <TextBlock Text="—" VerticalAlignment="Center"
+                                                   Foreground="{StaticResource OnBackgroundDim}"/>
+                                        <TextBox Classes="settings" Width="110"
+                                                 Text="{Binding PlaysMax}" PlaceholderText="до"/>
+                                    </StackPanel>
+                                </Grid>
+
+                                <Grid ColumnDefinitions="*,Auto" Margin="0,0,0,16">
+                                    <StackPanel Grid.Column="0">
+                                        <TextBlock Classes="settingsLabel" Text="Свежесть релизов"/>
+                                        <TextBlock Classes="settingsHint"
+                                                   Text="Выкладывал что-то за последние N дней. Пусто — не проверяем"/>
+                                    </StackPanel>
+                                    <TextBox Grid.Column="1" Classes="settings" Width="110"
+                                             Text="{Binding FreshDays}" PlaceholderText="дней"
+                                             VerticalAlignment="Center"/>
+                                </Grid>
+
+                                <Grid ColumnDefinitions="*,Auto">
+                                    <StackPanel Grid.Column="0">
+                                        <TextBlock Classes="settingsLabel" Text="Страна / язык"/>
+                                        <TextBlock Classes="settingsHint"
+                                                   Text="Сверяется с полем в профиле. Многие артисты его не заполняют"/>
+                                    </StackPanel>
+                                    <TextBox Grid.Column="1" Classes="settings" Width="180"
+                                             Text="{Binding Country}" PlaceholderText="напр. Russia"
+                                             VerticalAlignment="Center"/>
+                                </Grid>
+                            </StackPanel>
+                        </Border>
+
+                        <Border Classes="settingsSection last">
+                            <StackPanel>
+                                <TextBlock Classes="settingsHeader" Text="СКОЛЬКО БРАТЬ"/>
+
+                                <Grid ColumnDefinitions="*,Auto" Margin="0,0,0,16">
+                                    <StackPanel Grid.Column="0">
+                                        <TextBlock Classes="settingsLabel" Text="Артистов с каждой площадки"/>
+                                        <TextBlock Classes="settingsHint"
+                                                   Text="Лимит на каждую отдельно: 12 — это до 48 суммарно с четырёх"/>
+                                    </StackPanel>
+                                    <TextBox Grid.Column="1" Classes="settings" Width="110"
+                                             Text="{Binding MaxArtists}"
+                                             VerticalAlignment="Center"/>
+                                </Grid>
+
+                                <Grid ColumnDefinitions="*,Auto">
+                                    <StackPanel Grid.Column="0">
+                                        <TextBlock Classes="settingsLabel" Text="Треков на артиста"/>
+                                        <TextBlock Classes="settingsHint"
+                                                   Text="Чем больше, тем дольше прогон — на каждого уходит отдельный запрос"/>
+                                    </StackPanel>
+                                    <TextBox Grid.Column="1" Classes="settings" Width="110"
+                                             Text="{Binding TracksPerArtist}"
+                                             VerticalAlignment="Center"/>
+                                </Grid>
+                            </StackPanel>
+                        </Border>
+
+                    </StackPanel>
+                </ScrollViewer>
+
+                <!-- ШАГ 2: выдача -->
+                <Grid Grid.Row="1" IsVisible="{Binding IsResultsStep}" Margin="28,8,18,0"
+                      RowDefinitions="Auto,*,Auto">
+
+                    <Grid Grid.Row="0" ColumnDefinitions="24,*,90,80,Auto" Margin="4,0,12,8">
+                        <TextBlock Grid.Column="1" Classes="tableHeader" Text="NICKNAME"/>
+                        <TextBlock Grid.Column="2" Classes="tableHeader" Text="PLAYS"/>
+                        <TextBlock Grid.Column="3" Classes="tableHeader" Text="WHERE"/>
+                        <TextBlock Grid.Column="4" Classes="tableHeader" Text="TRACKS"/>
+                    </Grid>
+
+                    <TextBlock Grid.Row="1"
+                               IsVisible="{Binding IsResultsEmpty}"
+                               Text="Никого не нашлось. Ослабь отсев — например, убери диапазон прослушиваний или свежесть"
+                               FontFamily="{StaticResource HeadingFont}"
+                               FontSize="15" LetterSpacing="1"
+                               TextWrapping="Wrap" MaxWidth="420"
+                               Foreground="{StaticResource OnBackgroundDim}"
+                               HorizontalAlignment="Center" VerticalAlignment="Center"
+                               TextAlignment="Center"/>
+
+                    <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
+                        <ItemsControl ItemsSource="{Binding Results}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate DataType="vm:ParserResultItem">
+                                    <Border Background="#0DFFFFFF"
+                                            BorderBrush="#1AFFFFFF" BorderThickness="0,0,0,1"
+                                            Padding="4,10,12,10">
+                                        <Grid ColumnDefinitions="24,*,90,80,Auto">
+
+                                            <CheckBox Grid.Column="0"
+                                                      IsChecked="{Binding IsSelected}"
+                                                      VerticalAlignment="Center"
+                                                      Padding="0" MinWidth="0"/>
+
+                                            <StackPanel Grid.Column="1" Spacing="2" Margin="6,0,10,0">
+                                                <StackPanel Orientation="Horizontal" Spacing="8">
+                                                    <TextBlock Text="{Binding Nickname}"
+                                                               FontWeight="Bold" FontSize="14"
+                                                               TextTrimming="CharacterEllipsis"
+                                                               Foreground="{StaticResource OnBackground}"/>
+                                                    <Border Background="#332A2A2A" CornerRadius="3"
+                                                            Padding="6,1" VerticalAlignment="Center"
+                                                            IsVisible="{Binding HasStatus}">
+                                                        <TextBlock Text="{Binding StatusLabel}"
+                                                                   FontSize="9" FontWeight="Bold"
+                                                                   LetterSpacing="1"
+                                                                   Foreground="{StaticResource OnBackgroundDim}"/>
+                                                    </Border>
+                                                </StackPanel>
+                                                <TextBlock Text="{Binding TagsLabel}"
+                                                           FontSize="11"
+                                                           TextTrimming="CharacterEllipsis"
+                                                           Foreground="{StaticResource OnBackgroundDim}"/>
+                                            </StackPanel>
+
+                                            <TextBlock Grid.Column="2"
+                                                       Text="{Binding PlaysLabel}"
+                                                       FontSize="13"
+                                                       VerticalAlignment="Center"
+                                                       Foreground="{StaticResource OnBackground}"/>
+
+                                            <TextBlock Grid.Column="3"
+                                                       Text="{Binding Platform}"
+                                                       FontSize="11" LetterSpacing="1"
+                                                       VerticalAlignment="Center"
+                                                       Foreground="{StaticResource OnBackgroundDim}"/>
+
+                                            <TextBlock Grid.Column="4"
+                                                       Text="{Binding TracksLabel}"
+                                                       FontSize="11"
+                                                       VerticalAlignment="Center"
+                                                       Foreground="{StaticResource OnBackgroundDim}"/>
+                                        </Grid>
+                                    </Border>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </ScrollViewer>
+
+                    <TextBlock Grid.Row="2"
+                               Text="{Binding FailuresText}"
+                               IsVisible="{Binding HasFailures}"
+                               FontSize="11" TextWrapping="Wrap"
+                               Margin="4,10,12,0"
+                               Foreground="#C0A050"/>
+                </Grid>
+
+                <!-- Подвал -->
+                <Grid Grid.Row="2" Margin="28,14,28,22" ColumnDefinitions="Auto,*,Auto">
+
+                    <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="10">
+                        <Button Classes="action" MinWidth="120"
+                                Content="‹ НАЗАД"
+                                IsVisible="{Binding IsResultsStep}"
+                                Command="{Binding BackToCriteriaCommand}"/>
+                        <Button Classes="action" MinWidth="110"
+                                Content="ВСЕ"
+                                IsVisible="{Binding IsResultsStep}"
+                                Command="{Binding SelectAllCommand}"/>
+                        <Button Classes="action" MinWidth="110"
+                                Content="НИКОГО"
+                                IsVisible="{Binding IsResultsStep}"
+                                Command="{Binding SelectNoneCommand}"/>
+                    </StackPanel>
+
+                    <TextBlock Grid.Column="1"
+                               Text="{Binding StatusText}"
+                               FontSize="12"
+                               Margin="16,0"
+                               VerticalAlignment="Center"
+                               TextTrimming="CharacterEllipsis"
+                               Foreground="{StaticResource OnBackgroundDim}"/>
+
+                    <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="10">
+                        <Button Classes="action"
+                                Content="ОТМЕНА"
+                                IsVisible="{Binding IsSearching}"
+                                Command="{Binding CancelCommand}"/>
+                        <Button Classes="action"
+                                Content="НАЙТИ"
+                                IsVisible="{Binding IsCriteriaStep}"
+                                IsEnabled="{Binding !IsSearching}"
+                                Command="{Binding SearchCommand}"/>
+                        <Button Classes="action" MinWidth="220"
+                                Content="{Binding ImportButtonLabel}"
+                                IsVisible="{Binding IsResultsStep}"
+                                IsEnabled="{Binding HasSelection}"
+                                Command="{Binding ImportCommand}"/>
+                    </StackPanel>
+                </Grid>
+
+            </Grid>
+        </Border>
+    </Grid>
+</UserControl>

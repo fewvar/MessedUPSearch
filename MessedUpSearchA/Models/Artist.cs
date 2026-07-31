@@ -20,4 +20,7 @@ public class Artist
     public string Notes { get; set; } = string.Empty;
     public string CreatedAt { get; set; } = string.Empty;
     public string LastParsed { get; set; } = string.Empty;
+
+    public string SourcePlatform { get; set; } = string.Empty;
+    public string? SourceUrl { get; set; }
 }

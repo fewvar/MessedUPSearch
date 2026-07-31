@@ -9,17 +9,16 @@ public class AppSettings
 
     public int ReminderDays { get; set; } = 3;
 
-    private static string FilePath
-    {
-        get
-        {
-            var dir = Path.Combine(
-                Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
-                "MessedUpSearch");
-            Directory.CreateDirectory(dir);
-            return Path.Combine(dir, "settings.json");
-        }
-    }
+    public string MediaFolder { get; set; } = string.Empty;
+
+    public static string DefaultMediaFolder => Path.Combine(
+        Environment.GetFolderPath(Environment.SpecialFolder.UserProfile),
+        "Downloads", "MessedUpSearch");
+
+    public string ResolveMediaFolder() =>
+        string.IsNullOrWhiteSpace(MediaFolder) ? DefaultMediaFolder : MediaFolder;
+
+    private static string FilePath => AppPaths.SettingsFile;
 
     public static AppSettings Load()
     {

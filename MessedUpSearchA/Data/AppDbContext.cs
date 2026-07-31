@@ -10,18 +10,9 @@ public class AppDbContext : DbContext
     public DbSet<Artist> Artists => Set<Artist>();
     public DbSet<Beat> Beats => Set<Beat>();
     public DbSet<SentBeatsLog> SentBeatsLog => Set<SentBeatsLog>();
+    public DbSet<ArtistTrack> ArtistTracks => Set<ArtistTrack>();
 
-    public static string DbPath
-    {
-        get
-        {
-            var dir = Path.Combine(
-                Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
-                "MessedUpSearch");
-            Directory.CreateDirectory(dir);
-            return Path.Combine(dir, "app.db");
-        }
-    }
+    public static string DbPath => AppPaths.DbFile;
 
     protected override void OnConfiguring(DbContextOptionsBuilder options)
         => options.UseSqlite($"Data Source={DbPath}");
@@ -45,5 +36,21 @@ public class AppDbContext : DbContext
             .WithMany()
             .HasForeignKey(s => s.BeatId)
             .OnDelete(DeleteBehavior.Cascade);
+
+        b.Entity<Artist>()
+            .HasIndex(a => a.SourceUrl)
+            .IsUnique()
+            .HasFilter("\"SourceUrl\" IS NOT NULL");
+
+        b.Entity<ArtistTrack>()
+            .HasOne(t => t.Artist)
+            .WithMany()
+            .HasForeignKey(t => t.ArtistId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        b.Entity<ArtistTrack>()
+            .HasIndex(t => t.Url)
+            .IsUnique()
+            .HasFilter("\"Url\" IS NOT NULL");
     }
 }

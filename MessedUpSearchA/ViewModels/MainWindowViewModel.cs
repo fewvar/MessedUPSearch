@@ -14,9 +14,11 @@ public partial class MainWindowViewModel : ViewModelBase
 
     private readonly BeatsViewModel _beatsVm = new();
     private readonly ArtistsViewModel _artistsVm = new();
+    private readonly ParserViewModel _parserVm = new();
 
     public BeatsViewModel BeatsVm => _beatsVm;
     public ArtistsViewModel ArtistsVm => _artistsVm;
+    public ParserViewModel ParserVm => _parserVm;
 
     public ObservableCollection<CrmEntry> CrmEntries { get; } = new();
 
@@ -26,19 +28,25 @@ public partial class MainWindowViewModel : ViewModelBase
     [ObservableProperty] private bool _isCrmOpen;
     [ObservableProperty] private bool _isSettingsOpen;
     [ObservableProperty] private bool _isReminderOpen;
+    [ObservableProperty] private bool _isParserOpen;
 
     [ObservableProperty] private ViewModelBase _currentViewModel;
     [ObservableProperty] private bool? _isBeatsSelected = true;
     [ObservableProperty] private string _parserStatus = "Idle";
 
     [ObservableProperty] private int _reminderDays;
+    [ObservableProperty] private string _mediaFolder = string.Empty;
 
-    public string AppVersion => "v0.1";
+    public string AppVersion => "v0.4";
 
     public MainWindowViewModel()
     {
         _currentViewModel = _beatsVm;
         _reminderDays = Math.Clamp(_settings.ReminderDays, 1, 14);
+
+        _mediaFolder = _settings.ResolveMediaFolder();
+
+        _parserVm.ImportDone += _artistsVm.LoadArtists;
 
         LoadReminders();
         IsReminderOpen = Reminders.Count > 0;
@@ -52,6 +60,16 @@ public partial class MainWindowViewModel : ViewModelBase
     partial void OnReminderDaysChanged(int value)
     {
         _settings.ReminderDays = Math.Clamp(value, 1, 14);
+        _settings.Save();
+    }
+
+    public void SetMediaFolder(string folder)
+    {
+        if (string.IsNullOrWhiteSpace(folder))
+            return;
+
+        MediaFolder = folder;
+        _settings.MediaFolder = folder;
         _settings.Save();
     }
 
@@ -161,9 +179,12 @@ public partial class MainWindowViewModel : ViewModelBase
 
     public void ShowSettings() => IsSettingsOpen = true;
 
+    public void ShowParser() => IsParserOpen = true;
+
     public void CloseOverlays()
     {
         IsCrmOpen = false;
         IsSettingsOpen = false;
+        IsParserOpen = false;
     }
 }

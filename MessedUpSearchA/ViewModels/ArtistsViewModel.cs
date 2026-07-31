@@ -22,7 +22,7 @@ public partial class ArtistsViewModel : ViewModelBase
     public IReadOnlyList<string> TypeOptions { get; } =
         new[] { "ALL", "Rage", "Plugg", "Jerk", "Cloud", "Phonk", "Dark", "Ambient", "Trap", "Sad", "Emo" };
     public IReadOnlyList<string> LanguageOptions { get; } =
-        new[] { "ALL", "English", "Russian", "French", "Spanish", "German", "Unknown" };
+        new[] { "ALL", "English", "Russian", "French", "Spanish", "German", "Common" };
     public IReadOnlyList<string> PeriodOptions { get; } =
         new[] { "All time", "Today", "This week", "This month", "This year" };
 

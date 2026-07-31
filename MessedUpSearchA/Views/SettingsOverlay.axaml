@@ -88,7 +88,7 @@
                                     </ComboBox>
                                 </Grid>
 
-                                <Grid ColumnDefinitions="*,Auto">
+                                <Grid ColumnDefinitions="*,Auto" Margin="0,0,0,12">
                                     <StackPanel Grid.Column="0">
                                         <TextBlock Classes="settingsLabel" Text="Max artists per scan"/>
                                         <TextBlock Classes="settingsHint"
@@ -96,6 +96,20 @@
                                     </StackPanel>
                                     <TextBox Grid.Column="1" Classes="settings" Text="50"
                                              VerticalAlignment="Center"/>
+                                </Grid>
+
+                                <Grid ColumnDefinitions="*,Auto">
+                                    <StackPanel Grid.Column="0">
+                                        <TextBlock Classes="settingsLabel" Text="Media folder"/>
+                                        <TextBlock Classes="settingsHint"
+                                                   Text="{Binding MediaFolder}"
+                                                   TextTrimming="CharacterEllipsis"
+                                                   MaxWidth="420"/>
+                                    </StackPanel>
+                                    <Button Grid.Column="1" Classes="action"
+                                            Content="CHOOSE"
+                                            VerticalAlignment="Center"
+                                            Click="OnChooseMediaFolderClick"/>
                                 </Grid>
                             </StackPanel>
                         </Border>

@@ -1,6 +1,7 @@
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Interactivity;
+using Avalonia.Platform.Storage;
 using MessedUpSearchA.ViewModels;
 
 namespace MessedUpSearchA.Views;
@@ -22,5 +23,24 @@ public partial class SettingsOverlay : UserControl
     {
         var owner = TopLevel.GetTopLevel(this) as Window;
         (owner?.DataContext as MainWindowViewModel)?.CloseOverlays();
+    }
+
+    private async void OnChooseMediaFolderClick(object? sender, RoutedEventArgs e)
+    {
+        var top = TopLevel.GetTopLevel(this);
+
+        if (top is null || (top as Window)?.DataContext is not MainWindowViewModel vm)
+            return;
+
+        var folders = await top.StorageProvider.OpenFolderPickerAsync(new FolderPickerOpenOptions
+        {
+            Title = "Куда складывать аватарки",
+            AllowMultiple = false
+        });
+
+        if (folders.Count == 0)
+            return;
+
+        vm.SetMediaFolder(folders[0].TryGetLocalPath() ?? folders[0].Path.LocalPath);
     }
 }

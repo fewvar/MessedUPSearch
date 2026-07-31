@@ -92,6 +92,7 @@
             <views:CrmOverlay IsVisible="{Binding IsCrmOpen}"/>
             <views:SettingsOverlay IsVisible="{Binding IsSettingsOpen}"/>
             <views:ReminderOverlay IsVisible="{Binding IsReminderOpen}"/>
+            <views:ParserOverlay IsVisible="{Binding IsParserOpen}"/>
         </Grid>
     </Grid>
 </Window>
