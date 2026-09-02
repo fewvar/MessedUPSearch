@@ -20,6 +20,8 @@
 
 ### Артисты
 - Ручное добавление: никнейм, ссылки (SoundCloud / Instagram / Spotify), язык, жанровые теги, прослушивания.
+- Аватарки, скачанные парсером, видны в таблице и в карточке; у артистов без фото остаётся цветной кружок.
+- Язык определяется по названиям треков и описанию профиля: кириллица, вьетнамские диакритики, кана, хангыль, иероглифы и арабица распознаются по письменности, европейские языки — по стоп-словам.
 - Метки «избранное» и «ред-флаг» переключаются одним кликом прямо в таблице.
 - CRM-статус (не ответил / ок / выложил фри) и свободные заметки.
 - Дедупликация по ссылке на профиль: артистов без ссылки можно добавлять без ограничений, а у тех, где ссылка указана, она остаётся уникальной.
@@ -37,6 +39,9 @@
 - Отдельное окно для артистов, с которыми идёт работа (у кого проставлен CRM-статус).
 - По каждому: статус, заметки и список назначенных битов с пометкой «ждёт отправки» / «отправлен».
 - Кнопка «отметить отправленным» прямо в карточке.
+
+### Интерфейс на двух языках
+- Русский и английский переключаются в настройках и применяются сразу, без перезапуска. Выбор сохраняется между запусками.
 
 ### Напоминания
 - Привязал бит, но так и не отправил? Через настраиваемое число дней приложение при запуске покажет напоминание, сгруппированное по артисту.
@@ -57,6 +62,7 @@
 - Под капотом MERT — нейросеть, обученная на музыке. Она превращает бит в вектор из 768 чисел, который сравнивается с 1685 треками 32 артистов.
 - Проверено честной метрикой (прячем весь альбом, а не один трек): нужный артист попадает в первую пятёрку в 75% случаев при случайном угадывании 3%.
 - Результат сохраняется в базу и не пересчитывается при каждом открытии карточки. Один анализ занимает 5–7 секунд.
+- Обратная сторона: в карточке артиста видно, какие из твоих битов ему подходят. Работает для тех артистов, которых знает модель, — про остальных она честно сообщает, что не знает их.
 - Модель (208 МБ) не входит в репозиторий и скачивается один раз при первом анализе.
 
 Все данные, кроме скачивания модели, лежат в локальном файле SQLite на твоём компьютере — ничего никуда не загружается. Свежая установка стартует пустой, с приглушённым превью того, как выглядит заполненная таблица.
@@ -155,6 +161,8 @@ A local-first tool that turns a folder of beats and a list of artists into a wor
 
 ### Artists
 - Manual entry: nickname, links (SoundCloud / Instagram / Spotify), language, genre tags, plays.
+- Avatars downloaded by the parser show up in the table and on the artist card; artists without a photo keep a colored circle.
+- Language is detected from track titles and the profile bio: Cyrillic, Vietnamese diacritics, kana, hangul, Han characters and Arabic are recognised by script, European languages by stop words.
 - Favorite and red-flag toggles, switched with one click right in the table.
 - CRM status (no reply / ok / posted free) and free-form notes.
 - Deduplication by profile link: artists without a link can be added freely, while a given link stays unique.
@@ -172,6 +180,9 @@ A local-first tool that turns a folder of beats and a list of artists into a wor
 - A dedicated window for the artists you're working with (those with a CRM status set).
 - Per artist: status, notes, and the list of assigned beats marked pending or sent.
 - A "mark as sent" button right on the card.
+
+### Bilingual interface
+- Russian and English switch in Settings and apply immediately, no restart. The choice persists between launches.
 
 ### Reminders
 - Assigned a beat but never sent it? After a configurable number of days the app shows a reminder on startup, grouped per artist.
@@ -192,6 +203,7 @@ A local-first tool that turns a folder of beats and a list of artists into a wor
 - Powered by MERT, a neural network trained on music. It turns a beat into a 768-number vector compared against 1685 tracks by 32 artists.
 - Validated with a strict metric (the whole album is hidden, not just one track): the right artist lands in the top five 75% of the time, against 3% for random guessing.
 - Results are stored in the database and not recomputed every time you open the card. One analysis takes 5-7 seconds.
+- The reverse view: an artist card shows which of your beats fit them. It works for artists the model knows — for everyone else it says so plainly instead of showing an empty list.
 - The model (208 MB) is not part of the repository and is downloaded once on first analysis.
 
 Apart from the one-off model download, all data lives in a local SQLite file on your machine — nothing is uploaded anywhere. A fresh install starts empty, with a dimmed preview of how a filled table looks.
