@@ -64,6 +64,7 @@ public class ParserService
                     artist.Tracks.Clear();
                     artist.Tracks.AddRange(tracks);
                     ApplyTrackAggregates(artist);
+                    ApplyLanguage(artist);
 
                     if (!Passes(artist, query, source.SupportsPlayCountFilter))
                         continue;
@@ -128,7 +129,28 @@ public class ParserService
         if (!string.IsNullOrWhiteSpace(info.InstagramHandle))
             artist.IgLink = "https://instagram.com/" + info.InstagramHandle.TrimStart('@');
 
-        var language = ArtistLanguageGuesser.Guess(info.Description);
+        // Genius добивает только то, что не определилось по площадке.
+        if (string.IsNullOrWhiteSpace(artist.Language))
+        {
+            var language = ArtistLanguageGuesser.Guess(info.Description);
+            if (!string.IsNullOrWhiteSpace(language))
+                artist.Language = language;
+        }
+    }
+
+    /// <summary>
+    /// Язык по всему тексту, что есть у кандидата: описание профиля и названия
+    /// треков. Названия оказались сильнее описания — их пишут всегда, а
+    /// описание у большинства пустое.
+    /// </summary>
+    private static void ApplyLanguage(ArtistCandidate artist)
+    {
+        if (!string.IsNullOrWhiteSpace(artist.Language))
+            return;
+
+        var titles = string.Join(" ", artist.Tracks.Select(t => t.Title));
+        var language = ArtistLanguageGuesser.Guess(artist.Description, titles);
+
         if (!string.IsNullOrWhiteSpace(language))
             artist.Language = language;
     }

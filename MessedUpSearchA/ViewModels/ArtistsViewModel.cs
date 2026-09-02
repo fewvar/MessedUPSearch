@@ -26,8 +26,11 @@ public partial class ArtistsViewModel : ViewModelBase
 
     public IReadOnlyList<string> TypeOptions { get; } =
         new[] { "ALL", "Rage", "Plugg", "Jerk", "Cloud", "Phonk", "Dark", "Ambient", "Trap", "Sad", "Emo" };
+    // Список ровно тот, что умеет различать ArtistLanguageGuesser, плюс "Common"
+    // для случаев, когда определить не удалось.
     public IReadOnlyList<string> LanguageOptions { get; } =
-        new[] { "ALL", "English", "Russian", "French", "Spanish", "German", "Common" };
+        new[] { "ALL", "English", "Russian", "Vietnamese", "Spanish", "French", "German",
+                "Portuguese", "Italian", "Japanese", "Korean", "Chinese", "Arabic", "Common" };
     public IReadOnlyList<string> PeriodOptions { get; } =
         new[] { "All time", "Today", "This week", "This month", "This year" };
 
@@ -129,14 +132,22 @@ public partial class ArtistsViewModel : ViewModelBase
             Artists.Add(a);
     }
 
+    /// <summary>Старые записи могли храниться сокращённо — учитываем оба написания.</summary>
     private static string LangShort(string full) => full switch
     {
-        "English" => "ENG",
-        "Russian" => "RU",
-        "French"  => "FR",
-        "Spanish" => "ES",
-        "German"  => "DE",
-        _         => full
+        "English"    => "ENG",
+        "Russian"    => "RU",
+        "French"     => "FR",
+        "Spanish"    => "ES",
+        "German"     => "DE",
+        "Vietnamese" => "VI",
+        "Portuguese" => "PT",
+        "Italian"    => "IT",
+        "Japanese"   => "JP",
+        "Korean"     => "KR",
+        "Chinese"    => "CN",
+        "Arabic"     => "AR",
+        _            => full
     };
 
     public void BeginAddArtist()

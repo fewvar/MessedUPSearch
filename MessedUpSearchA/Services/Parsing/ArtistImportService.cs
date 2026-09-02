@@ -265,7 +265,14 @@ public class ArtistImportService
             ("chile", "Spanish"), ("colombia", "Spanish"), ("madrid", "Spanish"),
             ("usa", "English"), ("united states", "English"), ("uk", "English"),
             ("england", "English"), ("london", "English"), ("canada", "English"),
-            ("australia", "English"), ("new york", "English"), ("los angeles", "English")
+            ("australia", "English"), ("new york", "English"), ("los angeles", "English"),
+            ("vietnam", "Vietnamese"), ("viet nam", "Vietnamese"), ("hanoi", "Vietnamese"),
+            ("saigon", "Vietnamese"), ("ho chi minh", "Vietnamese"),
+            ("brazil", "Portuguese"), ("portugal", "Portuguese"), ("lisbon", "Portuguese"),
+            ("italy", "Italian"), ("rome", "Italian"), ("milan", "Italian"),
+            ("japan", "Japanese"), ("tokyo", "Japanese"),
+            ("korea", "Korean"), ("seoul", "Korean"),
+            ("china", "Chinese"), ("beijing", "Chinese"), ("shanghai", "Chinese")
         };
 
         foreach (var (needle, language) in map)
