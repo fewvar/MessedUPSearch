@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.ComponentModel;
 
 namespace MessedUpSearchA.Services.Localization;
 
@@ -13,13 +12,14 @@ public enum AppLanguage
 /// <summary>
 /// Строки интерфейса на двух языках.
 ///
-/// Доступ идёт через индексатор, а не через сотню свойств: при смене языка
-/// достаточно сказать «изменился Item[]», и Avalonia перечитает разом все
-/// привязки на экране. Поэтому переключение видно сразу, без перезапуска окна.
+/// Сам по себе он только хранит текущий язык и отдаёт строки по ключу. За
+/// обновление интерфейса отвечает <see cref="LocalizedString"/>: привязки идут
+/// к нему, а не сюда. Попытка обойтись уведомлением «изменился Item[]» прямо
+/// отсюда не сработала — Avalonia не перечитывает по нему живые привязки.
 ///
 /// В разметке используется как {loc:Tr Beats.Add}.
 /// </summary>
-public class Localizer : INotifyPropertyChanged
+public class Localizer
 {
     public static Localizer Instance { get; } = new();
 
@@ -27,9 +27,7 @@ public class Localizer : INotifyPropertyChanged
 
     private Localizer() { }
 
-    public event PropertyChangedEventHandler? PropertyChanged;
-
-    /// <summary>Срабатывает после смены языка — для кода, который держит строки у себя.</summary>
+    /// <summary>Срабатывает после смены языка: на него подписаны LocalizedString и вьюмодели.</summary>
     public event Action? LanguageChanged;
 
     public AppLanguage Language
@@ -41,13 +39,6 @@ public class Localizer : INotifyPropertyChanged
                 return;
 
             _language = value;
-
-            // "Item[]" — соглашение об «изменились все элементы индексатора».
-            // Пустая строка следом — универсальное «изменилось вообще всё»: если
-            // движок привязок не понимает первое, он точно поймёт второе.
-            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs("Item[]"));
-            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(string.Empty));
-            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(Language)));
             LanguageChanged?.Invoke();
         }
     }

@@ -19,10 +19,13 @@ public class TrExtension : MarkupExtension
 
     public override object ProvideValue(IServiceProvider serviceProvider)
     {
-        return new Binding($"[{Key}]")
+        // Привязываемся к Value отдельного объекта, а не к индексатору Localizer:
+        // уведомление «изменился Item[]» Avalonia на живых привязках игнорирует,
+        // и текст обновлялся только при пересоздании контрола.
+        return new Binding(nameof(LocalizedString.Value))
         {
             Mode = BindingMode.OneWay,
-            Source = Localizer.Instance
+            Source = LocalizedString.For(Key)
         };
     }
 }
