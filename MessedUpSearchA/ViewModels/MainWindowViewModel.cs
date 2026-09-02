@@ -1,10 +1,12 @@
 using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using MessedUpSearchA.Data;
 using MessedUpSearchA.Models;
+using MessedUpSearchA.Services.Localization;
 
 namespace MessedUpSearchA.ViewModels;
 
@@ -32,15 +34,28 @@ public partial class MainWindowViewModel : ViewModelBase
 
     [ObservableProperty] private ViewModelBase _currentViewModel;
     [ObservableProperty] private bool? _isBeatsSelected = true;
-    [ObservableProperty] private string _parserStatus = "Idle";
+
 
     [ObservableProperty] private int _reminderDays;
     [ObservableProperty] private string _mediaFolder = string.Empty;
     [ObservableProperty] private string _lastFmApiKey = string.Empty;
     [ObservableProperty] private string _jamendoClientId = string.Empty;
     [ObservableProperty] private string _geniusAccessToken = string.Empty;
+    [ObservableProperty] private string _language = "English";
+
+    public IReadOnlyList<string> LanguageOptions { get; } = new[] { "English", "Русский" };
 
     public string AppVersion => "v0.5";
+
+    /// <summary>
+    /// Подпись в футере. Парсер работает только по кнопке, фонового прогона нет,
+    /// поэтому состояние всегда одно — «ожидание».
+    /// </summary>
+    public string ParserStatus =>
+        Localizer.Instance.Format("Status.Parser", Localizer.Instance["Parser.Idle"]);
+
+    /// <summary>"3 дн." — число и слово вместе, поэтому строка собирается в коде.</summary>
+    public string ReminderDaysLabel => Localizer.Instance.Format("Settings.DaysShort", ReminderDays);
 
     public MainWindowViewModel()
     {
@@ -51,6 +66,18 @@ public partial class MainWindowViewModel : ViewModelBase
         _lastFmApiKey = _settings.LastFmApiKey;
         _jamendoClientId = _settings.JamendoClientId;
         _geniusAccessToken = _settings.GeniusAccessToken;
+
+        // Язык поднимаем до создания вкладок, иначе первый экран нарисуется
+        // на английском и переключится только после ручного тычка в настройки.
+        _language = string.IsNullOrWhiteSpace(_settings.Language) ? "English" : _settings.Language;
+        ApplyLanguage(_language);
+
+        // Строки, собранные в коде, привязки сами не перечитают — обновляем руками.
+        Localizer.Instance.LanguageChanged += () =>
+        {
+            OnPropertyChanged(nameof(ReminderDaysLabel));
+            OnPropertyChanged(nameof(ParserStatus));
+        };
 
         _parserVm.ImportDone += _artistsVm.LoadArtists;
 
@@ -67,6 +94,7 @@ public partial class MainWindowViewModel : ViewModelBase
     {
         _settings.ReminderDays = Math.Clamp(value, 1, 14);
         _settings.Save();
+        OnPropertyChanged(nameof(ReminderDaysLabel));
     }
 
     partial void OnLastFmApiKeyChanged(string value)
@@ -86,6 +114,18 @@ public partial class MainWindowViewModel : ViewModelBase
         _settings.GeniusAccessToken = value.Trim();
         _settings.Save();
     }
+
+    partial void OnLanguageChanged(string value)
+    {
+        ApplyLanguage(value);
+        _settings.Language = value;
+        _settings.Save();
+    }
+
+    private static void ApplyLanguage(string value) =>
+        Localizer.Instance.Language = value is "Русский" or "Russian"
+            ? AppLanguage.Russian
+            : AppLanguage.English;
 
     public void SetMediaFolder(string folder)
     {

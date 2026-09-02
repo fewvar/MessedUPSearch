@@ -8,6 +8,7 @@ using System.Threading.Tasks;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using MessedUpSearchA.Data;
+using MessedUpSearchA.Services.Localization;
 using MessedUpSearchA.Services.Parsing;
 using MessedUpSearchA.Services.Parsing.Sources;
 
@@ -66,10 +67,10 @@ public partial class ParserViewModel : ViewModelBase
     public bool HasSelection => SelectedCount > 0 && !IsImporting;
 
     public string ImportButtonLabel => SelectedCount == 0
-        ? "НИЧЕГО НЕ ВЫБРАНО"
-        : $"ДОБАВИТЬ {SelectedCount} В БАЗУ";
+        ? Localizer.Instance["Parser.NothingSelected"]
+        : Localizer.Instance.Format("Parser.ImportButton", SelectedCount);
 
-    public string FoundLabel => $"Найдено {Results.Count}";
+    public string FoundLabel => Localizer.Instance.Format("Parser.Found", Results.Count);
 
     partial void OnIsResultsStepChanged(bool value)
     {
@@ -98,13 +99,13 @@ public partial class ParserViewModel : ViewModelBase
 
         if (!HasEnabledSource)
         {
-            StatusText = "Выбери хотя бы одну площадку";
+            StatusText = Localizer.Instance["Parser.PickSource"];
             return;
         }
 
         IsSearching = true;
         FailuresText = string.Empty;
-        StatusText = "Запускаю…";
+        StatusText = Localizer.Instance["Parser.Starting"];
         ClearResults();
 
         _cts = new CancellationTokenSource();
@@ -140,11 +141,11 @@ public partial class ParserViewModel : ViewModelBase
         }
         catch (OperationCanceledException)
         {
-            StatusText = "Отменено";
+            StatusText = Localizer.Instance["Parser.Cancelled"];
         }
         catch (Exception ex)
         {
-            StatusText = "Не получилось";
+            StatusText = Localizer.Instance["Parser.Failed"];
             FailuresText = ex.Message;
             IsResultsStep = true;
         }
@@ -171,7 +172,7 @@ public partial class ParserViewModel : ViewModelBase
             return;
 
         IsImporting = true;
-        StatusText = $"Сохраняю {chosen.Count}…";
+        StatusText = Localizer.Instance.Format("Parser.Saving", chosen.Count);
 
         try
         {
@@ -193,7 +194,7 @@ public partial class ParserViewModel : ViewModelBase
         }
         catch (Exception ex)
         {
-            StatusText = "Сохранить не вышло";
+            StatusText = Localizer.Instance["Parser.SaveFailed"];
             FailuresText = ex.Message;
         }
         finally

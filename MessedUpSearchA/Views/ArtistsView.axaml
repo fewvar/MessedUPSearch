@@ -2,6 +2,7 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:MessedUpSearchA.ViewModels"
              xmlns:models="using:MessedUpSearchA.Models"
+             xmlns:loc="using:MessedUpSearchA.Services.Localization"
              x:Class="MessedUpSearchA.Views.ArtistsView"
              x:DataType="vm:ArtistsViewModel">
 
@@ -16,18 +17,18 @@
                     Orientation="Horizontal"
                     HorizontalAlignment="Right"
                     Spacing="12">
-            <Button Classes="action" Content="+ ADD ARTIST" Click="OnAddArtistClick"/>
-            <Button Classes="action" Content="⌕ PARSER" Click="OnParserClick"/>
+            <Button Classes="action" Content="{loc:Tr Buttons.AddArtist}" Click="OnAddArtistClick"/>
+            <Button Classes="action" Content="{loc:Tr Buttons.Parser}" Click="OnParserClick"/>
             <Button Classes="action" Click="OnCrmClick">
                 <StackPanel Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
                     <Border Classes="icon icon-crm" Width="18" Height="18"/>
-                    <TextBlock Text="CRM" VerticalAlignment="Center"/>
+                    <TextBlock Text="{loc:Tr Buttons.Crm}" VerticalAlignment="Center"/>
                 </StackPanel>
             </Button>
             <Button Classes="action" Click="OnSettingsClick">
                 <StackPanel Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
                     <Border Classes="icon icon-settings" Width="18" Height="18"/>
-                    <TextBlock Text="SETTINGS" VerticalAlignment="Center"/>
+                    <TextBlock Text="{loc:Tr Buttons.Settings}" VerticalAlignment="Center"/>
                 </StackPanel>
             </Button>
         </StackPanel>
@@ -42,16 +43,16 @@
                 <Border Grid.Row="0" Grid.RowSpan="2" Grid.Column="3" Classes="colDivider"/>
                 <Border Grid.Row="0" Grid.RowSpan="2" Grid.Column="4" Classes="colDivider"/>
 
-                <TextBlock Grid.Row="0" Grid.Column="1" Classes="tableHeader" Text="NICKNAME"/>
-                <TextBlock Grid.Row="0" Grid.Column="2" Classes="tableHeader" Text="TYPE / GENRE"/>
+                <TextBlock Grid.Row="0" Grid.Column="1" Classes="tableHeader" Text="{loc:Tr Artists.Nickname}"/>
+                <TextBlock Grid.Row="0" Grid.Column="2" Classes="tableHeader" Text="{loc:Tr Artists.Genre}"/>
                 <TextBlock Grid.Row="0" Grid.Column="3" Classes="tableHeader"
-                           Text="PLAYS&#10;(on last track)"
+                           Text="{loc:Tr Artists.Plays}"
                            TextWrapping="Wrap"/>
                 <TextBlock Grid.Row="0" Grid.Column="4" Classes="tableHeader"
-                           Text="Links to social media and music platforms&#10;(listenings per month)"
+                           Text="{loc:Tr Artists.Links}"
                            TextWrapping="Wrap"
                            Margin="14,0,14,0"/>
-                <TextBlock Grid.Row="0" Grid.Column="5" Classes="tableHeader" Text="LANGUAGE"/>
+                <TextBlock Grid.Row="0" Grid.Column="5" Classes="tableHeader" Text="{loc:Tr Artists.Language}"/>
 
                 <Border Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="6" Classes="headerDivider"/>
 
@@ -177,7 +178,7 @@
                         </Grid>
                     </StackPanel>
 
-                    <TextBlock Text="ПРИМЕР — здесь появятся артисты. Нажми + ADD ARTIST"
+                    <TextBlock Text="{loc:Tr Artists.Empty}"
                                FontFamily="{StaticResource HeadingFont}"
                                FontSize="15" LetterSpacing="1"
                                Foreground="{StaticResource OnSurfaceMuted}"
@@ -191,7 +192,7 @@
             <Border Grid.Column="0" Classes="filterBox">
                 <Grid RowDefinitions="Auto,*">
                     <Grid Grid.Row="0" ColumnDefinitions="*,Auto" VerticalAlignment="Center">
-                        <TextBlock Grid.Column="0" Classes="filterLabel" Text="TYPE" VerticalAlignment="Center"/>
+                        <TextBlock Grid.Column="0" Classes="filterLabel" Text="{loc:Tr Filter.Type}" VerticalAlignment="Center"/>
                         <Border Grid.Column="1" Classes="icon icon-type onSurface" Width="20" Height="20" VerticalAlignment="Center"/>
                     </Grid>
                     <ComboBox Grid.Row="1" Classes="filter"
@@ -203,13 +204,13 @@
             <Border Grid.Column="1" Classes="filterBox">
                 <Grid RowDefinitions="Auto,*">
                     <Grid Grid.Row="0" ColumnDefinitions="*,Auto" VerticalAlignment="Center">
-                        <TextBlock Grid.Column="0" Classes="filterLabel" Text="PLAYS" VerticalAlignment="Center"/>
+                        <TextBlock Grid.Column="0" Classes="filterLabel" Text="{loc:Tr Filter.Plays}" VerticalAlignment="Center"/>
                         <Border Grid.Column="1" Classes="icon icon-plays onSurface" Width="20" Height="20" VerticalAlignment="Center"/>
                     </Grid>
                     <Grid Grid.Row="1" ColumnDefinitions="*,Auto,*" VerticalAlignment="Center">
-                        <TextBox Grid.Column="0" Classes="search" Text="{Binding PlaysMin}" PlaceholderText="min"/>
+                        <TextBox Grid.Column="0" Classes="search" Text="{Binding PlaysMin}" PlaceholderText="{loc:Tr Filter.Min}"/>
                         <TextBlock Grid.Column="1" Classes="filterMuted" Text="—" Margin="8,0"/>
-                        <TextBox Grid.Column="2" Classes="search" Text="{Binding PlaysMax}" PlaceholderText="max"/>
+                        <TextBox Grid.Column="2" Classes="search" Text="{Binding PlaysMax}" PlaceholderText="{loc:Tr Filter.Max}"/>
                     </Grid>
                 </Grid>
             </Border>
@@ -217,7 +218,7 @@
             <Border Grid.Column="2" Classes="filterBox">
                 <Grid RowDefinitions="Auto,*">
                     <Grid Grid.Row="0" ColumnDefinitions="*,Auto" VerticalAlignment="Center">
-                        <TextBlock Grid.Column="0" Classes="filterLabel" Text="LANGUAGE" VerticalAlignment="Center"/>
+                        <TextBlock Grid.Column="0" Classes="filterLabel" Text="{loc:Tr Filter.Language}" VerticalAlignment="Center"/>
                         <Border Grid.Column="1" Classes="icon icon-language onSurface" Width="20" Height="20" VerticalAlignment="Center"/>
                     </Grid>
                     <ComboBox Grid.Row="1" Classes="filter"
@@ -229,7 +230,7 @@
             <Border Grid.Column="3" Classes="filterBox">
                 <Grid RowDefinitions="Auto,*">
                     <Grid Grid.Row="0" ColumnDefinitions="*,Auto" VerticalAlignment="Center">
-                        <TextBlock Grid.Column="0" Classes="filterLabel" Text="PERIOD" VerticalAlignment="Center"/>
+                        <TextBlock Grid.Column="0" Classes="filterLabel" Text="{loc:Tr Filter.Period}" VerticalAlignment="Center"/>
                         <Border Grid.Column="1" Classes="icon icon-period onSurface" Width="20" Height="20" VerticalAlignment="Center"/>
                     </Grid>
                     <ComboBox Grid.Row="1" Classes="filter"
@@ -243,7 +244,7 @@
                     <TextBox Grid.Column="0"
                              Classes="search"
                              Text="{Binding SearchText}"
-                             PlaceholderText="SEARCH (KEY WORD)"/>
+                             PlaceholderText="{loc:Tr Filter.Search}"/>
                     <Border Grid.Column="1" Classes="icon icon-search onSurface" Width="20" Height="20"/>
                 </Grid>
             </Border>
@@ -274,44 +275,44 @@
 
                 <Grid ColumnDefinitions="*,14,*">
                     <StackPanel Grid.Column="0" Spacing="4">
-                        <TextBlock Classes="filterLabel" Text="NICKNAME"/>
+                        <TextBlock Classes="filterLabel" Text="{loc:Tr Artists.Nickname}"/>
                         <TextBox Text="{Binding EditNickname}"/>
                     </StackPanel>
                     <StackPanel Grid.Column="2" Spacing="4">
-                        <TextBlock Classes="filterLabel" Text="SOUNDCLOUD LINK"/>
-                        <TextBox Text="{Binding EditScLink}" PlaceholderText="(можно пусто)"/>
+                        <TextBlock Classes="filterLabel" Text="{loc:Tr ArtistEditor.ScLink}"/>
+                        <TextBox Text="{Binding EditScLink}" PlaceholderText="{loc:Tr ArtistEditor.NoneHint}"/>
                     </StackPanel>
                 </Grid>
 
                 <Grid ColumnDefinitions="*,14,*">
                     <StackPanel Grid.Column="0" Spacing="4">
-                        <TextBlock Classes="filterLabel" Text="TYPE / GENRE"/>
+                        <TextBlock Classes="filterLabel" Text="{loc:Tr Artists.Genre}"/>
                         <TextBox Text="{Binding EditGenreTags}" PlaceholderText="Rage, Plugg"/>
                     </StackPanel>
                     <StackPanel Grid.Column="2" Spacing="4">
-                        <TextBlock Classes="filterLabel" Text="PLAYS"/>
+                        <TextBlock Classes="filterLabel" Text="{loc:Tr Filter.Plays}"/>
                         <TextBox Text="{Binding EditTotalPlays}" PlaceholderText="8120"/>
                     </StackPanel>
                 </Grid>
 
                 <Grid ColumnDefinitions="*,14,*">
                     <StackPanel Grid.Column="0" Spacing="4">
-                        <TextBlock Classes="filterLabel" Text="INSTAGRAM"/>
+                        <TextBlock Classes="filterLabel" Text="{loc:Tr ArtistEditor.Instagram}"/>
                         <TextBox Text="{Binding EditIgLink}" PlaceholderText="@nick"/>
                     </StackPanel>
                     <StackPanel Grid.Column="2" Spacing="4">
-                        <TextBlock Classes="filterLabel" Text="SPOTIFY"/>
+                        <TextBlock Classes="filterLabel" Text="{loc:Tr ArtistEditor.Spotify}"/>
                         <TextBox Text="{Binding EditSpotifyLink}"/>
                     </StackPanel>
                 </Grid>
 
                 <Grid ColumnDefinitions="*,14,*">
                     <StackPanel Grid.Column="0" Spacing="4">
-                        <TextBlock Classes="filterLabel" Text="LANGUAGE"/>
-                        <TextBox Text="{Binding EditLanguage}" PlaceholderText="ENG / RU / ..."/>
+                        <TextBlock Classes="filterLabel" Text="{loc:Tr Filter.Language}"/>
+                        <TextBox Text="{Binding EditLanguage}" PlaceholderText="{loc:Tr ArtistEditor.LanguageHint}"/>
                     </StackPanel>
                     <StackPanel Grid.Column="2" Spacing="4">
-                        <TextBlock Classes="filterLabel" Text="CRM STATUS"/>
+                        <TextBlock Classes="filterLabel" Text="{loc:Tr ArtistEditor.CrmStatus}"/>
                         <ComboBox HorizontalAlignment="Stretch"
                                   ItemsSource="{Binding CrmStatusOptions}"
                                   SelectedItem="{Binding EditCrmStatus}"/>
@@ -319,14 +320,14 @@
                 </Grid>
 
                 <StackPanel Spacing="4">
-                    <TextBlock Classes="filterLabel" Text="NOTES"/>
+                    <TextBlock Classes="filterLabel" Text="{loc:Tr ArtistEditor.Notes}"/>
                     <TextBox Text="{Binding EditNotes}"
                              AcceptsReturn="True" TextWrapping="Wrap"
                              Height="70"/>
                 </StackPanel>
 
                 <StackPanel Spacing="4" IsVisible="{Binding IsEditMode}">
-                    <TextBlock Classes="filterLabel" Text="ASSIGNED BEATS"/>
+                    <TextBlock Classes="filterLabel" Text="{loc:Tr ArtistEditor.AssignedBeats}"/>
                     <Border BorderBrush="#33FFFFFF" BorderThickness="1" CornerRadius="6" Padding="10,8">
                         <ScrollViewer MaxHeight="110" VerticalScrollBarVisibility="Auto">
                             <ItemsControl ItemsSource="{Binding AssignedBeats}">
@@ -347,13 +348,13 @@
                 </StackPanel>
 
                 <Grid Margin="0,8,0,0" ColumnDefinitions="Auto,*,Auto">
-                    <Button Grid.Column="0" Classes="action" Content="DELETE"
+                    <Button Grid.Column="0" Classes="action" Content="{loc:Tr Buttons.Delete}"
                             HorizontalAlignment="Left"
                             IsVisible="{Binding IsEditMode}"
                             Command="{Binding DeleteCommand}"/>
                     <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="12">
-                        <Button Classes="action" Content="CANCEL" Command="{Binding CancelCommand}"/>
-                        <Button Classes="action" Content="SAVE" Command="{Binding SaveCommand}"/>
+                        <Button Classes="action" Content="{loc:Tr Buttons.Cancel}" Command="{Binding CancelCommand}"/>
+                        <Button Classes="action" Content="{loc:Tr Buttons.Save}" Command="{Binding SaveCommand}"/>
                     </StackPanel>
                 </Grid>
             </StackPanel>

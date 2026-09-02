@@ -4,6 +4,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:vm="using:MessedUpSearchA.ViewModels"
         xmlns:views="using:MessedUpSearchA.Views"
+        xmlns:loc="using:MessedUpSearchA.Services.Localization"
         mc:Ignorable="d" d:DesignWidth="1280" d:DesignHeight="960"
         x:Class="MessedUpSearchA.MainWindow"
         x:DataType="vm:MainWindowViewModel"
@@ -43,10 +44,10 @@
 
             <RadioButton Classes="tab"
                          IsChecked="{Binding IsBeatsSelected, Mode=TwoWay}"
-                         Content="BEATS BASE"/>
+                         Content="{loc:Tr Tabs.Beats}"/>
             <RadioButton Classes="tab"
                          IsChecked="{Binding !IsBeatsSelected, Mode=TwoWay}"
-                         Content="ARTISTS"/>
+                         Content="{loc:Tr Tabs.Artists}"/>
         </Grid>
 
         <ContentControl Grid.Row="1" Content="{Binding CurrentViewModel}"/>
@@ -58,21 +59,29 @@
                 x:CompileBindings="False">
             <Grid ColumnDefinitions="Auto,*,Auto">
                 <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="10">
-                    <TextBlock Text="{Binding ArtistsVm.Artists.Count, StringFormat='Artists: {0}'}"
+                    <TextBlock Text="{loc:Tr Status.Artists}"
+                               FontFamily="{StaticResource HeadingFont}"
+                               FontSize="11" LetterSpacing="1"
+                               Foreground="{StaticResource OnBackgroundDim}"/>
+                    <TextBlock Text="{Binding ArtistsVm.Artists.Count}"
                                FontFamily="{StaticResource HeadingFont}"
                                FontSize="11" LetterSpacing="1"
                                Foreground="{StaticResource OnBackgroundDim}"/>
                     <TextBlock Text="•"
                                FontSize="11"
                                Foreground="{StaticResource OnBackgroundDim}"/>
-                    <TextBlock Text="{Binding BeatsVm.Beats.Count, StringFormat='Beats: {0}'}"
+                    <TextBlock Text="{loc:Tr Status.Beats}"
+                               FontFamily="{StaticResource HeadingFont}"
+                               FontSize="11" LetterSpacing="1"
+                               Foreground="{StaticResource OnBackgroundDim}"/>
+                    <TextBlock Text="{Binding BeatsVm.Beats.Count}"
                                FontFamily="{StaticResource HeadingFont}"
                                FontSize="11" LetterSpacing="1"
                                Foreground="{StaticResource OnBackgroundDim}"/>
                 </StackPanel>
 
                 <TextBlock Grid.Column="1"
-                           Text="{Binding ParserStatus, StringFormat='PARSER: {0}'}"
+                           Text="{Binding ParserStatus}"
                            HorizontalAlignment="Center"
                            FontFamily="{StaticResource HeadingFont}"
                            FontSize="11" LetterSpacing="2"

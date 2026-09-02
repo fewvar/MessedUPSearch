@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using MessedUpSearchA.Services.Localization;
 using Microsoft.ML.OnnxRuntime;
 using Microsoft.ML.OnnxRuntime.Tensors;
 
@@ -65,7 +66,7 @@ public class BeatSimilarityService : IDisposable
         var windows = SliceWindows(samples);
 
         if (windows.Count == 0)
-            throw new InvalidOperationException("бит короче трёх секунд — нечего анализировать");
+            throw new InvalidOperationException(Localizer.Instance["Analysis.TooShort"]);
 
         var embedding = Embed(windows, ct);
         return Rank(embedding, top);

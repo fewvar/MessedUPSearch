@@ -17,6 +17,9 @@ public class AppSettings
 
     public string GeniusAccessToken { get; set; } = string.Empty;
 
+    /// <summary>"English" или "Russian". Пустое значение — английский.</summary>
+    public string Language { get; set; } = "English";
+
     public static string DefaultMediaFolder => Path.Combine(
         Environment.GetFolderPath(Environment.SpecialFolder.UserProfile),
         "Downloads", "MessedUpSearch");

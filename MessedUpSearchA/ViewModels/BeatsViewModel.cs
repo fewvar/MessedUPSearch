@@ -10,6 +10,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using MessedUpSearchA.Data;
 using MessedUpSearchA.Models;
+using MessedUpSearchA.Services.Localization;
 using MessedUpSearchA.Services.Ml;
 
 namespace MessedUpSearchA.ViewModels;
@@ -48,7 +49,7 @@ public partial class BeatsViewModel : ViewModelBase
 
     [ObservableProperty] private bool _isEditorOpen;
     [ObservableProperty] private bool _isEditMode;
-    [ObservableProperty] private string _editorTitle = "ADD BEAT";
+    [ObservableProperty] private string _editorTitle = string.Empty;
 
     [ObservableProperty] private string _editName = string.Empty;
     [ObservableProperty] private string _editTags = string.Empty;
@@ -188,7 +189,7 @@ public partial class BeatsViewModel : ViewModelBase
         _editingId = 0;
         _editFilePath = filePath;
         IsEditMode = false;
-        EditorTitle = "ADD BEAT";
+        EditorTitle = Localizer.Instance["BeatEditor.Add"];
         EditName = Path.GetFileNameWithoutExtension(filePath);
         EditTags = string.Empty;
         EditBpm = string.Empty;
@@ -205,7 +206,7 @@ public partial class BeatsViewModel : ViewModelBase
         _editingId = beat.Id;
         _editFilePath = beat.FilePath;
         IsEditMode = true;
-        EditorTitle = "EDIT BEAT";
+        EditorTitle = Localizer.Instance["BeatEditor.Edit"];
         EditName = beat.BeatName;
         EditTags = beat.AiTags;
         EditBpm = beat.Bpm == 0 ? string.Empty : beat.Bpm.ToString();
@@ -230,13 +231,13 @@ public partial class BeatsViewModel : ViewModelBase
 
         if (string.IsNullOrWhiteSpace(_editFilePath) || !File.Exists(_editFilePath))
         {
-            AnalysisStatus = "Файл бита не найден — анализировать нечего";
+            AnalysisStatus = Localizer.Instance["Analysis.NoFile"];
             return;
         }
 
         if (!ModelStore.IsIndexReady())
         {
-            AnalysisStatus = "Нет файла с базой артистов (artist_index.bin)";
+            AnalysisStatus = Localizer.Instance["Analysis.NoIndex"];
             return;
         }
 
@@ -248,13 +249,13 @@ public partial class BeatsViewModel : ViewModelBase
             if (!ModelStore.IsModelReady())
             {
                 var progress = new Progress<double>(value =>
-                    AnalysisStatus = $"Качаю модель… {value:P0}");
+                    AnalysisStatus = Localizer.Instance.Format("Analysis.DownloadingProgress", value.ToString("P0")));
 
-                AnalysisStatus = "Качаю модель (208 МБ, один раз)…";
+                AnalysisStatus = Localizer.Instance["Analysis.Downloading"];
                 await ModelStore.DownloadModelAsync(progress, _analysisCts.Token);
             }
 
-            AnalysisStatus = "Слушаю бит…";
+            AnalysisStatus = Localizer.Instance["Analysis.Listening"];
 
             var matches = await Task.Run(() =>
             {
@@ -273,11 +274,11 @@ public partial class BeatsViewModel : ViewModelBase
         }
         catch (OperationCanceledException)
         {
-            AnalysisStatus = "Отменено";
+            AnalysisStatus = Localizer.Instance["Analysis.Cancelled"];
         }
         catch (Exception ex)
         {
-            AnalysisStatus = $"Не получилось: {ex.Message}";
+            AnalysisStatus = Localizer.Instance.Format("Analysis.Failed", ex.Message);
         }
         finally
         {

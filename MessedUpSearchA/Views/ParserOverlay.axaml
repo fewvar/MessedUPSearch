@@ -1,6 +1,7 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:MessedUpSearchA.ViewModels"
+             xmlns:loc="using:MessedUpSearchA.Services.Localization"
              x:Class="MessedUpSearchA.Views.ParserOverlay"
              x:DataType="vm:MainWindowViewModel">
 
@@ -22,7 +23,7 @@
 
                 <Grid Grid.Row="0" Margin="28,18,18,4">
                     <StackPanel Orientation="Horizontal" Spacing="14" VerticalAlignment="Center">
-                        <TextBlock Text="PARSER"
+                        <TextBlock Text="{loc:Tr Parser.Title}"
                                    FontFamily="{StaticResource HeadingFont}"
                                    FontSize="22" FontWeight="Bold"
                                    LetterSpacing="3"
@@ -49,7 +50,7 @@
 
                         <Border Classes="settingsSection">
                             <StackPanel>
-                                <TextBlock Classes="settingsHeader" Text="ПЛОЩАДКИ"/>
+                                <TextBlock Classes="settingsHeader" Text="{loc:Tr Parser.Platforms}"/>
                                 <ItemsControl ItemsSource="{Binding SourceToggles}">
                                     <ItemsControl.ItemsPanel>
                                         <ItemsPanelTemplate>
@@ -69,12 +70,12 @@
 
                         <Border Classes="settingsSection">
                             <StackPanel>
-                                <TextBlock Classes="settingsHeader" Text="ЧТО ИСКАТЬ"/>
+                                <TextBlock Classes="settingsHeader" Text="{loc:Tr Parser.WhatToSearch}"/>
                                 <Grid ColumnDefinitions="*,Auto">
                                     <StackPanel Grid.Column="0">
-                                        <TextBlock Classes="settingsLabel" Text="Жанр / тег"/>
+                                        <TextBlock Classes="settingsLabel" Text="{loc:Tr Parser.Genre}"/>
                                         <TextBlock Classes="settingsHint"
-                                                   Text="Ищется как тег трека: rage, plugg, jerk, phonk. Пусто — берём популярное"/>
+                                                   Text="{loc:Tr Parser.GenreHint}"/>
                                     </StackPanel>
                                     <ComboBox Grid.Column="1" Classes="settings"
                                               IsEditable="True"
@@ -87,44 +88,44 @@
 
                         <Border Classes="settingsSection">
                             <StackPanel>
-                                <TextBlock Classes="settingsHeader" Text="ОТСЕВ"/>
+                                <TextBlock Classes="settingsHeader" Text="{loc:Tr Parser.Filtering}"/>
 
                                 <Grid ColumnDefinitions="*,Auto" Margin="0,0,0,16">
                                     <StackPanel Grid.Column="0">
-                                        <TextBlock Classes="settingsLabel" Text="Прослушивания"/>
+                                        <TextBlock Classes="settingsLabel" Text="{loc:Tr Parser.Plays}"/>
                                         <TextBlock Classes="settingsHint"
-                                                   Text="Bandcamp прослушивания не отдаёт — для него фильтр не применяется"/>
+                                                   Text="{loc:Tr Parser.PlaysHint}"/>
                                     </StackPanel>
                                     <StackPanel Grid.Column="1" Orientation="Horizontal"
                                                 Spacing="10" VerticalAlignment="Center">
                                         <TextBox Classes="settings" Width="110"
-                                                 Text="{Binding PlaysMin}" PlaceholderText="от"/>
+                                                 Text="{Binding PlaysMin}" PlaceholderText="{loc:Tr Parser.From}"/>
                                         <TextBlock Text="—" VerticalAlignment="Center"
                                                    Foreground="{StaticResource OnBackgroundDim}"/>
                                         <TextBox Classes="settings" Width="110"
-                                                 Text="{Binding PlaysMax}" PlaceholderText="до"/>
+                                                 Text="{Binding PlaysMax}" PlaceholderText="{loc:Tr Parser.To}"/>
                                     </StackPanel>
                                 </Grid>
 
                                 <Grid ColumnDefinitions="*,Auto" Margin="0,0,0,16">
                                     <StackPanel Grid.Column="0">
-                                        <TextBlock Classes="settingsLabel" Text="Свежесть релизов"/>
+                                        <TextBlock Classes="settingsLabel" Text="{loc:Tr Parser.Freshness}"/>
                                         <TextBlock Classes="settingsHint"
-                                                   Text="Выкладывал что-то за последние N дней. Пусто — не проверяем"/>
+                                                   Text="{loc:Tr Parser.FreshnessHint}"/>
                                     </StackPanel>
                                     <TextBox Grid.Column="1" Classes="settings" Width="110"
-                                             Text="{Binding FreshDays}" PlaceholderText="дней"
+                                             Text="{Binding FreshDays}" PlaceholderText="{loc:Tr Parser.Days}"
                                              VerticalAlignment="Center"/>
                                 </Grid>
 
                                 <Grid ColumnDefinitions="*,Auto">
                                     <StackPanel Grid.Column="0">
-                                        <TextBlock Classes="settingsLabel" Text="Страна / язык"/>
+                                        <TextBlock Classes="settingsLabel" Text="{loc:Tr Parser.Country}"/>
                                         <TextBlock Classes="settingsHint"
-                                                   Text="Сверяется с полем в профиле. Многие артисты его не заполняют"/>
+                                                   Text="{loc:Tr Parser.CountryHint}"/>
                                     </StackPanel>
                                     <TextBox Grid.Column="1" Classes="settings" Width="180"
-                                             Text="{Binding Country}" PlaceholderText="напр. Russia"
+                                             Text="{Binding Country}" PlaceholderText="{loc:Tr Parser.CountryPlaceholder}"
                                              VerticalAlignment="Center"/>
                                 </Grid>
                             </StackPanel>
@@ -132,13 +133,13 @@
 
                         <Border Classes="settingsSection last">
                             <StackPanel>
-                                <TextBlock Classes="settingsHeader" Text="СКОЛЬКО БРАТЬ"/>
+                                <TextBlock Classes="settingsHeader" Text="{loc:Tr Parser.HowMany}"/>
 
                                 <Grid ColumnDefinitions="*,Auto" Margin="0,0,0,16">
                                     <StackPanel Grid.Column="0">
-                                        <TextBlock Classes="settingsLabel" Text="Артистов с каждой площадки"/>
+                                        <TextBlock Classes="settingsLabel" Text="{loc:Tr Parser.MaxArtists}"/>
                                         <TextBlock Classes="settingsHint"
-                                                   Text="Лимит на каждую отдельно: 12 — это до 48 суммарно с четырёх"/>
+                                                   Text="{loc:Tr Parser.MaxArtistsHint}"/>
                                     </StackPanel>
                                     <TextBox Grid.Column="1" Classes="settings" Width="110"
                                              Text="{Binding MaxArtists}"
@@ -147,9 +148,9 @@
 
                                 <Grid ColumnDefinitions="*,Auto">
                                     <StackPanel Grid.Column="0">
-                                        <TextBlock Classes="settingsLabel" Text="Треков на артиста"/>
+                                        <TextBlock Classes="settingsLabel" Text="{loc:Tr Parser.TracksPerArtist}"/>
                                         <TextBlock Classes="settingsHint"
-                                                   Text="Чем больше, тем дольше прогон — на каждого уходит отдельный запрос"/>
+                                                   Text="{loc:Tr Parser.TracksHint}"/>
                                     </StackPanel>
                                     <TextBox Grid.Column="1" Classes="settings" Width="110"
                                              Text="{Binding TracksPerArtist}"
@@ -166,15 +167,15 @@
                       RowDefinitions="Auto,*,Auto">
 
                     <Grid Grid.Row="0" ColumnDefinitions="24,*,90,80,Auto" Margin="4,0,12,8">
-                        <TextBlock Grid.Column="1" Classes="tableHeader" Text="NICKNAME"/>
-                        <TextBlock Grid.Column="2" Classes="tableHeader" Text="PLAYS"/>
-                        <TextBlock Grid.Column="3" Classes="tableHeader" Text="WHERE"/>
-                        <TextBlock Grid.Column="4" Classes="tableHeader" Text="TRACKS"/>
+                        <TextBlock Grid.Column="1" Classes="tableHeader" Text="{loc:Tr Parser.Nickname}"/>
+                        <TextBlock Grid.Column="2" Classes="tableHeader" Text="{loc:Tr Parser.PlaysColumn}"/>
+                        <TextBlock Grid.Column="3" Classes="tableHeader" Text="{loc:Tr Parser.Where}"/>
+                        <TextBlock Grid.Column="4" Classes="tableHeader" Text="{loc:Tr Parser.Tracks}"/>
                     </Grid>
 
                     <TextBlock Grid.Row="1"
                                IsVisible="{Binding IsResultsEmpty}"
-                               Text="Никого не нашлось. Ослабь отсев — например, убери диапазон прослушиваний или свежесть"
+                               Text="{loc:Tr Parser.EmptyResult}"
                                FontFamily="{StaticResource HeadingFont}"
                                FontSize="15" LetterSpacing="1"
                                TextWrapping="Wrap" MaxWidth="420"
@@ -254,15 +255,15 @@
 
                     <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="10">
                         <Button Classes="action" MinWidth="120"
-                                Content="‹ НАЗАД"
+                                Content="{loc:Tr Parser.Back}"
                                 IsVisible="{Binding IsResultsStep}"
                                 Command="{Binding BackToCriteriaCommand}"/>
                         <Button Classes="action" MinWidth="110"
-                                Content="ВСЕ"
+                                Content="{loc:Tr Parser.SelectAll}"
                                 IsVisible="{Binding IsResultsStep}"
                                 Command="{Binding SelectAllCommand}"/>
                         <Button Classes="action" MinWidth="110"
-                                Content="НИКОГО"
+                                Content="{loc:Tr Parser.SelectNone}"
                                 IsVisible="{Binding IsResultsStep}"
                                 Command="{Binding SelectNoneCommand}"/>
                     </StackPanel>
@@ -277,11 +278,11 @@
 
                     <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="10">
                         <Button Classes="action"
-                                Content="ОТМЕНА"
+                                Content="{loc:Tr Parser.Cancel}"
                                 IsVisible="{Binding IsSearching}"
                                 Command="{Binding CancelCommand}"/>
                         <Button Classes="action"
-                                Content="НАЙТИ"
+                                Content="{loc:Tr Parser.Search}"
                                 IsVisible="{Binding IsCriteriaStep}"
                                 IsEnabled="{Binding CanSearch}"
                                 Command="{Binding SearchCommand}"/>

@@ -1,6 +1,7 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:MessedUpSearchA.ViewModels"
+             xmlns:loc="using:MessedUpSearchA.Services.Localization"
              x:Class="MessedUpSearchA.Views.ReminderOverlay"
              x:DataType="vm:MainWindowViewModel">
 
@@ -13,11 +14,11 @@
 
                 <Grid Grid.Row="0" Margin="28,18,18,8">
                     <StackPanel>
-                        <TextBlock Text="ПОРА ОТПРАВИТЬ"
+                        <TextBlock Text="{loc:Tr Reminder.Title}"
                                    FontFamily="{StaticResource HeadingFont}"
                                    FontSize="22" FontWeight="Bold" LetterSpacing="3"
                                    Foreground="{StaticResource OnBackground}"/>
-                        <TextBlock Text="Эти биты привязаны, но ещё не отправлены"
+                        <TextBlock Text="{loc:Tr Reminder.Subtitle}"
                                    FontSize="13" Margin="0,4,0,0"
                                    Foreground="{StaticResource OnBackgroundDim}"/>
                     </StackPanel>
@@ -57,8 +58,8 @@
                 <StackPanel Grid.Row="2" Orientation="Horizontal"
                             HorizontalAlignment="Right" Spacing="12"
                             Margin="28,8,28,22">
-                    <Button Classes="action" Content="ПОЗЖЕ" Click="OnCloseClick"/>
-                    <Button Classes="action" Content="ОТКРЫТЬ CRM" Click="OnOpenCrmClick"/>
+                    <Button Classes="action" Content="{loc:Tr Reminder.Later}" Click="OnCloseClick"/>
+                    <Button Classes="action" Content="{loc:Tr Reminder.OpenCrm}" Click="OnOpenCrmClick"/>
                 </StackPanel>
             </Grid>
         </Border>

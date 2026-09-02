@@ -1,6 +1,7 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:MessedUpSearchA.ViewModels"
+             xmlns:loc="using:MessedUpSearchA.Services.Localization"
              xmlns:models="using:MessedUpSearchA.Models"
              x:Class="MessedUpSearchA.Views.CrmOverlay"
              x:Name="CrmRoot"
@@ -12,7 +13,7 @@
         <Border Classes="modal" Width="880" Height="620">
             <Grid RowDefinitions="Auto,*">
                 <Grid Grid.Row="0" Margin="28,18,18,0">
-                    <TextBlock Text="CRM"
+                    <TextBlock Text="{loc:Tr Crm.Title}"
                                FontFamily="{StaticResource HeadingFont}"
                                FontSize="22" FontWeight="Bold"
                                LetterSpacing="3"
@@ -25,7 +26,7 @@
                 <Grid Grid.Row="1" Margin="28,16,18,22">
 
                     <TextBlock IsVisible="{Binding IsCrmEmpty}"
-                               Text="Пометь артистам CRM-статус на вкладке ARTISTS — они появятся здесь"
+                               Text="{loc:Tr Crm.Empty}"
                                FontFamily="{StaticResource HeadingFont}"
                                FontSize="15" LetterSpacing="1"
                                TextWrapping="Wrap" MaxWidth="420"
@@ -83,18 +84,18 @@
                                                                        FontSize="13" VerticalAlignment="Center"
                                                                        Foreground="{StaticResource OnBackground}"/>
 
-                                                            <TextBlock Grid.Column="2" Text="✓ sent"
+                                                            <TextBlock Grid.Column="2" Text="{loc:Tr Crm.Sent}"
                                                                        FontSize="12" FontWeight="Bold"
                                                                        Margin="8,0" VerticalAlignment="Center"
                                                                        Foreground="#2ECC71"
                                                                        IsVisible="{Binding IsSent}"/>
 
-                                                            <TextBlock Grid.Column="2" Text="⏳ pending"
+                                                            <TextBlock Grid.Column="2" Text="{loc:Tr Crm.Pending}"
                                                                        FontSize="12"
                                                                        Margin="8,0" VerticalAlignment="Center"
                                                                        Foreground="{StaticResource OnBackgroundDim}"
                                                                        IsVisible="{Binding IsPending}"/>
-                                                            <Button Grid.Column="3" Content="MARK SENT"
+                                                            <Button Grid.Column="3" Content="{loc:Tr Crm.MarkSent}"
                                                                     Classes="action"
                                                                     Padding="10,4" FontSize="11"
                                                                     VerticalAlignment="Center"

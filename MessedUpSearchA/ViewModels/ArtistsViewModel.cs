@@ -7,6 +7,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using MessedUpSearchA.Data;
 using MessedUpSearchA.Models;
+using MessedUpSearchA.Services.Localization;
 
 namespace MessedUpSearchA.ViewModels;
 
@@ -46,7 +47,7 @@ public partial class ArtistsViewModel : ViewModelBase
 
     [ObservableProperty] private bool _isEditorOpen;
     [ObservableProperty] private bool _isEditMode;
-    [ObservableProperty] private string _editorTitle = "ADD ARTIST";
+    [ObservableProperty] private string _editorTitle = string.Empty;
 
     [ObservableProperty] private string _editNickname = string.Empty;
     [ObservableProperty] private string _editScLink = string.Empty;
@@ -127,7 +128,7 @@ public partial class ArtistsViewModel : ViewModelBase
     {
         _editingId = 0;
         IsEditMode = false;
-        EditorTitle = "ADD ARTIST";
+        EditorTitle = Localizer.Instance["ArtistEditor.Add"];
         EditNickname = string.Empty;
         EditScLink = string.Empty;
         EditGenreTags = string.Empty;
@@ -145,7 +146,7 @@ public partial class ArtistsViewModel : ViewModelBase
     {
         _editingId = artist.Id;
         IsEditMode = true;
-        EditorTitle = "EDIT ARTIST";
+        EditorTitle = Localizer.Instance["ArtistEditor.Edit"];
         EditNickname = artist.Nickname;
         EditScLink = artist.ScLink ?? string.Empty;
         EditGenreTags = artist.AiGenreTags;

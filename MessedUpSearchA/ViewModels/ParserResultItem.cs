@@ -1,5 +1,6 @@
 using System.Globalization;
 using CommunityToolkit.Mvvm.ComponentModel;
+using MessedUpSearchA.Services.Localization;
 using MessedUpSearchA.Services.Parsing;
 
 namespace MessedUpSearchA.ViewModels;
@@ -36,19 +37,15 @@ public partial class ParserResultItem : ObservableObject
 
     public string CountryLabel => string.IsNullOrWhiteSpace(Candidate.Country) ? "—" : Candidate.Country;
 
-    public string TracksLabel => Candidate.Tracks.Count switch
-    {
-        0 => "нет треков",
-        1 => "1 трек",
-        >= 2 and <= 4 => $"{Candidate.Tracks.Count} трека",
-        _ => $"{Candidate.Tracks.Count} треков"
-    };
+    public string TracksLabel => Candidate.Tracks.Count == 0
+        ? Localizer.Instance["Parser.NoTracks"]
+        : Localizer.Instance.Format("Parser.TracksCount", Candidate.Tracks.Count);
 
     public string LastReleaseLabel =>
         string.IsNullOrWhiteSpace(Candidate.LastTrackDate) ? "—" : Candidate.LastTrackDate;
 
-    public string StatusLabel => IsImported ? "СОХРАНЁН"
-        : AlreadyInDb ? "УЖЕ В БАЗЕ"
+    public string StatusLabel => IsImported ? Localizer.Instance["Parser.Saved"]
+        : AlreadyInDb ? Localizer.Instance["Parser.AlreadyInDb"]
         : string.Empty;
 
     public bool HasStatus => StatusLabel.Length > 0;
