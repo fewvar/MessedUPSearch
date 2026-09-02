@@ -145,7 +145,11 @@ public class ArtistImportService
         FillIfEmpty(() => artist.SpotifyLink, v => artist.SpotifyLink = v, candidate.SpotifyLink);
         FillIfEmpty(() => artist.LinktreeLink, v => artist.LinktreeLink = v, candidate.Website);
         FillIfEmpty(() => artist.AvatarPath, v => artist.AvatarPath = v, avatarPath);
-        FillIfEmpty(() => artist.Language, v => artist.Language = v, GuessLanguage(candidate.Country));
+
+        var language = string.IsNullOrWhiteSpace(candidate.Language)
+            ? GuessLanguage(candidate.Country)
+            : candidate.Language;
+        FillIfEmpty(() => artist.Language, v => artist.Language = v, language);
 
         // Notes, CrmStatus, IsFavorite, IsRedFlagged — ручные поля, парсер их не трогает.
     }
@@ -231,7 +235,7 @@ public class ArtistImportService
     private static string GuessLanguage(string location)
     {
         if (string.IsNullOrWhiteSpace(location))
-            return "UNKNOWN";
+            return "Common";
 
         var map = new (string Needle, string Language)[]
         {
@@ -252,6 +256,6 @@ public class ArtistImportService
                 return language;
         }
 
-        return "Unknown";
+        return "Common";
     }
 }

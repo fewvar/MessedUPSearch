@@ -11,6 +11,12 @@ public class AppSettings
 
     public string MediaFolder { get; set; } = string.Empty;
 
+    public string LastFmApiKey { get; set; } = string.Empty;
+
+    public string JamendoClientId { get; set; } = string.Empty;
+
+    public string GeniusAccessToken { get; set; } = string.Empty;
+
     public static string DefaultMediaFolder => Path.Combine(
         Environment.GetFolderPath(Environment.SpecialFolder.UserProfile),
         "Downloads", "MessedUpSearch");

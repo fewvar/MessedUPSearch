@@ -23,6 +23,7 @@ public class ArtistCandidate
     public string IgLink { get; set; } = string.Empty;
     public string SpotifyLink { get; set; } = string.Empty;
     public string Website { get; set; } = string.Empty;
+    public string Language { get; set; } = string.Empty;
 
     public List<TrackInfo> Tracks { get; } = new();
 }

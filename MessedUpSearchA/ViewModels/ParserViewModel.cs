@@ -17,6 +17,15 @@ public partial class ParserViewModel : ViewModelBase
 {
     public ObservableCollection<ParserResultItem> Results { get; } = new();
 
+    public ObservableCollection<SourceToggle> SourceToggles { get; } = new()
+    {
+        new SourceToggle("AUDIUS", () => new AudiusSource()),
+        new SourceToggle("SOUNDCLOUD", () => new SoundCloudSource()),
+        new SourceToggle("BANDCAMP", () => new BandcampSource()),
+        new SourceToggle("LAST.FM", () => new LastFmSource(AppSettings.Load().LastFmApiKey)),
+        new SourceToggle("JAMENDO", () => new JamendoSource(AppSettings.Load().JamendoClientId))
+    };
+
     public IReadOnlyList<string> GenreOptions { get; } =
         new[] { "Rage", "Plugg", "Jerk", "Cloud", "Phonk", "Trap", "Dark", "Ambient", "Sad", "Emo" };
 
@@ -36,11 +45,21 @@ public partial class ParserViewModel : ViewModelBase
 
     private CancellationTokenSource? _cts;
 
+    public ParserViewModel()
+    {
+        foreach (var toggle in SourceToggles)
+            toggle.PropertyChanged += OnSourceToggleChanged;
+    }
+
     public bool HasFailures => !string.IsNullOrWhiteSpace(FailuresText);
 
     public bool IsCriteriaStep => !IsResultsStep;
 
     public bool IsResultsEmpty => IsResultsStep && Results.Count == 0;
+
+    public bool HasEnabledSource => SourceToggles.Any(s => s.IsEnabled);
+
+    public bool CanSearch => HasEnabledSource && !IsSearching;
 
     public int SelectedCount => Results.Count(r => r.IsSelected);
 
@@ -60,11 +79,28 @@ public partial class ParserViewModel : ViewModelBase
 
     partial void OnFailuresTextChanged(string value) => OnPropertyChanged(nameof(HasFailures));
 
+    partial void OnIsSearchingChanged(bool value) => OnPropertyChanged(nameof(CanSearch));
+
+    private void OnSourceToggleChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName == nameof(SourceToggle.IsEnabled))
+        {
+            OnPropertyChanged(nameof(HasEnabledSource));
+            OnPropertyChanged(nameof(CanSearch));
+        }
+    }
+
     [RelayCommand]
     private async Task SearchAsync()
     {
         if (IsSearching)
             return;
+
+        if (!HasEnabledSource)
+        {
+            StatusText = "Выбери хотя бы одну площадку";
+            return;
+        }
 
         IsSearching = true;
         FailuresText = string.Empty;
@@ -75,7 +111,8 @@ public partial class ParserViewModel : ViewModelBase
 
         try
         {
-            var service = new ParserService(BuildSources());
+            var genius = new GeniusLookup(AppSettings.Load().GeniusAccessToken);
+            var service = new ParserService(BuildSources(), genius);
             var progress = new Progress<string>(message => StatusText = message);
 
             var run = await Task.Run(
@@ -208,8 +245,8 @@ public partial class ParserViewModel : ViewModelBase
         Results.Clear();
     }
 
-    private static IReadOnlyList<IArtistSource> BuildSources() =>
-        new IArtistSource[] { new AudiusSource(), new SoundCloudSource() };
+    private IReadOnlyList<IArtistSource> BuildSources() =>
+        SourceToggles.Where(s => s.IsEnabled).Select(s => s.Create()).ToList();
 
     private ArtistSearchQuery BuildQuery() => new()
     {

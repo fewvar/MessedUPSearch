@@ -1,5 +1,7 @@
 using System;
 using System.Net.Http;
+using System.Net.Http.Headers;
+using System.Text;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
@@ -22,6 +24,23 @@ public static class ParsingHttp
     public static async Task<string> GetStringAsync(string url, CancellationToken ct)
     {
         using var response = await Client.GetAsync(url, ct);
+        response.EnsureSuccessStatusCode();
+        return await response.Content.ReadAsStringAsync(ct);
+    }
+
+    public static async Task<string> PostJsonAsync(string url, string jsonBody, CancellationToken ct)
+    {
+        using var content = new StringContent(jsonBody, Encoding.UTF8, "application/json");
+        using var response = await Client.PostAsync(url, content, ct);
+        response.EnsureSuccessStatusCode();
+        return await response.Content.ReadAsStringAsync(ct);
+    }
+
+    public static async Task<string> GetStringWithBearerAsync(string url, string bearerToken, CancellationToken ct)
+    {
+        using var request = new HttpRequestMessage(HttpMethod.Get, url);
+        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", bearerToken);
+        using var response = await Client.SendAsync(request, ct);
         response.EnsureSuccessStatusCode();
         return await response.Content.ReadAsStringAsync(ct);
     }
@@ -84,7 +103,14 @@ public static class JsonExt
         if (!element.TryGetProperty(property, out var value))
             return 0;
 
-        return value.ValueKind == JsonValueKind.Number && value.TryGetInt32(out var number) ? number : 0;
+        if (value.ValueKind == JsonValueKind.Number && value.TryGetInt32(out var number))
+            return number;
+
+        // Last.fm отдаёт числовые поля (listeners, playcount) строками — подстраховка.
+        if (value.ValueKind == JsonValueKind.String && int.TryParse(value.GetString(), out var parsed))
+            return parsed;
+
+        return 0;
     }
 
     public static bool Bool(this JsonElement element, string property) =>
@@ -94,4 +120,15 @@ public static class JsonExt
         element.TryGetProperty(property, out var value) && value.ValueKind == JsonValueKind.Object
             ? value
             : null;
+
+    /// <summary>
+    /// Число как строка без потери точности — некоторые ID у Bandcamp не влезают в int32.
+    /// </summary>
+    public static string NumberAsString(this JsonElement element, string property)
+    {
+        if (!element.TryGetProperty(property, out var value))
+            return string.Empty;
+
+        return value.ValueKind == JsonValueKind.Number ? value.GetRawText() : string.Empty;
+    }
 }

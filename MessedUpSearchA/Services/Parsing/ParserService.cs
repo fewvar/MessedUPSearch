@@ -9,8 +9,13 @@ namespace MessedUpSearchA.Services.Parsing;
 public class ParserService
 {
     private readonly IReadOnlyList<IArtistSource> _sources;
+    private readonly GeniusLookup? _genius;
 
-    public ParserService(IReadOnlyList<IArtistSource> sources) => _sources = sources;
+    public ParserService(IReadOnlyList<IArtistSource> sources, GeniusLookup? genius = null)
+    {
+        _sources = sources;
+        _genius = genius;
+    }
 
     public async Task<ParserRunResult> RunAsync(
         ArtistSearchQuery query,
@@ -20,16 +25,23 @@ public class ParserService
         var result = new ParserRunResult();
         var seenUrls = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
+        var sourceIndex = 0;
+        var sourceTotal = _sources.Count;
+
         foreach (var source in _sources)
         {
             ct.ThrowIfCancellationRequested();
+            sourceIndex++;
 
             var collectedHere = 0;
+            var tag = $"[{sourceIndex}/{sourceTotal}] {source.Platform}";
 
             try
             {
-                progress?.Report($"{source.Platform}: ищу артистов…");
+                progress?.Report($"{tag}: ищу артистов…");
                 var found = await source.SearchArtistsAsync(query, ct);
+
+                var checkedCount = 0;
 
                 foreach (var artist in found)
                 {
@@ -38,10 +50,15 @@ public class ParserService
                     if (collectedHere >= query.MaxArtists)
                         break;
 
+                    checkedCount++;
+
                     if (string.IsNullOrWhiteSpace(artist.SourceUrl) || !seenUrls.Add(artist.SourceUrl))
                         continue;
 
-                    progress?.Report($"{source.Platform}: {artist.Nickname} — треки…");
+                    progress?.Report(
+                        $"{tag}: {collectedHere}/{query.MaxArtists} собрано — смотрю {artist.Nickname} " +
+                        $"({checkedCount}/{found.Count})…");
+
                     var tracks = await source.GetTracksAsync(artist, query.TracksPerArtist, ct);
 
                     artist.Tracks.Clear();
@@ -51,11 +68,17 @@ public class ParserService
                     if (!Passes(artist, query, source.SupportsPlayCountFilter))
                         continue;
 
+                    if (_genius is { IsConfigured: true })
+                    {
+                        progress?.Report($"{tag}: Genius — {artist.Nickname}…");
+                        await ApplyGeniusAsync(artist, ct);
+                    }
+
                     result.Candidates.Add(artist);
                     collectedHere++;
                 }
 
-                progress?.Report($"{source.Platform}: готово, {collectedHere}");
+                progress?.Report($"{tag}: готово, {collectedHere}");
             }
             catch (OperationCanceledException)
             {
@@ -70,11 +93,44 @@ public class ParserService
                     Message = ex.Message,
                     CollectedBefore = collectedHere
                 });
-                progress?.Report($"{source.Platform}: отвалилась — {ex.Message}");
+                progress?.Report($"{tag}: отвалилась — {ex.Message}");
             }
         }
 
         return result;
+    }
+
+    private async Task ApplyGeniusAsync(ArtistCandidate artist, CancellationToken ct)
+    {
+        if (_genius is null || string.IsNullOrWhiteSpace(artist.Nickname))
+            return;
+
+        GeniusArtistInfo? info;
+
+        try
+        {
+            info = await _genius.LookupAsync(artist.Nickname, ct);
+        }
+        catch (OperationCanceledException)
+        {
+            throw;
+        }
+        catch
+        {
+            // Genius сбойнул — у кандидата и так уже есть данные с основной площадки, не роняем его.
+            return;
+        }
+
+        if (info is null)
+            return;
+
+        // Genius всегда главный по соцсетям — перезаписывает то, что уже нашлось на исходной площадке.
+        if (!string.IsNullOrWhiteSpace(info.InstagramHandle))
+            artist.IgLink = "https://instagram.com/" + info.InstagramHandle.TrimStart('@');
+
+        var language = ArtistLanguageGuesser.Guess(info.Description);
+        if (!string.IsNullOrWhiteSpace(language))
+            artist.Language = language;
     }
 
     private static void ApplyTrackAggregates(ArtistCandidate artist)

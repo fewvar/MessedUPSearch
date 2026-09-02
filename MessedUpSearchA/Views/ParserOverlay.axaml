@@ -49,6 +49,26 @@
 
                         <Border Classes="settingsSection">
                             <StackPanel>
+                                <TextBlock Classes="settingsHeader" Text="ПЛОЩАДКИ"/>
+                                <ItemsControl ItemsSource="{Binding SourceToggles}">
+                                    <ItemsControl.ItemsPanel>
+                                        <ItemsPanelTemplate>
+                                            <WrapPanel/>
+                                        </ItemsPanelTemplate>
+                                    </ItemsControl.ItemsPanel>
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate DataType="vm:SourceToggle">
+                                            <CheckBox Content="{Binding Name}"
+                                                      IsChecked="{Binding IsEnabled}"
+                                                      Margin="0,0,24,4"/>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                            </StackPanel>
+                        </Border>
+
+                        <Border Classes="settingsSection">
+                            <StackPanel>
                                 <TextBlock Classes="settingsHeader" Text="ЧТО ИСКАТЬ"/>
                                 <Grid ColumnDefinitions="*,Auto">
                                     <StackPanel Grid.Column="0">
@@ -263,7 +283,7 @@
                         <Button Classes="action"
                                 Content="НАЙТИ"
                                 IsVisible="{Binding IsCriteriaStep}"
-                                IsEnabled="{Binding !IsSearching}"
+                                IsEnabled="{Binding CanSearch}"
                                 Command="{Binding SearchCommand}"/>
                         <Button Classes="action" MinWidth="220"
                                 Content="{Binding ImportButtonLabel}"

@@ -116,6 +116,48 @@
 
                         <Border Classes="settingsSection">
                             <StackPanel>
+                                <TextBlock Classes="settingsHeader" Text="PARSER API KEYS"/>
+
+                                <Grid ColumnDefinitions="*,Auto" Margin="0,0,0,12">
+                                    <StackPanel Grid.Column="0">
+                                        <TextBlock Classes="settingsLabel" Text="Last.fm API key"/>
+                                        <TextBlock Classes="settingsHint"
+                                                   Text="Бесплатно на last.fm/api/account/create — нужен для площадки Last.fm"/>
+                                    </StackPanel>
+                                    <TextBox Grid.Column="1" Classes="settings" Width="260"
+                                             Text="{Binding LastFmApiKey}"
+                                             PasswordChar="•"
+                                             VerticalAlignment="Center"/>
+                                </Grid>
+
+                                <Grid ColumnDefinitions="*,Auto" Margin="0,0,0,12">
+                                    <StackPanel Grid.Column="0">
+                                        <TextBlock Classes="settingsLabel" Text="Jamendo client_id"/>
+                                        <TextBlock Classes="settingsHint"
+                                                   Text="Бесплатно на devportal.jamendo.com — нужен для площадки Jamendo"/>
+                                    </StackPanel>
+                                    <TextBox Grid.Column="1" Classes="settings" Width="260"
+                                             Text="{Binding JamendoClientId}"
+                                             PasswordChar="•"
+                                             VerticalAlignment="Center"/>
+                                </Grid>
+
+                                <Grid ColumnDefinitions="*,Auto">
+                                    <StackPanel Grid.Column="0">
+                                        <TextBlock Classes="settingsLabel" Text="Genius access token"/>
+                                        <TextBlock Classes="settingsHint"
+                                                   Text="Бесплатно на genius.com/api-clients — соцсети и язык артиста"/>
+                                    </StackPanel>
+                                    <TextBox Grid.Column="1" Classes="settings" Width="260"
+                                             Text="{Binding GeniusAccessToken}"
+                                             PasswordChar="•"
+                                             VerticalAlignment="Center"/>
+                                </Grid>
+                            </StackPanel>
+                        </Border>
+
+                        <Border Classes="settingsSection">
+                            <StackPanel>
                                 <TextBlock Classes="settingsHeader" Text="LANGUAGE"/>
                                 <Grid ColumnDefinitions="*,Auto">
                                     <StackPanel Grid.Column="0">
@@ -160,7 +202,7 @@
                             <StackPanel>
                                 <TextBlock Classes="settingsHeader" Text="ABOUT"/>
 
-                                <TextBlock Text="MessedUpSearch v0.1"
+                                <TextBlock Text="{Binding AppVersion, StringFormat='MessedUpSearch {0}'}"
                                            FontFamily="{StaticResource HeadingFont}"
                                            FontSize="14" FontWeight="Bold"
                                            LetterSpacing="2"
@@ -169,7 +211,7 @@
 
                                 <TextBlock Classes="settingsAbout"
                                            TextWrapping="Wrap"
-                                           Text="Desktop tool for beatmakers — scrapes underground SoundCloud artists, classifies them by audio features, matches with your beats."/>
+                                           Text="Библиотека битов, база андеграунд-артистов с пяти площадок и подбор артистов под звучание бита."/>
                                 <TextBlock Classes="settingsAbout"
                                            TextWrapping="Wrap"
                                            Text="Built with Avalonia 12 + .NET 9"
@@ -179,7 +221,7 @@
                                            Text="by @fewvar"/>
                                 <TextBlock Classes="settingsAbout"
                                            TextWrapping="Wrap"
-                                           Text="github.com/fewvar/MessedUpSearchApp"
+                                           Text="github.com/fewvar/MessedUPSearch"
                                            Margin="0,2,0,0"/>
                             </StackPanel>
                         </Border>

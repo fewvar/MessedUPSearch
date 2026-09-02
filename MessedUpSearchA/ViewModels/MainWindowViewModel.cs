@@ -36,6 +36,9 @@ public partial class MainWindowViewModel : ViewModelBase
 
     [ObservableProperty] private int _reminderDays;
     [ObservableProperty] private string _mediaFolder = string.Empty;
+    [ObservableProperty] private string _lastFmApiKey = string.Empty;
+    [ObservableProperty] private string _jamendoClientId = string.Empty;
+    [ObservableProperty] private string _geniusAccessToken = string.Empty;
 
     public string AppVersion => "v0.4";
 
@@ -45,6 +48,9 @@ public partial class MainWindowViewModel : ViewModelBase
         _reminderDays = Math.Clamp(_settings.ReminderDays, 1, 14);
 
         _mediaFolder = _settings.ResolveMediaFolder();
+        _lastFmApiKey = _settings.LastFmApiKey;
+        _jamendoClientId = _settings.JamendoClientId;
+        _geniusAccessToken = _settings.GeniusAccessToken;
 
         _parserVm.ImportDone += _artistsVm.LoadArtists;
 
@@ -60,6 +66,24 @@ public partial class MainWindowViewModel : ViewModelBase
     partial void OnReminderDaysChanged(int value)
     {
         _settings.ReminderDays = Math.Clamp(value, 1, 14);
+        _settings.Save();
+    }
+
+    partial void OnLastFmApiKeyChanged(string value)
+    {
+        _settings.LastFmApiKey = value.Trim();
+        _settings.Save();
+    }
+
+    partial void OnJamendoClientIdChanged(string value)
+    {
+        _settings.JamendoClientId = value.Trim();
+        _settings.Save();
+    }
+
+    partial void OnGeniusAccessTokenChanged(string value)
+    {
+        _settings.GeniusAccessToken = value.Trim();
         _settings.Save();
     }
 
