@@ -43,7 +43,23 @@
 - Порог (1–14 дней) задаётся ползунком в настройках и сохраняется между запусками.
 - Отметил бит отправленным — напоминание исчезает.
 
-Все данные лежат в локальном файле SQLite на твоём компьютере — ничего никуда не загружается. Свежая установка стартует пустой, с приглушённым превью того, как выглядит заполненная таблица.
+
+### Парсер артистов
+- Ищет андеграунд-артистов сразу по пяти площадкам: Audius, SoundCloud, Bandcamp, Last.fm, Jamendo. Любую можно отключить галочкой.
+- Критерии: жанр или тег, диапазон прослушиваний, свежесть релизов, страна, сколько артистов брать с каждой площадки.
+- Собирает ник, ссылку на профиль, аватарку, прослушивания, дату последнего релиза, теги и треки; соцсети дополняются через Genius.
+- Выдача приходит списком с галочками — в базу попадает только то, что ты отметил. Повторный прогон не плодит дубликаты и не трогает заметки, CRM-статус и флаги.
+- Падение одной площадки не роняет прогон: остальные доработают, а в отчёте будет видно, кто отвалился и сколько успел собрать.
+- Last.fm, Jamendo и Genius требуют бесплатных ключей — вписываются в настройках.
+
+### Похожие артисты (по звучанию)
+- Кнопка ANALYZE на карточке бита показывает, на кого из базы он похож **по звучанию**, а не по тегам: `Osamason 87% · Summrs 81% · Autumn! 74%`.
+- Под капотом MERT — нейросеть, обученная на музыке. Она превращает бит в вектор из 768 чисел, который сравнивается с 1685 треками 32 артистов.
+- Проверено честной метрикой (прячем весь альбом, а не один трек): нужный артист попадает в первую пятёрку в 75% случаев при случайном угадывании 3%.
+- Результат сохраняется в базу и не пересчитывается при каждом открытии карточки. Один анализ занимает 5–7 секунд.
+- Модель (208 МБ) не входит в репозиторий и скачивается один раз при первом анализе.
+
+Все данные, кроме скачивания модели, лежат в локальном файле SQLite на твоём компьютере — ничего никуда не загружается. Свежая установка стартует пустой, с приглушённым превью того, как выглядит заполненная таблица.
 
 ## Технологии
 
@@ -62,16 +78,32 @@ App.axaml.cs                 применить миграции EF -> откр�
    |
 MainWindow (MainWindowViewModel)
    |-- вкладки: Beats / Artists  (переключение CurrentViewModel)
-   |-- оверлеи: CRM / Settings / Reminders
+   |-- оверлеи: CRM / Settings / Reminders / Parser
    |
-   +-- BeatsView   <- BeatsViewModel    (CRUD битов, фильтры, привязка артистов)
-   +-- ArtistsView <- ArtistsViewModel  (CRUD артистов, фильтры, флаги)
+   +-- BeatsView   <- BeatsViewModel    (CRUD битов, фильтры, привязка артистов, похожесть)
+   +-- ArtistsView <- ArtistsViewModel  (CRUD артистов, фильтры, флаги, живые ссылки)
+   |
+Services/Parsing              пять площадок за общим интерфейсом IArtistSource
+   +-- ParserService          гоняет источники, собирает прогресс и отказы
+   +-- Sources/               Audius, SoundCloud, Bandcamp, LastFm, Jamendo
+   +-- GeniusLookup           соцсети и язык поверх найденного
+   +-- ArtistImportService    upsert в базу, аватарки, треки
+   |
+Services/Ml                   похожесть бита на артистов
+   +-- AudioDecoder           WAV/MP3 -> моно 24 кГц (свой windowed-sinc ресемплер)
+   +-- BeatSimilarityService  ONNX-модель MERT -> вектор -> косинусы -> топ-5
+   +-- ModelStore             докачка модели при первом анализе
    |
 Слой данных (EF Core)
    +-- AppDbContext --> SQLite app.db
         |-- Artists
+        |-- ArtistTracks       (треки, найденные парсером)
         |-- Beats
-        +-- SentBeatsLog   (связи бит <-> артист: назначен / отправлен / дата)
+        |-- BeatSimilarities   (на кого похож бит: артист, ранг, проценты)
+        +-- SentBeatsLog       (связи бит <-> артист: назначен / отправлен / дата)
+
+ml/                          Python-кухня: датасет, эмбеддинги, метрики, экспорт в ONNX
+                             (в работе приложения не участвует)
 ```
 
 Расположение базы: `%AppData%/MessedUpSearch/app.db` (Windows), `~/Library/Application Support/MessedUpSearch/app.db` (macOS).
@@ -95,14 +127,14 @@ dotnet publish MessedUpSearchA/MessedUpSearchA.csproj -c Release
 
 Намеренно вынесено за рамки текущей версии и запланировано следующим:
 
-- **Парсер SoundCloud** — автосбор андеграунд-артистов (ник, аватар, прослушивания, соцсети, последний релиз) через приватный API.
-- **Аудио-классификатор жанра** — анализ звучания бита через `librosa` (Python, упаковка PyInstaller) и автотегирование жанра/BPM/тональности вместо ручного ввода.
-- **Определение языка** — Genius API с фолбэком на speech-to-text для языка лирики артиста.
+- **Жанровые ярлыки поверх похожести** — сгруппировать артистов в кластеры (rage, plugg, jerk) и показывать бит сразу тегом, а не только списком похожих.
+- **Автотегирование BPM и тональности** — сейчас вводятся руками.
+- **Определение языка по лирике** — сейчас язык угадывается по стране профиля и описанию с Genius, что работает так себе.
 - **Email и Telegram-напоминания** — доставка напоминаний вне приложения, а не только при запуске.
 
 ## Статус
 
-v0.3 — полностью рабочая локальная версия: биты, артисты, связи, фильтры, CRM и напоминания.
+v0.5 — биты, артисты, связи, фильтры, CRM и напоминания; парсер по пяти площадкам; подбор артистов под звучание бита.
 
 ---
 ---
@@ -146,7 +178,23 @@ A local-first tool that turns a folder of beats and a list of artists into a wor
 - The threshold (1–14 days) is a slider in Settings and persists between launches.
 - Mark a beat sent and the reminder disappears.
 
-All data lives in a local SQLite file on your machine — nothing is uploaded anywhere. A fresh install starts empty, with a dimmed preview of how a filled table looks.
+
+### Artist parser
+- Searches five platforms at once: Audius, SoundCloud, Bandcamp, Last.fm and Jamendo. Each can be switched off with a checkbox.
+- Criteria: genre or tag, plays range, release freshness, country, and how many artists to take per platform.
+- Collects nickname, profile link, avatar, plays, last release date, tags and tracks; socials are enriched through Genius.
+- Results arrive as a checklist — only what you tick lands in the database. Re-runs don't create duplicates and never touch notes, CRM status or flags.
+- One platform failing doesn't kill the run: the rest finish, and the report shows who dropped out and how much they managed to collect.
+- Last.fm, Jamendo and Genius need free API keys, entered in Settings.
+
+### Similar artists (by sound)
+- The ANALYZE button on a beat card shows which artists from the database it resembles **by sound**, not by tags: `Osamason 87% · Summrs 81% · Autumn! 74%`.
+- Powered by MERT, a neural network trained on music. It turns a beat into a 768-number vector compared against 1685 tracks by 32 artists.
+- Validated with a strict metric (the whole album is hidden, not just one track): the right artist lands in the top five 75% of the time, against 3% for random guessing.
+- Results are stored in the database and not recomputed every time you open the card. One analysis takes 5-7 seconds.
+- The model (208 MB) is not part of the repository and is downloaded once on first analysis.
+
+Apart from the one-off model download, all data lives in a local SQLite file on your machine — nothing is uploaded anywhere. A fresh install starts empty, with a dimmed preview of how a filled table looks.
 
 ## Tech stack
 
@@ -165,16 +213,32 @@ App.axaml.cs                 apply EF migrations -> open MainWindow
    |
 MainWindow (MainWindowViewModel)
    |-- tabs: Beats / Artists  (switch CurrentViewModel)
-   |-- overlays: CRM / Settings / Reminders
+   |-- overlays: CRM / Settings / Reminders / Parser
    |
-   +-- BeatsView   <- BeatsViewModel    (CRUD beats, filters, assign artists)
-   +-- ArtistsView <- ArtistsViewModel  (CRUD artists, filters, flags)
+   +-- BeatsView   <- BeatsViewModel    (CRUD beats, filters, assign artists, similarity)
+   +-- ArtistsView <- ArtistsViewModel  (CRUD artists, filters, flags, clickable links)
+   |
+Services/Parsing              five platforms behind one IArtistSource interface
+   +-- ParserService          drives sources, collects progress and failures
+   +-- Sources/               Audius, SoundCloud, Bandcamp, LastFm, Jamendo
+   +-- GeniusLookup           socials and language on top of what was found
+   +-- ArtistImportService    upsert into the database, avatars, tracks
+   |
+Services/Ml                   beat-to-artist similarity
+   +-- AudioDecoder           WAV/MP3 -> mono 24 kHz (own windowed-sinc resampler)
+   +-- BeatSimilarityService  MERT ONNX model -> vector -> cosines -> top 5
+   +-- ModelStore             downloads the model on first analysis
    |
 Data layer (EF Core)
    +-- AppDbContext --> SQLite app.db
         |-- Artists
+        |-- ArtistTracks       (tracks found by the parser)
         |-- Beats
-        +-- SentBeatsLog   (beat <-> artist links: assigned / sent / date)
+        |-- BeatSimilarities   (which artists a beat resembles: rank, percent)
+        +-- SentBeatsLog       (beat <-> artist links: assigned / sent / date)
+
+ml/                          Python workshop: dataset, embeddings, metrics, ONNX export
+                             (not part of the running app)
 ```
 
 Database location: `%AppData%/MessedUpSearch/app.db` (Windows), `~/Library/Application Support/MessedUpSearch/app.db` (macOS).
@@ -198,11 +262,11 @@ Cross-platform: Windows and macOS.
 
 Intentionally out of scope for the current version and planned next:
 
-- **SoundCloud parser** — auto-collect underground artists (nickname, avatar, plays, socials, last release) via the private API.
-- **Audio genre classifier** — analyze each beat's sound with `librosa` (Python, packed with PyInstaller) and auto-tag genre/BPM/key instead of typing them by hand.
-- **Language detection** — Genius API with a speech-to-text fallback for an artist's lyrics language.
+- **Genre labels on top of similarity** — group artists into clusters (rage, plugg, jerk) and tag a beat directly instead of only listing lookalikes.
+- **Automatic BPM and key detection** — currently typed by hand.
+- **Lyrics-based language detection** — language is currently guessed from the profile's country and the Genius bio, which works poorly.
 - **Email & Telegram reminders** — deliver pitch reminders outside the app, not just on startup.
 
 ## Status
 
-v0.3 — fully working local version: beats, artists, links, filters, CRM and reminders.
+v0.5 — beats, artists, links, filters, CRM and reminders; a five-platform parser; sound-based artist matching.

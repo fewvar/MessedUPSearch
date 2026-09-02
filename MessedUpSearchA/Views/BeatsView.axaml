@@ -208,7 +208,9 @@
 
     <Grid IsVisible="{Binding IsEditorOpen}">
         <Border Background="#B0000000"/>
-        <Border Classes="modal" Width="520" VerticalAlignment="Center" HorizontalAlignment="Center">
+        <Border Classes="modal" Width="520" MaxHeight="820"
+                VerticalAlignment="Center" HorizontalAlignment="Center">
+            <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
             <StackPanel Margin="28,18,28,24" Spacing="14">
                 <StackPanel.Styles>
 
@@ -278,6 +280,62 @@
                     </Border>
                 </StackPanel>
 
+                <StackPanel Spacing="4">
+                    <Grid ColumnDefinitions="*,Auto">
+                        <TextBlock Grid.Column="0" Classes="filterLabel" Text="SIMILAR ARTISTS"
+                                   VerticalAlignment="Center"/>
+                        <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8">
+                            <Button Classes="action" Content="ANALYZE"
+                                    IsVisible="{Binding !IsAnalyzing}"
+                                    Command="{Binding AnalyzeSimilarityCommand}"/>
+                            <Button Classes="action" Content="STOP"
+                                    IsVisible="{Binding IsAnalyzing}"
+                                    Command="{Binding CancelAnalysisCommand}"/>
+                        </StackPanel>
+                    </Grid>
+
+                    <TextBlock Text="{Binding AnalysisStatus}"
+                               IsVisible="{Binding AnalysisStatus, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
+                               FontSize="11" TextWrapping="Wrap"
+                               Foreground="{StaticResource OnBackgroundDim}"/>
+
+                    <TextBlock Text="Нажми ANALYZE — подберём артистов, на чьё звучание похож бит"
+                               IsVisible="{Binding !HasSimilarity}"
+                               FontSize="11" TextWrapping="Wrap"
+                               Foreground="{StaticResource OnBackgroundDim}"/>
+
+                    <ItemsControl ItemsSource="{Binding SimilarArtists}"
+                                  IsVisible="{Binding HasSimilarity}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate DataType="vm:SimilarArtistItem">
+                                <Grid ColumnDefinitions="150,*,44" Margin="0,3">
+                                    <TextBlock Grid.Column="0"
+                                               Text="{Binding Artist}"
+                                               FontSize="13"
+                                               TextTrimming="CharacterEllipsis"
+                                               VerticalAlignment="Center"
+                                               Foreground="{StaticResource OnBackground}"/>
+                                    <Border Grid.Column="1" Height="6" CornerRadius="3"
+                                            Background="#22FFFFFF"
+                                            HorizontalAlignment="Stretch"
+                                            VerticalAlignment="Center">
+                                        <Border Height="6" CornerRadius="3"
+                                                Background="{StaticResource OnBackground}"
+                                                Width="{Binding BarWidth}"
+                                                HorizontalAlignment="Left"/>
+                                    </Border>
+                                    <TextBlock Grid.Column="2"
+                                               Text="{Binding PercentLabel}"
+                                               FontSize="12"
+                                               HorizontalAlignment="Right"
+                                               VerticalAlignment="Center"
+                                               Foreground="{StaticResource OnBackgroundDim}"/>
+                                </Grid>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </StackPanel>
+
                 <Grid Margin="0,8,0,0" ColumnDefinitions="Auto,*,Auto">
                     <Button Grid.Column="0" Classes="action" Content="DELETE"
                             HorizontalAlignment="Left"
@@ -289,6 +347,7 @@
                     </StackPanel>
                 </Grid>
             </StackPanel>
+            </ScrollViewer>
         </Border>
     </Grid>
     </Grid>

@@ -40,7 +40,7 @@ public partial class MainWindowViewModel : ViewModelBase
     [ObservableProperty] private string _jamendoClientId = string.Empty;
     [ObservableProperty] private string _geniusAccessToken = string.Empty;
 
-    public string AppVersion => "v0.4";
+    public string AppVersion => "v0.5";
 
     public MainWindowViewModel()
     {

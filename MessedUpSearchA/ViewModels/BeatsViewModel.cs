@@ -3,11 +3,14 @@ using System.Collections.ObjectModel;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 using Avalonia.Controls;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using MessedUpSearchA.Data;
 using MessedUpSearchA.Models;
+using MessedUpSearchA.Services.Ml;
 
 namespace MessedUpSearchA.ViewModels;
 
@@ -53,6 +56,14 @@ public partial class BeatsViewModel : ViewModelBase
     [ObservableProperty] private string _editKey = string.Empty;
     [ObservableProperty] private string _editStatus = "POTENTIAL";
     [ObservableProperty] private string _editLicense = string.Empty;
+
+    public ObservableCollection<SimilarArtistItem> SimilarArtists { get; } = new();
+
+    [ObservableProperty] private bool _isAnalyzing;
+    [ObservableProperty] private string _analysisStatus = string.Empty;
+    [ObservableProperty] private bool _hasSimilarity;
+
+    private CancellationTokenSource? _analysisCts;
 
     private int _editingId;
     private string _editFilePath = string.Empty;
@@ -185,6 +196,7 @@ public partial class BeatsViewModel : ViewModelBase
         EditStatus = "POTENTIAL";
         EditLicense = string.Empty;
         LoadArtistPicks(0);
+        LoadSimilarity(0);
         IsEditorOpen = true;
     }
 
@@ -201,7 +213,138 @@ public partial class BeatsViewModel : ViewModelBase
         EditStatus = string.IsNullOrWhiteSpace(beat.Status) ? "POTENTIAL" : beat.Status;
         EditLicense = beat.LicenseType;
         LoadArtistPicks(beat.Id);
+        LoadSimilarity(beat.Id);
         IsEditorOpen = true;
+    }
+
+    /// <summary>
+    /// Анализ идёт секунды и требует 208-мегабайтной модели, поэтому: результат
+    /// пишем в базу и при следующем открытии карточки просто достаём оттуда,
+    /// а саму модель качаем один раз при первом запуске.
+    /// </summary>
+    [RelayCommand]
+    private async Task AnalyzeSimilarityAsync()
+    {
+        if (IsAnalyzing)
+            return;
+
+        if (string.IsNullOrWhiteSpace(_editFilePath) || !File.Exists(_editFilePath))
+        {
+            AnalysisStatus = "Файл бита не найден — анализировать нечего";
+            return;
+        }
+
+        if (!ModelStore.IsIndexReady())
+        {
+            AnalysisStatus = "Нет файла с базой артистов (artist_index.bin)";
+            return;
+        }
+
+        IsAnalyzing = true;
+        _analysisCts = new CancellationTokenSource();
+
+        try
+        {
+            if (!ModelStore.IsModelReady())
+            {
+                var progress = new Progress<double>(value =>
+                    AnalysisStatus = $"Качаю модель… {value:P0}");
+
+                AnalysisStatus = "Качаю модель (208 МБ, один раз)…";
+                await ModelStore.DownloadModelAsync(progress, _analysisCts.Token);
+            }
+
+            AnalysisStatus = "Слушаю бит…";
+
+            var matches = await Task.Run(() =>
+            {
+                using var service = new BeatSimilarityService(ModelStore.ModelPath, ModelStore.IndexPath);
+                return service.Analyze(_editFilePath, top: 5, _analysisCts.Token);
+            }, _analysisCts.Token);
+
+            SaveSimilarity(_editingId, matches);
+            ShowSimilarity(matches.Select((m, i) => new SimilarArtistItem
+            {
+                Artist = m.Artist,
+                Percent = m.Percent
+            }));
+
+            AnalysisStatus = string.Empty;
+        }
+        catch (OperationCanceledException)
+        {
+            AnalysisStatus = "Отменено";
+        }
+        catch (Exception ex)
+        {
+            AnalysisStatus = $"Не получилось: {ex.Message}";
+        }
+        finally
+        {
+            IsAnalyzing = false;
+            _analysisCts?.Dispose();
+            _analysisCts = null;
+        }
+    }
+
+    [RelayCommand]
+    private void CancelAnalysis() => _analysisCts?.Cancel();
+
+    private void SaveSimilarity(int beatId, IReadOnlyList<ArtistMatch> matches)
+    {
+        if (beatId == 0)
+            return;   // бит ещё не сохранён — привязывать результат не к чему
+
+        using var db = new AppDbContext();
+
+        db.BeatSimilarities.RemoveRange(db.BeatSimilarities.Where(s => s.BeatId == beatId));
+
+        var now = DateTime.Now.ToString("yyyy-MM-dd HH:mm");
+        for (var i = 0; i < matches.Count; i++)
+        {
+            db.BeatSimilarities.Add(new BeatSimilarity
+            {
+                BeatId = beatId,
+                Artist = matches[i].Artist,
+                Rank = i + 1,
+                Percent = matches[i].Percent,
+                Similarity = matches[i].Similarity,
+                ComputedAt = now
+            });
+        }
+
+        db.SaveChanges();
+    }
+
+    private void LoadSimilarity(int beatId)
+    {
+        SimilarArtists.Clear();
+        HasSimilarity = false;
+        AnalysisStatus = string.Empty;
+
+        if (beatId == 0)
+            return;
+
+        using var db = new AppDbContext();
+        var saved = db.BeatSimilarities
+            .Where(s => s.BeatId == beatId)
+            .OrderBy(s => s.Rank)
+            .ToList();
+
+        ShowSimilarity(saved.Select(s => new SimilarArtistItem
+        {
+            Artist = s.Artist,
+            Percent = s.Percent
+        }));
+    }
+
+    private void ShowSimilarity(IEnumerable<SimilarArtistItem> items)
+    {
+        SimilarArtists.Clear();
+        foreach (var item in items)
+            SimilarArtists.Add(item);
+
+        HasSimilarity = SimilarArtists.Count > 0;
     }
 
     private void LoadArtistPicks(int beatId)

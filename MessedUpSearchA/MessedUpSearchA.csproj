@@ -12,6 +12,11 @@
         <AvaloniaResource Include="Assets/Fonts/**" />
         <AvaloniaResource Include="Assets/Textures/**" />
         <AvaloniaResource Include="Assets/Icons/**" />
+        <!-- Индекс артистов читается с диска как обычный файл, а не как ресурс
+             Avalonia: так его можно пересобрать скриптом из ml/ и подменить,
+             не пересобирая приложение. -->
+        <Content Include="Assets/Models/artist_index.bin"
+                 CopyToOutputDirectory="PreserveNewest" />
     </ItemGroup>
 
     <ItemGroup>
@@ -29,5 +34,7 @@
           <PrivateAssets>all</PrivateAssets>
         </PackageReference>
         <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="9.0.11" />
+        <PackageReference Include="Microsoft.ML.OnnxRuntime" Version="1.29.0" />
+        <PackageReference Include="NLayer" Version="3.0.0" />
     </ItemGroup>
 </Project>

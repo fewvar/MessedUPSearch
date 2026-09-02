@@ -1,0 +1,13 @@
+# Версии не пиним жёстко: пара torch/torchaudio нумеруется вразнобой,
+# пусть pip подберёт совместимую сам.
+torch
+torchaudio
+torchlibrosa
+numpy>=2.0
+soundfile>=0.12
+librosa>=0.10
+pandas>=2.0
+scikit-learn>=1.5
+tqdm>=4.66
+onnx>=1.17
+onnxruntime>=1.20
