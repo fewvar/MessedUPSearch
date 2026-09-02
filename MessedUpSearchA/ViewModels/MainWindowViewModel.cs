@@ -6,6 +6,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using MessedUpSearchA.Data;
 using MessedUpSearchA.Models;
+using MessedUpSearchA.Converters;
 using MessedUpSearchA.Services.Localization;
 
 namespace MessedUpSearchA.ViewModels;
@@ -79,7 +80,12 @@ public partial class MainWindowViewModel : ViewModelBase
             OnPropertyChanged(nameof(ParserStatus));
         };
 
-        _parserVm.ImportDone += _artistsVm.LoadArtists;
+        _parserVm.ImportDone += () =>
+        {
+            // Парсер мог перекачать аватарки — старые картинки в кэше уже неверны.
+            AvatarBrushConverter.Invalidate();
+            _artistsVm.LoadArtists();
+        };
 
         LoadReminders();
         IsReminderOpen = Reminders.Count > 0;

@@ -71,11 +71,16 @@
                                             BorderBrush="#22000000" BorderThickness="0,0,0,1"
                                             VerticalAlignment="Bottom" IsHitTestVisible="False"/>
 
-                                    <Ellipse Grid.Column="0"
-                                             Width="32" Height="32"
-                                             Fill="{Binding AvatarColor, Converter={StaticResource StringToBrush}}"
-                                             HorizontalAlignment="Center"
-                                             VerticalAlignment="Center"/>
+                                    <Panel Grid.Column="0"
+                                           Width="32" Height="32"
+                                           HorizontalAlignment="Center"
+                                           VerticalAlignment="Center">
+                                        <!-- Цветной кружок виден, когда фото нет:
+                                             у артистов, добавленных руками, и если
+                                             файл аватарки пропал с диска. -->
+                                        <Ellipse Fill="{Binding AvatarColor, Converter={StaticResource StringToBrush}}"/>
+                                        <Ellipse Fill="{Binding AvatarPath, Converter={StaticResource AvatarBrush}}"/>
+                                    </Panel>
 
                                     <TextBlock Grid.Column="1"
                                                Text="{Binding Nickname}"
@@ -263,11 +268,17 @@
                 </StackPanel.Styles>
 
                 <Grid>
-                    <TextBlock Text="{Binding EditorTitle}"
-                               FontFamily="{StaticResource HeadingFont}"
-                               FontSize="20" FontWeight="Bold" LetterSpacing="3"
-                               Foreground="{StaticResource OnBackground}"
-                               VerticalAlignment="Center"/>
+                    <StackPanel Orientation="Horizontal" Spacing="14" VerticalAlignment="Center">
+                        <Panel Width="40" Height="40" VerticalAlignment="Center">
+                            <Ellipse Fill="{Binding EditAvatarColor, Converter={StaticResource StringToBrush}}"/>
+                            <Ellipse Fill="{Binding EditAvatarPath, Converter={StaticResource AvatarBrush}}"/>
+                        </Panel>
+                        <TextBlock Text="{Binding EditorTitle}"
+                                   FontFamily="{StaticResource HeadingFont}"
+                                   FontSize="20" FontWeight="Bold" LetterSpacing="3"
+                                   Foreground="{StaticResource OnBackground}"
+                                   VerticalAlignment="Center"/>
+                    </StackPanel>
                     <Button Classes="modalClose" Content="✕"
                             HorizontalAlignment="Right"
                             Command="{Binding CancelCommand}"/>

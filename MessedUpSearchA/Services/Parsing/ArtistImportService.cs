@@ -83,7 +83,10 @@ public class ArtistImportService
                         Nickname = candidate.Nickname,
                         CreatedAt = now,
                         CrmStatus = string.Empty,
-                        Notes = string.Empty
+                        Notes = string.Empty,
+                        // Запасной кружок на случай, если аватарка не скачалась
+                        // или файл потом пропадёт. Без этого все были серыми.
+                        AvatarColor = PickColor(candidate.Nickname)
                     };
                     db.Artists.Add(artist);
                 }
@@ -216,6 +219,21 @@ public class ArtistImportService
         await File.WriteAllBytesAsync(path, bytes, ct);
 
         return path;
+    }
+
+    /// <summary>
+    /// Цвет по нику, а не случайный: один и тот же артист всегда получает свой,
+    /// и при повторном импорте кружок не перекрашивается.
+    /// </summary>
+    private static string PickColor(string nickname)
+    {
+        string[] palette = { "#E74C3C", "#5DADE2", "#2ECC71", "#F1C40F", "#9B59B6", "#E67E22", "#1ABC9C" };
+
+        var hash = 0;
+        foreach (var c in nickname)
+            hash = (hash * 31 + c) & 0x7FFFFFFF;
+
+        return palette[hash % palette.Length];
     }
 
     private static string Sanitize(string raw)

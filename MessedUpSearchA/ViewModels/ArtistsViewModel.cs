@@ -59,6 +59,10 @@ public partial class ArtistsViewModel : ViewModelBase
     [ObservableProperty] private string _editCrmStatus = string.Empty;
     [ObservableProperty] private string _editNotes = string.Empty;
 
+    /// <summary>Только для показа: аватарку качает парсер, руками её не задать.</summary>
+    [ObservableProperty] private string _editAvatarPath = string.Empty;
+    [ObservableProperty] private string _editAvatarColor = "#888888";
+
     private int _editingId;
 
     public ArtistsViewModel()
@@ -138,6 +142,8 @@ public partial class ArtistsViewModel : ViewModelBase
         EditLanguage = string.Empty;
         EditCrmStatus = string.Empty;
         EditNotes = string.Empty;
+        EditAvatarPath = string.Empty;
+        EditAvatarColor = "#888888";
         AssignedBeats.Clear();
         IsEditorOpen = true;
     }
@@ -156,6 +162,8 @@ public partial class ArtistsViewModel : ViewModelBase
         EditLanguage = artist.Language;
         EditCrmStatus = artist.CrmStatus;
         EditNotes = artist.Notes;
+        EditAvatarPath = artist.AvatarPath;
+        EditAvatarColor = string.IsNullOrWhiteSpace(artist.AvatarColor) ? "#888888" : artist.AvatarColor;
         LoadAssignedBeats(artist.Id);
         IsEditorOpen = true;
     }

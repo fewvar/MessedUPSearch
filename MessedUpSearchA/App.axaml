@@ -18,6 +18,7 @@
     <Application.Resources>
 
         <conv:StringToBrushConverter x:Key="StringToBrush"/>
+        <conv:AvatarBrushConverter x:Key="AvatarBrush"/>
 
         <FontFamily x:Key="HeadingFont">avares://MessedUpSearchA/Assets/Fonts/Oswald-VariableFont_wght.ttf#Oswald</FontFamily>
 
