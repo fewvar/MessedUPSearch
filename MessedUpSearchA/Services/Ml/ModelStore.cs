@@ -23,7 +23,7 @@ public static class ModelStore
     private const long ExpectedModelBytes = 207_503_434;
 
     private static readonly string DownloadUrl =
-        $"https://github.com/fewvar/MessedUPSearch/releases/download/v0.5/{ModelFileName}";
+        $"https://github.com/fewvar/MessedUPSearch/releases/download/v0.6/{ModelFileName}";
 
     public static string ModelDirectory
     {
