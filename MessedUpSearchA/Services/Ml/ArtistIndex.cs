@@ -70,6 +70,39 @@ public class ArtistIndex
         return new ArtistIndex(center, vectors, names, trackArtistIds);
     }
 
+    /// <summary>
+    /// Только имена артистов, без векторов. Нужно, чтобы понять, знает ли модель
+    /// конкретного артиста; тянуть ради этого 5 мегабайт векторов незачем.
+    /// </summary>
+    public static IReadOnlyList<string> LoadNamesOnly(string path)
+    {
+        using var stream = File.OpenRead(path);
+        using var reader = new BinaryReader(stream, Encoding.UTF8);
+
+        var trackCount = reader.ReadInt32();
+        var dimension = reader.ReadInt32();
+
+        if (trackCount <= 0 || dimension <= 0 || dimension > 8192)
+            throw new InvalidDataException($"битый индекс: {trackCount} треков, размерность {dimension}");
+
+        // Пропускаем центр и все векторы разом.
+        var vectorBytes = (long)(trackCount + 1) * dimension * sizeof(float);
+        stream.Seek(vectorBytes, SeekOrigin.Current);
+
+        var artistCount = reader.ReadInt32();
+        if (artistCount <= 0 || artistCount > trackCount)
+            throw new InvalidDataException($"битый индекс: {artistCount} артистов");
+
+        var names = new string[artistCount];
+        for (var i = 0; i < artistCount; i++)
+        {
+            var length = reader.ReadInt32();
+            names[i] = Encoding.UTF8.GetString(reader.ReadBytes(length));
+        }
+
+        return names;
+    }
+
     /// <summary>Индексы треков каждого артиста — считается один раз при загрузке.</summary>
     public Dictionary<int, List<int>> GroupByArtist()
     {

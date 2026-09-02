@@ -82,6 +82,10 @@ public static class LocalizationStrings
         ["ArtistEditor.AssignedBeats"] = "ASSIGNED BEATS",
         ["ArtistEditor.NoneHint"] = "(can be empty)",
         ["ArtistEditor.LanguageHint"] = "ENG / RU / ...",
+        ["ArtistEditor.MatchingBeats"] = "BEATS THAT FIT",
+        ["ArtistEditor.NoMatches"] = "No beat matched this artist yet. Analyze your beats on their cards — matching ones will show up here.",
+        ["ArtistEditor.UnknownArtist"] = "The model doesn't know this artist: it was trained on 32 specific ones, and matching goes by name. For everyone else this block stays empty.",
+        ["ArtistEditor.NoModel"] = "Artist database file is missing — matching is unavailable.",
 
         // Анализ похожести (сообщения из кода)
         ["Analysis.NoFile"] = "Beat file not found — nothing to analyze",
@@ -250,6 +254,10 @@ public static class LocalizationStrings
         ["ArtistEditor.AssignedBeats"] = "ПРИВЯЗАННЫЕ БИТЫ",
         ["ArtistEditor.NoneHint"] = "(можно пусто)",
         ["ArtistEditor.LanguageHint"] = "ENG / RU / ...",
+        ["ArtistEditor.MatchingBeats"] = "ПОДХОДЯЩИЕ БИТЫ",
+        ["ArtistEditor.NoMatches"] = "Пока ни один бит не совпал с этим артистом. Прогони свои биты через АНАЛИЗ в их карточках — подходящие появятся здесь.",
+        ["ArtistEditor.UnknownArtist"] = "Модель не знает этого артиста: она обучена на 32 конкретных, и сопоставление идёт по имени. Для остальных блок остаётся пустым.",
+        ["ArtistEditor.NoModel"] = "Нет файла с базой артистов — подбор недоступен.",
 
         // Анализ похожести
         ["Analysis.NoFile"] = "Файл бита не найден — анализировать нечего",

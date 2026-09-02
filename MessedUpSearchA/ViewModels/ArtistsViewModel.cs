@@ -8,6 +8,7 @@ using CommunityToolkit.Mvvm.Input;
 using MessedUpSearchA.Data;
 using MessedUpSearchA.Models;
 using MessedUpSearchA.Services.Localization;
+using MessedUpSearchA.Services.Ml;
 
 namespace MessedUpSearchA.ViewModels;
 
@@ -16,6 +17,9 @@ public partial class ArtistsViewModel : ViewModelBase
     public ObservableCollection<Artist> Artists { get; } = new();
 
     public ObservableCollection<Beat> AssignedBeats { get; } = new();
+
+    /// <summary>Мои биты, отсортированные по тому, насколько они подходят артисту.</summary>
+    public ObservableCollection<SimilarBeatItem> SimilarBeats { get; } = new();
 
     public IReadOnlyList<string> CrmStatusOptions { get; } =
         new[] { "", "NO REPLY", "OK", "POSTED FREE" };
@@ -58,6 +62,13 @@ public partial class ArtistsViewModel : ViewModelBase
     [ObservableProperty] private string _editLanguage = string.Empty;
     [ObservableProperty] private string _editCrmStatus = string.Empty;
     [ObservableProperty] private string _editNotes = string.Empty;
+
+    [ObservableProperty] private bool _hasSimilarBeats;
+
+    /// <summary>Модель обучена на конкретных 32 артистах — этого среди них может не быть.</summary>
+    [ObservableProperty] private bool _isArtistKnownToModel;
+
+    [ObservableProperty] private bool _isSimilarityAvailable;
 
     /// <summary>Только для показа: аватарку качает парсер, руками её не задать.</summary>
     [ObservableProperty] private string _editAvatarPath = string.Empty;
@@ -145,6 +156,7 @@ public partial class ArtistsViewModel : ViewModelBase
         EditAvatarPath = string.Empty;
         EditAvatarColor = "#888888";
         AssignedBeats.Clear();
+        LoadSimilarBeats(string.Empty);
         IsEditorOpen = true;
     }
 
@@ -165,8 +177,90 @@ public partial class ArtistsViewModel : ViewModelBase
         EditAvatarPath = artist.AvatarPath;
         EditAvatarColor = string.IsNullOrWhiteSpace(artist.AvatarColor) ? "#888888" : artist.AvatarColor;
         LoadAssignedBeats(artist.Id);
+        LoadSimilarBeats(artist.Nickname);
         IsEditorOpen = true;
     }
+
+    /// <summary>
+    /// Разворачиваем выдачу анализа: бит знает, на кого он похож, а нам нужно
+    /// обратное — какие биты подходят этому артисту.
+    ///
+    /// Связь идёт по имени, и это слабое место: модель знает своих 32 артистов
+    /// (Yeat, Carti, nettspend...), а в базе лежат те, кого нашёл парсер. Имена
+    /// сверяем нормализованно — без регистра, пробелов, точек и эмодзи, так что
+    /// "playboi carty" и "Playboi Carty" совпадут, а "TuDrill🔥" найдётся как
+    /// "tudrill". Разное написание одного артиста ("2Holis" против "2hollis")
+    /// это не лечит — тут нужен уже словарь синонимов, а не нормализация.
+    /// </summary>
+    private void LoadSimilarBeats(string nickname)
+    {
+        SimilarBeats.Clear();
+        HasSimilarBeats = false;
+        IsArtistKnownToModel = false;
+        IsSimilarityAvailable = ModelStore.IsIndexReady();
+
+        if (!IsSimilarityAvailable || string.IsNullOrWhiteSpace(nickname))
+            return;
+
+        var wanted = NormalizeName(nickname);
+        IsArtistKnownToModel = KnownArtists().Contains(wanted);
+
+        using var db = new AppDbContext();
+
+        var matches = db.BeatSimilarities.ToList()
+            .Where(s => NormalizeName(s.Artist) == wanted)
+            .ToList();
+
+        if (matches.Count == 0)
+            return;
+
+        var beatIds = matches.Select(m => m.BeatId).ToList();
+        var beats = db.Beats.Where(b => beatIds.Contains(b.Id)).ToDictionary(b => b.Id);
+
+        foreach (var match in matches.OrderByDescending(m => m.Percent))
+        {
+            if (!beats.TryGetValue(match.BeatId, out var beat))
+                continue;
+
+            SimilarBeats.Add(new SimilarBeatItem
+            {
+                BeatId = beat.Id,
+                BeatName = beat.BeatName,
+                Percent = match.Percent,
+                StatusColor = string.IsNullOrWhiteSpace(beat.StatusColor) ? "#888888" : beat.StatusColor
+            });
+        }
+
+        HasSimilarBeats = SimilarBeats.Count > 0;
+    }
+
+    private static HashSet<string>? _knownArtists;
+
+    /// <summary>Имена из индекса модели. Читаются один раз — файл на диске не меняется.</summary>
+    private static HashSet<string> KnownArtists()
+    {
+        if (_knownArtists is not null)
+            return _knownArtists;
+
+        try
+        {
+            _knownArtists = ArtistIndex.LoadNamesOnly(ModelStore.IndexPath)
+                .Select(NormalizeName)
+                .ToHashSet();
+        }
+        catch
+        {
+            _knownArtists = new HashSet<string>();
+        }
+
+        return _knownArtists;
+    }
+
+    private static string NormalizeName(string raw) =>
+        new string((raw ?? string.Empty)
+            .ToLowerInvariant()
+            .Where(char.IsLetterOrDigit)
+            .ToArray());
 
     private void LoadAssignedBeats(int artistId)
     {

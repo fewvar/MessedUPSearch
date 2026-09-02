@@ -358,6 +358,69 @@
                     </Border>
                 </StackPanel>
 
+                <StackPanel Spacing="4">
+                    <TextBlock Classes="filterLabel" Text="{loc:Tr ArtistEditor.MatchingBeats}"/>
+
+                    <TextBlock Text="{loc:Tr ArtistEditor.NoModel}"
+                               IsVisible="{Binding !IsSimilarityAvailable}"
+                               FontSize="11" TextWrapping="Wrap"
+                               Foreground="{StaticResource OnBackgroundDim}"/>
+
+                    <TextBlock Text="{loc:Tr ArtistEditor.UnknownArtist}"
+                               FontSize="11" TextWrapping="Wrap"
+                               Foreground="{StaticResource OnBackgroundDim}">
+                        <TextBlock.IsVisible>
+                            <MultiBinding Converter="{x:Static BoolConverters.And}">
+                                <Binding Path="IsSimilarityAvailable"/>
+                                <Binding Path="!IsArtistKnownToModel"/>
+                            </MultiBinding>
+                        </TextBlock.IsVisible>
+                    </TextBlock>
+
+                    <TextBlock Text="{loc:Tr ArtistEditor.NoMatches}"
+                               FontSize="11" TextWrapping="Wrap"
+                               Foreground="{StaticResource OnBackgroundDim}">
+                        <TextBlock.IsVisible>
+                            <MultiBinding Converter="{x:Static BoolConverters.And}">
+                                <Binding Path="IsArtistKnownToModel"/>
+                                <Binding Path="!HasSimilarBeats"/>
+                            </MultiBinding>
+                        </TextBlock.IsVisible>
+                    </TextBlock>
+
+                    <Border BorderBrush="#33FFFFFF" BorderThickness="1" CornerRadius="6"
+                            Padding="10,8" IsVisible="{Binding HasSimilarBeats}">
+                        <ScrollViewer MaxHeight="130" VerticalScrollBarVisibility="Auto">
+                            <ItemsControl ItemsSource="{Binding SimilarBeats}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate DataType="vm:SimilarBeatItem">
+                                        <Grid ColumnDefinitions="Auto,150,*,44" Margin="0,3">
+                                            <Ellipse Grid.Column="0" Width="10" Height="10"
+                                                     Margin="0,0,8,0" VerticalAlignment="Center"
+                                                     Fill="{Binding StatusColor, Converter={StaticResource StringToBrush}}"/>
+                                            <TextBlock Grid.Column="1" Text="{Binding BeatName}"
+                                                       FontSize="13" VerticalAlignment="Center"
+                                                       TextTrimming="CharacterEllipsis"/>
+                                            <Border Grid.Column="2" Height="6" CornerRadius="3"
+                                                    Background="#22FFFFFF" Margin="8,0"
+                                                    VerticalAlignment="Center">
+                                                <Border Height="6" CornerRadius="3"
+                                                        Background="{StaticResource OnBackground}"
+                                                        Width="{Binding BarWidth}"
+                                                        HorizontalAlignment="Left"/>
+                                            </Border>
+                                            <TextBlock Grid.Column="3" Text="{Binding PercentLabel}"
+                                                       FontSize="12" HorizontalAlignment="Right"
+                                                       VerticalAlignment="Center"
+                                                       Foreground="{StaticResource OnBackgroundDim}"/>
+                                        </Grid>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </ScrollViewer>
+                    </Border>
+                </StackPanel>
+
                 <Grid Margin="0,8,0,0" ColumnDefinitions="Auto,*,Auto">
                     <Button Grid.Column="0" Classes="action" Content="{loc:Tr Buttons.Delete}"
                             HorizontalAlignment="Left"

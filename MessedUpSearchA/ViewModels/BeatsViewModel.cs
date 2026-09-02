@@ -66,6 +66,13 @@ public partial class BeatsViewModel : ViewModelBase
 
     private CancellationTokenSource? _analysisCts;
 
+    /// <summary>
+    /// Анализ нового бита нельзя записать сразу: у него ещё нет номера в базе,
+    /// к которому привязывается результат. Держим его здесь и сохраняем вместе
+    /// с самим битом — иначе пользователь видит выдачу на экране, а она пропадает.
+    /// </summary>
+    private IReadOnlyList<ArtistMatch> _pendingSimilarity = Array.Empty<ArtistMatch>();
+
     private int _editingId;
     private string _editFilePath = string.Empty;
 
@@ -263,7 +270,10 @@ public partial class BeatsViewModel : ViewModelBase
                 return service.Analyze(_editFilePath, top: 5, _analysisCts.Token);
             }, _analysisCts.Token);
 
-            SaveSimilarity(_editingId, matches);
+            if (_editingId == 0)
+                _pendingSimilarity = matches;   // бит ещё не сохранён — запишем при сохранении
+            else
+                SaveSimilarity(_editingId, matches);
             ShowSimilarity(matches.Select((m, i) => new SimilarArtistItem
             {
                 Artist = m.Artist,
@@ -293,8 +303,8 @@ public partial class BeatsViewModel : ViewModelBase
 
     private void SaveSimilarity(int beatId, IReadOnlyList<ArtistMatch> matches)
     {
-        if (beatId == 0)
-            return;   // бит ещё не сохранён — привязывать результат не к чему
+        if (beatId == 0 || matches.Count == 0)
+            return;
 
         using var db = new AppDbContext();
 
@@ -322,6 +332,7 @@ public partial class BeatsViewModel : ViewModelBase
         SimilarArtists.Clear();
         HasSimilarity = false;
         AnalysisStatus = string.Empty;
+        _pendingSimilarity = Array.Empty<ArtistMatch>();
 
         if (beatId == 0)
             return;
@@ -395,6 +406,12 @@ public partial class BeatsViewModel : ViewModelBase
         db.SaveChanges();
         SyncArtistLinks(db, beat.Id);
         db.SaveChanges();
+
+        if (_pendingSimilarity.Count > 0)
+        {
+            SaveSimilarity(beat.Id, _pendingSimilarity);
+            _pendingSimilarity = Array.Empty<ArtistMatch>();
+        }
 
         IsEditorOpen = false;
         LoadBeats();
