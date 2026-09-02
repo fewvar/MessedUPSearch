@@ -20,6 +20,9 @@ public class AppSettings
     /// <summary>"English" или "Russian". Пустое значение — английский.</summary>
     public string Language { get; set; } = "English";
 
+    /// <summary>Писать ли прогоны парсера в app.log рядом с базой.</summary>
+    public bool EnableParserLogs { get; set; } = true;
+
     public static string DefaultMediaFolder => Path.Combine(
         Environment.GetFolderPath(Environment.SpecialFolder.UserProfile),
         "Downloads", "MessedUpSearch");

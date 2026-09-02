@@ -7,6 +7,7 @@ using CommunityToolkit.Mvvm.Input;
 using MessedUpSearchA.Data;
 using MessedUpSearchA.Models;
 using MessedUpSearchA.Converters;
+using MessedUpSearchA.Services;
 using MessedUpSearchA.Services.Localization;
 
 namespace MessedUpSearchA.ViewModels;
@@ -43,6 +44,7 @@ public partial class MainWindowViewModel : ViewModelBase
     [ObservableProperty] private string _jamendoClientId = string.Empty;
     [ObservableProperty] private string _geniusAccessToken = string.Empty;
     [ObservableProperty] private string _language = "English";
+    [ObservableProperty] private bool _enableParserLogs = true;
 
     public IReadOnlyList<string> LanguageOptions { get; } = new[] { "English", "Русский" };
 
@@ -72,6 +74,9 @@ public partial class MainWindowViewModel : ViewModelBase
         // на английском и переключится только после ручного тычка в настройки.
         _language = string.IsNullOrWhiteSpace(_settings.Language) ? "English" : _settings.Language;
         ApplyLanguage(_language);
+
+        _enableParserLogs = _settings.EnableParserLogs;
+        AppLog.Enabled = _enableParserLogs;
 
         // Строки, собранные в коде, привязки сами не перечитают — обновляем руками.
         Localizer.Instance.LanguageChanged += () =>
@@ -120,6 +125,16 @@ public partial class MainWindowViewModel : ViewModelBase
         _settings.GeniusAccessToken = value.Trim();
         _settings.Save();
     }
+
+    partial void OnEnableParserLogsChanged(bool value)
+    {
+        AppLog.Enabled = value;
+        _settings.EnableParserLogs = value;
+        _settings.Save();
+    }
+
+    /// <summary>Путь к логу показываем в настройках — он же подсказка, где лежат данные.</summary>
+    public string LogFilePath => AppLog.FilePath;
 
     partial void OnLanguageChanged(string value)
     {

@@ -152,22 +152,23 @@
                             <StackPanel>
                                 <TextBlock Classes="settingsHeader" Text="{loc:Tr Settings.Logs}"/>
 
-                                <CheckBox Classes="settings" Content="{loc:Tr Settings.EnableParserLogs}"
-                                          IsChecked="True" Margin="0,0,0,8"/>
-                                <CheckBox Classes="settings" Content="{loc:Tr Settings.EnableDevTools}"
-                                          IsChecked="True" Margin="0,0,0,8"/>
-                                <CheckBox Classes="settings" Content="{loc:Tr Settings.VerboseHttp}"
+                                <CheckBox Classes="settings"
+                                          Content="{loc:Tr Settings.EnableParserLogs}"
+                                          IsChecked="{Binding EnableParserLogs}"
                                           Margin="0,0,0,12"/>
 
                                 <Grid ColumnDefinitions="*,Auto" Margin="0,4,0,0">
                                     <StackPanel Grid.Column="0">
                                         <TextBlock Classes="settingsLabel" Text="{loc:Tr Settings.LogFile}"/>
                                         <TextBlock Classes="settingsHint"
-                                                   Text="~/Library/Application Support/MessedUpSearch/app.log"/>
+                                                   Text="{Binding LogFilePath}"
+                                                   TextTrimming="CharacterEllipsis"
+                                                   MaxWidth="420"/>
                                     </StackPanel>
                                     <Button Grid.Column="1" Classes="action"
                                             Content="{loc:Tr Settings.OpenFolder}"
-                                            VerticalAlignment="Center"/>
+                                            VerticalAlignment="Center"
+                                            Click="OnOpenDataFolderClick"/>
                                 </Grid>
                             </StackPanel>
                         </Border>

@@ -25,6 +25,18 @@ public partial class SettingsOverlay : UserControl
         (owner?.DataContext as MainWindowViewModel)?.CloseOverlays();
     }
 
+    /// <summary>
+    /// Открывает папку с данными: там база, настройки и лог. Раньше кнопка
+    /// была нарисована, но обработчика у неё не было вообще.
+    /// </summary>
+    private void OnOpenDataFolderClick(object? sender, RoutedEventArgs e)
+    {
+        var folder = MessedUpSearchA.Data.AppPaths.DataDir;
+
+        var launcher = TopLevel.GetTopLevel(this)?.Launcher;
+        launcher?.LaunchDirectoryInfoAsync(new System.IO.DirectoryInfo(folder));
+    }
+
     private async void OnChooseMediaFolderClick(object? sender, RoutedEventArgs e)
     {
         var top = TopLevel.GetTopLevel(this);

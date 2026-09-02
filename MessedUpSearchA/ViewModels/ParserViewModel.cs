@@ -8,6 +8,7 @@ using System.Threading.Tasks;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using MessedUpSearchA.Data;
+using MessedUpSearchA.Services;
 using MessedUpSearchA.Services.Localization;
 using MessedUpSearchA.Services.Parsing;
 using MessedUpSearchA.Services.Parsing.Sources;
@@ -110,6 +111,11 @@ public partial class ParserViewModel : ViewModelBase
 
         _cts = new CancellationTokenSource();
 
+        var query = BuildQuery();
+        AppLog.Write($"парсер: старт, площадки [{string.Join(", ", SourceToggles.Where(s => s.IsEnabled).Select(s => s.Name))}], " +
+                     $"тег '{query.GenreTag}', плеи {query.PlaysMin?.ToString() ?? "—"}..{query.PlaysMax?.ToString() ?? "—"}, " +
+                     $"свежесть {query.FreshWithinDays?.ToString() ?? "—"}, до {query.MaxArtists} с площадки");
+
         try
         {
             var genius = new GeniusLookup(AppSettings.Load().GeniusAccessToken);
@@ -117,7 +123,7 @@ public partial class ParserViewModel : ViewModelBase
             var progress = new Progress<string>(message => StatusText = message);
 
             var run = await Task.Run(
-                () => service.RunAsync(BuildQuery(), progress, _cts.Token),
+                () => service.RunAsync(query, progress, _cts.Token),
                 _cts.Token);
 
             var known = LoadKnownUrls();
@@ -134,7 +140,14 @@ public partial class ParserViewModel : ViewModelBase
             }
 
             if (run.HasFailures)
+            {
                 FailuresText = string.Join("\n", run.Failures.Select(f => f.Line));
+                foreach (var failure in run.Failures)
+                    AppLog.Write($"парсер: {failure.Line}");
+            }
+
+            AppLog.Write($"парсер: готово, кандидатов {run.Candidates.Count}" +
+                         (run.HasFailures ? $", отвалилось площадок {run.Failures.Count}" : ""));
 
             StatusText = run.Summary;
             IsResultsStep = true;
@@ -148,6 +161,7 @@ public partial class ParserViewModel : ViewModelBase
             StatusText = Localizer.Instance["Parser.Failed"];
             FailuresText = ex.Message;
             IsResultsStep = true;
+            AppLog.Write($"парсер: прогон упал — {ex.Message}");
         }
         finally
         {
@@ -182,6 +196,10 @@ public partial class ParserViewModel : ViewModelBase
             var outcome = await Task.Run(() => service.ImportAsync(chosen));
 
             StatusText = outcome.Summary;
+            AppLog.Write($"импорт: {outcome.Summary}");
+
+            foreach (var problem in outcome.Problems)
+                AppLog.Write($"импорт: {problem}");
 
             FailuresText = outcome.Problems.Count > 0
                 ? string.Join("\n", outcome.Problems)
