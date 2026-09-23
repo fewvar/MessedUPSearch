@@ -2,9 +2,7 @@
 
 Десктопная CRM и библиотека битов для музыкальных продюсеров. Держи свои биты в порядке, веди базу андеграунд-артистов, привязывай биты к тем, кому их питчишь, и получай напоминания, когда питч завис.
 
-<!-- TODO: добавить скриншот и/или GIF-демо -->
-<!-- ![MessedUpSearch — beats](docs/screenshot-beats.png) -->
-<!-- ![MessedUpSearch — artists](docs/screenshot-artists.png) -->
+<!-- скриншот или GIF: <img src="docs/screenshot.png" width="100%"> -->
 
 ---
 
