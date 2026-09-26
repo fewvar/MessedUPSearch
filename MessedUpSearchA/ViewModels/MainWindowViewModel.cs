@@ -103,6 +103,13 @@ public partial class MainWindowViewModel : ViewModelBase
         TrackEmbeddingQueue.Instance.StateChanged += () =>
             Dispatcher.UIThread.Post(RefreshEmbeddingStatus);
 
+        _beatsVm.ArtistImported += () =>
+        {
+            AvatarBrushConverter.Invalidate();
+            _artistsVm.LoadArtists();
+            TrackEmbeddingQueue.Instance.Kick();
+        };
+
         _parserVm.ImportDone += () =>
         {
             // Новые артисты — новые треки, которые надо послушать.

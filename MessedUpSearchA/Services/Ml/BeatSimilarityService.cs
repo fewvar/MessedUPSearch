@@ -6,9 +6,28 @@ using System.Threading.Tasks;
 
 namespace MessedUpSearchA.Services.Ml;
 
+/// <summary>Ориентир стиля (крупный артист из индекса друга) или цель — кому можно предложить бит.</summary>
+public enum MatchKind
+{
+    Target,
+    Reference
+}
+
 public class ArtistMatch
 {
     public string Artist { get; init; } = string.Empty;
+
+    public MatchKind Kind { get; init; } = MatchKind.Target;
+
+    /// <summary>Для артистов большого индекса: откуда он и как его импортировать и послушать.</summary>
+    public string Platform { get; init; } = string.Empty;
+    public string SourceId { get; init; } = string.Empty;
+    public string SourceUrl { get; init; } = string.Empty;
+    public string AvatarUrl { get; init; } = string.Empty;
+    public int Plays { get; init; }
+    public string TopTrackId { get; init; } = string.Empty;
+    public string TopTrackUrl { get; init; } = string.Empty;
+    public string TopTrackTitle { get; init; } = string.Empty;
 
     /// <summary>Артист из нашей базы, если совпадение пришло из его треков. Для индекса — null.</summary>
     public int? ArtistId { get; init; }
@@ -18,6 +37,13 @@ public class ArtistMatch
 
     /// <summary>Растянутая под восприятие оценка 0..100 — вот её показываем.</summary>
     public int Percent { get; init; }
+}
+
+/// <summary>Результат анализа: «звучит как» и «кому предложить».</summary>
+public sealed class SimilarityResult
+{
+    public IReadOnlyList<ArtistMatch> References { get; init; } = [];
+    public IReadOnlyList<ArtistMatch> Targets { get; init; } = [];
 }
 
 /// <summary>Трек артиста из базы: сырой вектор MERT, посчитанный по звуку из сети.</summary>
@@ -77,6 +103,90 @@ public class BeatSimilarityService : IDisposable
         var raw = _embedder.EmbedRaw(AudioDecoder.Decode(audioPath), ct);
         var embedding = MertEmbedder.Centered(raw, _index.Center);
         return Rank(embedding, top, extraTracks ?? []);
+    }
+
+    /// <summary>
+    /// Полная выдача для приложения. Ориентиры — только индекс друга (Yeat, Osamason…):
+    /// им бит не продашь, но «звучит как» помогает понять выдачу. Цели — большой индекс
+    /// доступных артистов плюс артисты из базы пользователя. Если артист из индекса уже
+    /// в базе (совпала ссылка на профиль), это один кандидат с номером из базы.
+    /// </summary>
+    public SimilarityResult AnalyzeAll(
+        string audioPath,
+        TargetIndex? targets,
+        IReadOnlyList<ReferenceTrack> userTracks,
+        IReadOnlyDictionary<string, int> userArtistIdsByUrl,
+        int referenceTop = 3,
+        int targetTop = 10,
+        CancellationToken ct = default)
+    {
+        var raw = _embedder.EmbedRaw(AudioDecoder.Decode(audioPath), ct);
+        var embedding = MertEmbedder.Centered(raw, _index.Center);
+
+        var references = Rank(embedding, referenceTop, [])
+            .Select(m => new ArtistMatch
+            {
+                Artist = m.Artist, Kind = MatchKind.Reference, Similarity = m.Similarity, Percent = m.Percent
+            })
+            .ToArray();
+
+        var candidates = new Dictionary<string, Candidate>();
+        var info = new Dictionary<string, TargetArtist>();
+
+        // Индекс v2 собирается с тем же центром; если нет — векторы несравнимы, лучше без него.
+        if (targets is not null && targets.Center.AsSpan().SequenceEqual(_index.Center))
+        {
+            foreach (var artist in targets.Artists)
+            {
+                int? id = userArtistIdsByUrl.TryGetValue(artist.SourceUrl, out var found) ? found : null;
+                var key = id is { } known ? $"db:{known}" : $"url:{artist.SourceUrl}";
+
+                var candidate = GetCandidate(candidates, key, artist.Nickname, id);
+                info[key] = artist;
+
+                foreach (var vector in artist.Vectors)
+                    candidate.Add(Dot(embedding, vector));
+            }
+        }
+
+        foreach (var track in userTracks)
+        {
+            if (track.ArtistId is not { } id || track.RawVector.Length != embedding.Length)
+                continue;
+
+            var candidate = GetCandidate(candidates, $"db:{id}", track.Artist, id);
+            candidate.Add(Dot(embedding, MertEmbedder.Centered(track.RawVector, _index.Center)));
+        }
+
+        var targetMatches = candidates
+            .Where(c => c.Value.Count > 0)
+            .Select(c => (Key: c.Key, Candidate: c.Value, Score: c.Value.Score()))
+            .OrderByDescending(c => c.Score)
+            .Take(targetTop)
+            .Select(c =>
+            {
+                info.TryGetValue(c.Key, out var artist);
+                return new ArtistMatch
+                {
+                    // Ник из базы пользователя главнее: он мог его переименовать.
+                    Artist = c.Candidate.ArtistId is not null ? c.Candidate.Name : artist?.Nickname ?? c.Candidate.Name,
+                    ArtistId = c.Candidate.ArtistId,
+                    Kind = MatchKind.Target,
+                    Similarity = c.Score,
+                    Percent = ToPercent(c.Score),
+                    Platform = artist?.Platform ?? string.Empty,
+                    SourceId = artist?.SourceId ?? string.Empty,
+                    SourceUrl = artist?.SourceUrl ?? string.Empty,
+                    AvatarUrl = artist?.AvatarUrl ?? string.Empty,
+                    Plays = artist?.Plays ?? 0,
+                    TopTrackId = artist?.TopTrackId ?? string.Empty,
+                    TopTrackUrl = artist?.TopTrackUrl ?? string.Empty,
+                    TopTrackTitle = artist?.TopTrackTitle ?? string.Empty
+                };
+            })
+            .ToArray();
+
+        return new SimilarityResult { References = references, Targets = targetMatches };
     }
 
     private IReadOnlyList<ArtistMatch> Rank(float[] embedding, int top, IReadOnlyList<ReferenceTrack> extraTracks)

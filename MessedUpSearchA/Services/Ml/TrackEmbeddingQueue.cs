@@ -40,8 +40,11 @@ public sealed class TrackEmbeddingQueue
     public const int TracksPerArtist = 6;
     public const int MaxAttempts = 3;
 
-    /// <summary>Короче этого — не трек, а интро или сниппет; вектор по нему случайный.</summary>
-    private const int MinSeconds = 20;
+    /// <summary>
+    /// Короче этого — сниппет, вектор по нему случайный. Кусок на 320 кбит/с даёт ~26 с,
+    /// поэтому порог ниже, чем был для целых треков.
+    /// </summary>
+    private const int MinSeconds = 15;
 
     private const int DeezerTracksPerArtist = 10;
 
@@ -295,7 +298,8 @@ public sealed class TrackEmbeddingQueue
                 return;
             }
 
-            path = await AudioFetcher.DownloadAsync(audio, TempDirectory, ct);
+            // Мегабайт из середины вместо всего трека: качество то же, трафик в 4–6 раз меньше.
+            path = await AudioFetcher.DownloadSliceAsync(audio, TempDirectory, ct);
 
             var samples = AudioDecoder.Decode(path);
             var seconds = (double)samples.Length / AudioDecoder.TargetSampleRate;

@@ -31,6 +31,14 @@ public static class UiScenes
                     main.BeatsVm.BeginEditBeat(beat);
                 break;
 
+            case "beat-analyze":
+                if (main.BeatsVm.Beats.FirstOrDefault() is { } analyzed)
+                {
+                    main.BeatsVm.BeginEditBeat(analyzed);
+                    main.BeatsVm.AnalyzeSimilarityCommand.Execute(null);
+                }
+                break;
+
             case "player":
                 if (main.BeatsVm.Beats.FirstOrDefault() is { } first)
                 {

@@ -29,4 +29,17 @@ public class BeatSimilarity
     public double Similarity { get; set; }
 
     public string ComputedAt { get; set; } = string.Empty;
+
+    /// <summary>"Target" — кому предложить, "Reference" — «звучит как» (крупные артисты).</summary>
+    public string Kind { get; set; } = "Target";
+
+    // Для артистов большого индекса, которых ещё нет в базе: как импортировать и что сыграть.
+    public string Platform { get; set; } = string.Empty;
+    public string SourceId { get; set; } = string.Empty;
+    public string SourceUrl { get; set; } = string.Empty;
+    public string AvatarUrl { get; set; } = string.Empty;
+    public int Plays { get; set; }
+    public string TopTrackId { get; set; } = string.Empty;
+    public string TopTrackUrl { get; set; } = string.Empty;
+    public string TopTrackTitle { get; set; } = string.Empty;
 }

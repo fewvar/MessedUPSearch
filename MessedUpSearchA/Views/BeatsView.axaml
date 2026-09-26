@@ -360,11 +360,16 @@
                                FontSize="11" TextWrapping="Wrap"
                                Foreground="{StaticResource OnBackgroundDim}"/>
 
+                    <TextBlock Text="{Binding StyleReferences}"
+                               IsVisible="{Binding StyleReferences, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
+                               FontSize="12" TextWrapping="Wrap" Margin="0,2,0,6"
+                               Foreground="{StaticResource OnBackgroundDim}"/>
+
                     <ItemsControl ItemsSource="{Binding SimilarArtists}"
                                   IsVisible="{Binding HasSimilarity}">
                         <ItemsControl.ItemTemplate>
                             <DataTemplate DataType="vm:SimilarArtistItem">
-                                <Grid ColumnDefinitions="170,*,44" Margin="0,3">
+                                <Grid ColumnDefinitions="150,*,40,Auto" Margin="0,1">
                                     <TextBlock Grid.Column="0"
                                                Text="{Binding Artist}"
                                                FontSize="13"
@@ -386,6 +391,26 @@
                                                HorizontalAlignment="Right"
                                                VerticalAlignment="Center"
                                                Foreground="{StaticResource OnBackgroundDim}"/>
+
+                                    <!-- ▶ послушать · ➕ в базу (если его там нет) · ↗ профиль -->
+                                    <StackPanel Grid.Column="3" Orientation="Horizontal" Margin="6,0,0,0">
+                                        <Button Classes="playerButton" Click="OnPlaySimilarClick"
+                                                ToolTip.Tip="{loc:Tr BeatEditor.PlayTrack}">
+                                            <Path Data="M0,0 L8,4.5 L0,9 Z"/>
+                                        </Button>
+                                        <Panel Width="30">
+                                            <Button Classes="playerButton" Click="OnImportSimilarClick"
+                                                    IsVisible="{Binding CanImport}"
+                                                    ToolTip.Tip="{loc:Tr BeatEditor.AddToBase}">
+                                                <Path Data="M4,0 H6 V4 H10 V6 H6 V10 H4 V6 H0 V4 H4 Z"/>
+                                            </Button>
+                                        </Panel>
+                                        <Button Classes="playerButton" Click="OnOpenSimilarClick"
+                                                IsVisible="{Binding CanOpen}"
+                                                ToolTip.Tip="{loc:Tr BeatEditor.OpenProfile}">
+                                            <Path Data="M3,0 H10 V7 H8 V3.4 L1.4,10 L0,8.6 L6.6,2 H3 Z"/>
+                                        </Button>
+                                    </StackPanel>
                                 </Grid>
                             </DataTemplate>
                         </ItemsControl.ItemTemplate>

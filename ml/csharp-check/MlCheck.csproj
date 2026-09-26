@@ -15,12 +15,14 @@
     <Compile Include="../../MessedUpSearchA/Services/Ml/ArtistIndex.cs" Link="ArtistIndex.cs" />
     <Compile Include="../../MessedUpSearchA/Services/Ml/BeatSimilarityService.cs" Link="BeatSimilarityService.cs" />
     <Compile Include="../../MessedUpSearchA/Services/Ml/MertEmbedder.cs" Link="MertEmbedder.cs" />
+    <Compile Include="../../MessedUpSearchA/Services/Ml/TargetIndex.cs" Link="TargetIndex.cs" />
     <Compile Include="../../MessedUpSearchA/Services/Localization/Localizer.cs" Link="Localizer.cs" />
     <Compile Include="../../MessedUpSearchA/Services/Localization/LocalizationStrings.cs" Link="LocalizationStrings.cs" />
     <!-- Для режима online: качает превью Deezer тем же кодом, что и приложение. -->
     <Compile Include="../../MessedUpSearchA/Services/Parsing/ParsingHttp.cs" Link="ParsingHttp.cs" />
     <Compile Include="../../MessedUpSearchA/Services/Parsing/IAudioResolver.cs" Link="IAudioResolver.cs" />
     <Compile Include="../../MessedUpSearchA/Services/Parsing/AudioFetcher.cs" Link="AudioFetcher.cs" />
+    <Compile Include="../../MessedUpSearchA/Services/Parsing/Mp3Sync.cs" Link="Mp3Sync.cs" />
     <Compile Include="../../MessedUpSearchA/Services/Parsing/ArtistCandidate.cs" Link="ArtistCandidate.cs" />
     <Compile Include="../../MessedUpSearchA/Services/Parsing/Sources/DeezerSource.cs" Link="DeezerSource.cs" />
   </ItemGroup>

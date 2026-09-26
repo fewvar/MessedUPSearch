@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- Краулер большого индекса артистов. Ссылается на проект приложения, чтобы
+       парсер, резолверы, декодер и MERT были ровно те же, что у пользователя.
+       В релиз приложения не входит. -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <RootNamespace>Crawler</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../../MessedUpSearchA/MessedUpSearchA.csproj" />
+  </ItemGroup>
+</Project>

@@ -16,6 +16,11 @@ public sealed class TargetArtist
     public string Genre { get; init; } = string.Empty;
     public int Plays { get; init; }
 
+    /// <summary>Самый прослушиваемый трек — его играет ▶ в выдаче, чтобы послушать до импорта.</summary>
+    public string TopTrackId { get; init; } = string.Empty;
+    public string TopTrackUrl { get; init; } = string.Empty;
+    public string TopTrackTitle { get; init; } = string.Empty;
+
     /// <summary>Векторы треков — уже центрированные тем же центром и нормированные.</summary>
     public float[][] Vectors { get; init; } = [];
 }
@@ -27,7 +32,8 @@ public sealed class TargetArtist
 ///
 /// Формат (little-endian):
 ///   "MUSX", int версия = 2, int размерность, int артистов, float[размерность] центр,
-///   на артиста: 6 строк (int длина + UTF-8: ник, площадка, id, ссылка, аватар, жанр),
+///   на артиста: 9 строк (int длина + UTF-8: ник, площадка, id, ссылка, аватар, жанр,
+///   id лучшего трека, ссылка на него, его название),
 ///   int прослушивания, int треков, затем треки × размерность × Half.
 /// Half вместо float: индекс вдвое меньше, а на косинусе разницы не видно.
 /// </summary>
@@ -70,6 +76,9 @@ public sealed class TargetIndex
             var sourceUrl = ReadString(reader);
             var avatarUrl = ReadString(reader);
             var genre = ReadString(reader);
+            var topTrackId = ReadString(reader);
+            var topTrackUrl = ReadString(reader);
+            var topTrackTitle = ReadString(reader);
             var plays = reader.ReadInt32();
             var tracks = reader.ReadInt32();
 
@@ -85,7 +94,8 @@ public sealed class TargetIndex
             artists.Add(new TargetArtist
             {
                 Nickname = nickname, Platform = platform, SourceId = sourceId, SourceUrl = sourceUrl,
-                AvatarUrl = avatarUrl, Genre = genre, Plays = plays, Vectors = vectors
+                AvatarUrl = avatarUrl, Genre = genre, Plays = plays, Vectors = vectors,
+                TopTrackId = topTrackId, TopTrackUrl = topTrackUrl, TopTrackTitle = topTrackTitle
             });
         }
 
@@ -105,7 +115,8 @@ public sealed class TargetIndex
 
         foreach (var artist in Artists)
         {
-            foreach (var text in new[] { artist.Nickname, artist.Platform, artist.SourceId, artist.SourceUrl, artist.AvatarUrl, artist.Genre })
+            foreach (var text in new[] { artist.Nickname, artist.Platform, artist.SourceId, artist.SourceUrl, artist.AvatarUrl,
+                         artist.Genre, artist.TopTrackId, artist.TopTrackUrl, artist.TopTrackTitle })
                 WriteString(writer, text);
 
             writer.Write(artist.Plays);
