@@ -167,7 +167,7 @@ public partial class ArtistsViewModel : ViewModelBase
         EditAvatarPath = string.Empty;
         EditAvatarColor = "#888888";
         AssignedBeats.Clear();
-        LoadSimilarBeats(string.Empty);
+        LoadSimilarBeats(0, string.Empty);
         IsEditorOpen = true;
     }
 
@@ -188,7 +188,7 @@ public partial class ArtistsViewModel : ViewModelBase
         EditAvatarPath = artist.AvatarPath;
         EditAvatarColor = string.IsNullOrWhiteSpace(artist.AvatarColor) ? "#888888" : artist.AvatarColor;
         LoadAssignedBeats(artist.Id);
-        LoadSimilarBeats(artist.Nickname);
+        LoadSimilarBeats(artist.Id, artist.Nickname);
         IsEditorOpen = true;
     }
 
@@ -203,7 +203,7 @@ public partial class ArtistsViewModel : ViewModelBase
     /// "tudrill". Разное написание одного артиста ("2Holis" против "2hollis")
     /// это не лечит — тут нужен уже словарь синонимов, а не нормализация.
     /// </summary>
-    private void LoadSimilarBeats(string nickname)
+    private void LoadSimilarBeats(int artistId, string nickname)
     {
         SimilarBeats.Clear();
         HasSimilarBeats = false;
@@ -214,12 +214,14 @@ public partial class ArtistsViewModel : ViewModelBase
             return;
 
         var wanted = NormalizeName(nickname);
-        IsArtistKnownToModel = KnownArtists().Contains(wanted);
+        // Модель знает артиста, если он в индексе по имени или если очередь уже послушала его треки.
+        IsArtistKnownToModel = KnownArtists().Contains(wanted) ||
+                               (artistId != 0 && LiveIndex.HasVectors(artistId));
 
         using var db = new AppDbContext();
 
         var matches = db.BeatSimilarities.ToList()
-            .Where(s => NormalizeName(s.Artist) == wanted)
+            .Where(s => (artistId != 0 && s.ArtistId == artistId) || NormalizeName(s.Artist) == wanted)
             .ToList();
 
         if (matches.Count == 0)

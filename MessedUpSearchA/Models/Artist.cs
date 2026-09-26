@@ -23,4 +23,10 @@ public class Artist
 
     public string SourcePlatform { get; set; } = string.Empty;
     public string? SourceUrl { get; set; }
+
+    /// <summary>
+    /// Когда искали артиста на Deezer ради превью. Пусто — ещё не искали.
+    /// Ищем один раз: не нашёлся — значит, и завтра не найдётся.
+    /// </summary>
+    public string DeezerCheckedAt { get; set; } = string.Empty;
 }

@@ -3,9 +3,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using MessedUpSearchA.Services.Localization;
-using Microsoft.ML.OnnxRuntime;
-using Microsoft.ML.OnnxRuntime.Tensors;
 
 namespace MessedUpSearchA.Services.Ml;
 
@@ -13,11 +10,22 @@ public class ArtistMatch
 {
     public string Artist { get; init; } = string.Empty;
 
+    /// <summary>Артист из нашей базы, если совпадение пришло из его треков. Для индекса — null.</summary>
+    public int? ArtistId { get; init; }
+
     /// <summary>Сырая косинусная близость, от -1 до 1. Для отладки, не для показа.</summary>
     public float Similarity { get; init; }
 
     /// <summary>Растянутая под восприятие оценка 0..100 — вот её показываем.</summary>
     public int Percent { get; init; }
+}
+
+/// <summary>Трек артиста из базы: сырой вектор MERT, посчитанный по звуку из сети.</summary>
+public class ReferenceTrack
+{
+    public string Artist { get; init; } = string.Empty;
+    public int? ArtistId { get; init; }
+    public float[] RawVector { get; init; } = [];
 }
 
 /// <summary>
@@ -27,182 +35,134 @@ public class ArtistMatch
 /// не сойдутся: декодируем в 24 кГц моно -> режем на окна по 10 секунд ->
 /// прогоняем через MERT -> усредняем окна -> вычитаем центр базы -> нормируем ->
 /// считаем косинусы с треками и агрегируем по артистам.
+///
+/// Треки сравнения — это artist_index.bin (32 артиста из собранного архива) плюс
+/// треки артистов из базы, которые приложение само послушало в сети. Центр один
+/// на всех — из индекса: он посчитан по 1685 трекам нужных жанров, и пересчитывать
+/// его при каждом новом артисте значило бы сдвигать все сохранённые оценки.
 /// </summary>
 public class BeatSimilarityService : IDisposable
 {
-    private const int WindowSamples = 10 * AudioDecoder.TargetSampleRate;
-    private const int MaxWindows = 6;      // 6 окон = минута звука, хватает и не тормозит
     private const int TopTracksPerArtist = 3;
 
-    private readonly InferenceSession _session;
+    private readonly MertEmbedder _embedder;
+    private readonly bool _ownsEmbedder;
     private readonly ArtistIndex _index;
     private readonly Dictionary<int, List<int>> _tracksByArtist;
 
-    public BeatSimilarityService(string modelPath, string indexPath)
+    public BeatSimilarityService(MertEmbedder embedder, string indexPath)
     {
-        var options = new SessionOptions
-        {
-            // Считаем на всех ядрах: анализ одного бита — это секунды, и пользователь
-            // их ждёт. Оставляем одно ядро системе, чтобы интерфейс не подтормаживал.
-            IntraOpNumThreads = Math.Max(1, Environment.ProcessorCount - 1),
-            InterOpNumThreads = 1,
-            GraphOptimizationLevel = GraphOptimizationLevel.ORT_ENABLE_ALL
-        };
-
-        _session = new InferenceSession(modelPath, options);
+        _embedder = embedder;
         _index = ArtistIndex.Load(indexPath);
         _tracksByArtist = _index.GroupByArtist();
     }
 
+    /// <summary>Своя сессия ONNX — для консольной сверки, где общей нет.</summary>
+    public BeatSimilarityService(string modelPath, string indexPath)
+        : this(new MertEmbedder(modelPath), indexPath)
+        => _ownsEmbedder = true;
+
     public IReadOnlyList<string> KnownArtists => _index.ArtistNames;
+
+    public float[] Center => _index.Center;
 
     public Task<IReadOnlyList<ArtistMatch>> AnalyzeAsync(
         string audioPath, int top = 5, CancellationToken ct = default)
         => Task.Run(() => Analyze(audioPath, top, ct), ct);
 
-    public IReadOnlyList<ArtistMatch> Analyze(string audioPath, int top = 5, CancellationToken ct = default)
+    public IReadOnlyList<ArtistMatch> Analyze(
+        string audioPath, int top = 5, CancellationToken ct = default,
+        IReadOnlyList<ReferenceTrack>? extraTracks = null)
     {
-        var samples = AudioDecoder.Decode(audioPath);
-        var windows = SliceWindows(samples);
-
-        if (windows.Count == 0)
-            throw new InvalidOperationException(Localizer.Instance["Analysis.TooShort"]);
-
-        var embedding = Embed(windows, ct);
-        return Rank(embedding, top);
+        var raw = _embedder.EmbedRaw(AudioDecoder.Decode(audioPath), ct);
+        var embedding = MertEmbedder.Centered(raw, _index.Center);
+        return Rank(embedding, top, extraTracks ?? []);
     }
 
-    /// <summary>
-    /// Берём окна равномерно по всему биту. Только начало брать нельзя: там часто
-    /// интро без бочки, и оно не показательно для звучания целиком.
-    /// </summary>
-    private static List<float[]> SliceWindows(float[] samples)
+    private IReadOnlyList<ArtistMatch> Rank(float[] embedding, int top, IReadOnlyList<ReferenceTrack> extraTracks)
     {
-        var windows = new List<float[]>();
-
-        if (samples.Length < 3 * AudioDecoder.TargetSampleRate)
-            return windows;
-
-        if (samples.Length <= WindowSamples)
-        {
-            var padded = new float[WindowSamples];
-            Array.Copy(samples, padded, samples.Length);
-            windows.Add(padded);
-            return windows;
-        }
-
-        var count = Math.Min(MaxWindows, samples.Length / WindowSamples);
-        var step = count > 1 ? (double)(samples.Length - WindowSamples) / (count - 1) : 0;
-
-        for (var i = 0; i < count; i++)
-        {
-            var window = new float[WindowSamples];
-            Array.Copy(samples, (int)(i * step), window, 0, WindowSamples);
-            windows.Add(window);
-        }
-
-        return windows;
-    }
-
-    private float[] Embed(List<float[]> windows, CancellationToken ct)
-    {
-        ct.ThrowIfCancellationRequested();
-
-        // Все окна одним прогоном: по одному это выходило вдвое дольше — модель
-        // распараллеливает батч сама, а мы платили за запуск графа каждый раз.
-        var batch = new float[windows.Count * WindowSamples];
-        for (var w = 0; w < windows.Count; w++)
-            Array.Copy(windows[w], 0, batch, w * WindowSamples, WindowSamples);
-
-        var tensor = new DenseTensor<float>(batch, new[] { windows.Count, WindowSamples });
-        var inputs = new List<NamedOnnxValue>
-        {
-            NamedOnnxValue.CreateFromTensor("waveform", tensor)
-        };
-
-        using var results = _session.Run(inputs);
-        var output = results.First().AsTensor<float>();
-
-        var dimension = _index.Dimension;
-        if (output.Dimensions.Length != 2 || output.Dimensions[1] != dimension)
-        {
-            throw new InvalidOperationException(
-                $"модель вернула форму [{string.Join(",", output.Dimensions.ToArray())}], " +
-                $"а индекс ждёт {dimension} чисел — модель и индекс из разных сборок");
-        }
-
-        var accumulated = new float[dimension];
-
-        for (var w = 0; w < windows.Count; w++)
-        {
-            for (var i = 0; i < dimension; i++)
-                accumulated[i] += output[w, i];
-        }
-
-        for (var i = 0; i < accumulated.Length; i++)
-            accumulated[i] /= windows.Count;
-
-        // Центрирование и нормировка — точно как при построении базы.
-        for (var i = 0; i < accumulated.Length; i++)
-            accumulated[i] -= _index.Center[i];
-
-        var norm = 0f;
-        for (var i = 0; i < accumulated.Length; i++)
-            norm += accumulated[i] * accumulated[i];
-
-        norm = MathF.Sqrt(norm);
-        if (norm > 1e-9f)
-        {
-            for (var i = 0; i < accumulated.Length; i++)
-                accumulated[i] /= norm;
-        }
-
-        return accumulated;
-    }
-
-    private IReadOnlyList<ArtistMatch> Rank(float[] embedding, int top)
-    {
-        var scores = new List<(string Artist, float Score)>(_tracksByArtist.Count);
+        // Кандидат — это артист; у него копятся косинусы со всеми его треками.
+        // Артиста из базы с тем же именем, что в индексе, сливаем с ним: иначе
+        // в топе окажутся два одинаковых «Yeat».
+        var groups = new Dictionary<string, Candidate>();
 
         foreach (var (artistId, trackIds) in _tracksByArtist)
         {
-            // Оценка артиста — среднее по трём его ближайшим трекам. Один трек
-            // слишком случаен, среднее по всем размывает: у Yeat 153 трека.
-            var best = new float[TopTracksPerArtist];
-            Array.Fill(best, float.NegativeInfinity);
+            var name = _index.ArtistNames[artistId];
+            var candidate = GetCandidate(groups, NameKey(name), name, null);
 
             foreach (var trackId in trackIds)
-            {
-                var similarity = Dot(embedding, _index.Vectors[trackId]);
-
-                for (var slot = 0; slot < best.Length; slot++)
-                {
-                    if (similarity <= best[slot])
-                        continue;
-
-                    for (var shift = best.Length - 1; shift > slot; shift--)
-                        best[shift] = best[shift - 1];
-
-                    best[slot] = similarity;
-                    break;
-                }
-            }
-
-            var taken = best.Where(v => !float.IsNegativeInfinity(v)).ToArray();
-            if (taken.Length > 0)
-                scores.Add((_index.ArtistNames[artistId], taken.Average()));
+                candidate.Add(Dot(embedding, _index.Vectors[trackId]));
         }
 
-        return scores
-            .OrderByDescending(s => s.Score)
+        foreach (var track in extraTracks)
+        {
+            if (track.RawVector.Length != embedding.Length)
+                continue;   // вектор от другой модели — сравнивать нечего
+
+            var nameKey = NameKey(track.Artist);
+            var key = groups.ContainsKey(nameKey) || track.ArtistId is null ? nameKey : $"db:{track.ArtistId}";
+
+            var candidate = GetCandidate(groups, key, track.Artist, track.ArtistId);
+            candidate.ArtistId ??= track.ArtistId;
+            candidate.Add(Dot(embedding, MertEmbedder.Centered(track.RawVector, _index.Center)));
+        }
+
+        return groups.Values
+            .Where(c => c.Count > 0)
+            .Select(c => (c.Name, c.ArtistId, Score: c.Score()))
+            .OrderByDescending(c => c.Score)
             .Take(top)
-            .Select(s => new ArtistMatch
+            .Select(c => new ArtistMatch
             {
-                Artist = s.Artist,
-                Similarity = s.Score,
-                Percent = ToPercent(s.Score)
+                Artist = c.Name,
+                ArtistId = c.ArtistId,
+                Similarity = c.Score,
+                Percent = ToPercent(c.Score)
             })
             .ToArray();
+    }
+
+    private static Candidate GetCandidate(Dictionary<string, Candidate> groups, string key, string name, int? artistId)
+    {
+        if (!groups.TryGetValue(key, out var candidate))
+            groups[key] = candidate = new Candidate { Name = name, ArtistId = artistId };
+        return candidate;
+    }
+
+    private static string NameKey(string name) =>
+        "name:" + new string(name.ToLowerInvariant().Where(char.IsLetterOrDigit).ToArray());
+
+    /// <summary>
+    /// Оценка артиста — среднее по трём его ближайшим трекам. Один трек
+    /// слишком случаен, среднее по всем размывает: у Yeat 153 трека.
+    /// </summary>
+    private sealed class Candidate
+    {
+        private readonly float[] _best = [float.NegativeInfinity, float.NegativeInfinity, float.NegativeInfinity];
+
+        public string Name { get; init; } = string.Empty;
+        public int? ArtistId { get; set; }
+        public int Count { get; private set; }
+
+        public void Add(float similarity)
+        {
+            Count++;
+
+            for (var slot = 0; slot < TopTracksPerArtist; slot++)
+            {
+                if (similarity <= _best[slot])
+                    continue;
+
+                for (var shift = TopTracksPerArtist - 1; shift > slot; shift--)
+                    _best[shift] = _best[shift - 1];
+
+                _best[slot] = similarity;
+                break;
+            }
+        }
+
+        public float Score() => _best.Where(v => !float.IsNegativeInfinity(v)).Average();
     }
 
     /// <summary>
@@ -228,5 +188,9 @@ public class BeatSimilarityService : IDisposable
         return sum;
     }
 
-    public void Dispose() => _session.Dispose();
+    public void Dispose()
+    {
+        if (_ownsEmbedder)
+            _embedder.Dispose();
+    }
 }

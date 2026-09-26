@@ -12,6 +12,7 @@ public class AppDbContext : DbContext
     public DbSet<SentBeatsLog> SentBeatsLog => Set<SentBeatsLog>();
     public DbSet<ArtistTrack> ArtistTracks => Set<ArtistTrack>();
     public DbSet<BeatSimilarity> BeatSimilarities => Set<BeatSimilarity>();
+    public DbSet<TrackEmbedding> TrackEmbeddings => Set<TrackEmbedding>();
 
     public static string DbPath => AppPaths.DbFile;
 
@@ -63,5 +64,23 @@ public class AppDbContext : DbContext
         // Ищем всегда по биту — «покажи, на кого похож вот этот».
         b.Entity<BeatSimilarity>()
             .HasIndex(s => s.BeatId);
+
+        // Удалили артиста — строка в выдаче остаётся с именем, но без ссылки на карточку.
+        b.Entity<BeatSimilarity>()
+            .HasOne<Artist>()
+            .WithMany()
+            .HasForeignKey(s => s.ArtistId)
+            .OnDelete(DeleteBehavior.SetNull);
+
+        b.Entity<TrackEmbedding>()
+            .HasOne(e => e.ArtistTrack)
+            .WithMany()
+            .HasForeignKey(e => e.ArtistTrackId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        // Один вектор на трек и модель: пересчёт заменяет, а не копит дубли.
+        b.Entity<TrackEmbedding>()
+            .HasIndex(e => new { e.ArtistTrackId, e.ModelVersion })
+            .IsUnique();
     }
 }

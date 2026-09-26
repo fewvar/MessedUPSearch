@@ -20,6 +20,12 @@ public static class LocalizationStrings
         ["Status.Artists"] = "Artists:",
         ["Status.Beats"] = "Beats:",
         ["Status.Parser"] = "PARSER: {0}",
+        ["Status.EmbedListening"] = "LISTENING TO TRACKS: {0}/{1}",
+        ["Status.EmbedModel"] = "DOWNLOADING MODEL: {0}",
+        ["Status.EmbedPaused"] = "TRACK LISTENING PAUSED",
+        ["Status.EmbedFailed"] = "TRACK LISTENING STOPPED: {0}",
+        ["Status.EmbedPause"] = "PAUSE",
+        ["Status.EmbedResume"] = "RESUME",
         ["Parser.Idle"] = "Idle",
 
         // Кнопки на панелях
@@ -84,7 +90,7 @@ public static class LocalizationStrings
         ["ArtistEditor.LanguageHint"] = "ENG / RU / ...",
         ["ArtistEditor.MatchingBeats"] = "BEATS THAT FIT",
         ["ArtistEditor.NoMatches"] = "No beat matched this artist yet. Analyze your beats on their cards — matching ones will show up here.",
-        ["ArtistEditor.UnknownArtist"] = "The model doesn't know this artist: it was trained on 32 specific ones, and matching goes by name. For everyone else this block stays empty.",
+        ["ArtistEditor.UnknownArtist"] = "The model hasn't heard this artist yet: their tracks are queued, or no audio could be found for them.",
         ["ArtistEditor.NoModel"] = "Artist database file is missing — matching is unavailable.",
 
         // Анализ похожести (сообщения из кода)
@@ -192,6 +198,12 @@ public static class LocalizationStrings
         ["Status.Artists"] = "Артистов:",
         ["Status.Beats"] = "Битов:",
         ["Status.Parser"] = "ПАРСЕР: {0}",
+        ["Status.EmbedListening"] = "СЛУШАЮ ТРЕКИ: {0}/{1}",
+        ["Status.EmbedModel"] = "КАЧАЮ МОДЕЛЬ: {0}",
+        ["Status.EmbedPaused"] = "ПРОСЛУШКА НА ПАУЗЕ",
+        ["Status.EmbedFailed"] = "ПРОСЛУШКА ОСТАНОВЛЕНА: {0}",
+        ["Status.EmbedPause"] = "ПАУЗА",
+        ["Status.EmbedResume"] = "ДАЛЬШЕ",
         ["Parser.Idle"] = "Ожидание",
 
         // Кнопки на панелях
@@ -256,7 +268,7 @@ public static class LocalizationStrings
         ["ArtistEditor.LanguageHint"] = "ENG / RU / ...",
         ["ArtistEditor.MatchingBeats"] = "ПОДХОДЯЩИЕ БИТЫ",
         ["ArtistEditor.NoMatches"] = "Пока ни один бит не совпал с этим артистом. Прогони свои биты через АНАЛИЗ в их карточках — подходящие появятся здесь.",
-        ["ArtistEditor.UnknownArtist"] = "Модель не знает этого артиста: она обучена на 32 конкретных, и сопоставление идёт по имени. Для остальных блок остаётся пустым.",
+        ["ArtistEditor.UnknownArtist"] = "Модель ещё не слышала этого артиста: его треки в очереди или звук для них не нашёлся.",
         ["ArtistEditor.NoModel"] = "Нет файла с базой артистов — подбор недоступен.",
 
         // Анализ похожести

@@ -10,7 +10,7 @@ using System.Threading.Tasks;
 
 namespace MessedUpSearchA.Services.Parsing.Sources;
 
-public class SoundCloudSource : IArtistSource
+public class SoundCloudSource : IArtistSource, IAudioResolver
 {
     private const string Api = "https://api-v2.soundcloud.com";
     private const int PageSize = 50;
@@ -116,6 +116,7 @@ public class SoundCloudSource : IArtistSource
             {
                 Title = track.Str("title"),
                 Url = track.Str("permalink_url"),
+                SourceId = track.NumberAsString("id"),
                 PlayCount = track.Int("playback_count"),
                 ReleasedAt = NormalizeDate(track.Str("created_at")),
                 Tags = ParseTagList(track.Str("tag_list"), track.Str("genre")),
@@ -124,6 +125,87 @@ public class SoundCloudSource : IArtistSource
         }
 
         return tracks;
+    }
+
+    /// <summary>
+    /// Звук трека через неофициальный api-v2. Берём progressive mp3, если его нет —
+    /// HLS с mp3-сегментами (их можно склеить подряд). AAC-варианты не берём: наш
+    /// декодер их не читает. Сниппеты GO+ отбрасываем — 30 секунд из середины
+    /// чужого платного трека не то же самое, что трек.
+    /// </summary>
+    public async Task<ResolvedAudio?> ResolveAsync(string trackId, string trackUrl, CancellationToken ct)
+    {
+        string url;
+        if (!string.IsNullOrWhiteSpace(trackId))
+            url = $"{Api}/tracks/{Uri.EscapeDataString(trackId)}";
+        else if (!string.IsNullOrWhiteSpace(trackUrl))
+            url = $"{Api}/resolve?url={Uri.EscapeDataString(trackUrl)}";
+        else
+            return null;
+
+        using var doc = await GetJsonAsync(url, ct);
+        var track = doc.RootElement;
+
+        if (track.Str("policy") == "SNIP" || track.Str("kind") != "track")
+            return null;
+
+        var media = track.Obj("media");
+        if (media is null ||
+            !media.Value.TryGetProperty("transcodings", out var transcodings) ||
+            transcodings.ValueKind != JsonValueKind.Array)
+        {
+            return null;
+        }
+
+        JsonElement? progressive = null, hls = null;
+
+        foreach (var transcoding in transcodings.EnumerateArray())
+        {
+            if (transcoding.Bool("snipped"))
+                continue;
+
+            var format = transcoding.Obj("format");
+            if (format is null || format.Value.Str("mime_type") != "audio/mpeg")
+                continue;
+
+            var protocol = format.Value.Str("protocol");
+            if (protocol == "progressive")
+                progressive ??= transcoding;
+            else if (protocol == "hls")
+                hls ??= transcoding;
+        }
+
+        var chosen = progressive ?? hls;
+        if (chosen is null)
+            return null;
+
+        var authorization = track.Str("track_authorization");
+        var resolveUrl = chosen.Value.Str("url") +
+                         (string.IsNullOrWhiteSpace(authorization)
+                             ? string.Empty
+                             : "?track_authorization=" + Uri.EscapeDataString(authorization));
+
+        using var resolved = await GetJsonAsync(resolveUrl, ct);
+        var mediaUrl = resolved.RootElement.Str("url");
+        if (string.IsNullOrWhiteSpace(mediaUrl))
+            return null;
+
+        if (progressive is not null)
+            return new ResolvedAudio { Urls = [mediaUrl], AudioKind = AudioKinds.Full };
+
+        // HLS: плейлист — это список сегментов, строки без решётки. Ссылки в нём абсолютные.
+        await _limiter.WaitAsync(ct);
+        var playlist = await _fetch(mediaUrl, ct);
+
+        var segments = playlist
+            .Split('\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+            .Where(line => !line.StartsWith('#'))
+            .Select(line => Uri.TryCreate(new Uri(mediaUrl), line, out var absolute) ? absolute.ToString() : line)
+            .ToList();
+
+        return segments.Count == 0
+            ? null
+            : new ResolvedAudio { Urls = segments, AudioKind = AudioKinds.Full };
     }
 
     private async Task<JsonDocument> GetJsonAsync(string url, CancellationToken ct)

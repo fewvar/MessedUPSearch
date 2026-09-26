@@ -13,6 +13,12 @@ public class BeatSimilarity
 
     public string Artist { get; set; } = string.Empty;
 
+    /// <summary>
+    /// Артист из нашей базы, если совпадение пришло из его треков. Для 32 артистов
+    /// из artist_index.bin пусто — у них нет карточки, только имя.
+    /// </summary>
+    public int? ArtistId { get; set; }
+
     /// <summary>Позиция в выдаче, 1 — самый похожий.</summary>
     public int Rank { get; set; }
 

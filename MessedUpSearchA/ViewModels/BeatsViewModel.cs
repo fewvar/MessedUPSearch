@@ -266,8 +266,10 @@ public partial class BeatsViewModel : ViewModelBase
 
             var matches = await Task.Run(() =>
             {
-                using var service = new BeatSimilarityService(ModelStore.ModelPath, ModelStore.IndexPath);
-                return service.Analyze(_editFilePath, top: 5, _analysisCts.Token);
+                // Сессия общая с фоновой очередью — вторая копия модели заняла бы ещё сотни МБ.
+                using var service = new BeatSimilarityService(
+                    MertEmbedder.GetShared(ModelStore.ModelPath), ModelStore.IndexPath);
+                return service.Analyze(_editFilePath, top: 5, _analysisCts.Token, LiveIndex.Load());
             }, _analysisCts.Token);
 
             if (_editingId == 0)
@@ -317,6 +319,7 @@ public partial class BeatsViewModel : ViewModelBase
             {
                 BeatId = beatId,
                 Artist = matches[i].Artist,
+                ArtistId = matches[i].ArtistId,
                 Rank = i + 1,
                 Percent = matches[i].Percent,
                 Similarity = matches[i].Similarity,

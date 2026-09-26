@@ -59,10 +59,11 @@
 
 ### Похожие артисты (по звучанию)
 - Кнопка ANALYZE на карточке бита показывает, на кого из базы он похож **по звучанию**, а не по тегам: `Osamason 87% · Summrs 81% · Autumn! 74%`.
-- Под капотом MERT — нейросеть, обученная на музыке. Она превращает бит в вектор из 768 чисел, который сравнивается с 1685 треками 32 артистов.
-- Проверено честной метрикой (прячем весь альбом, а не один трек): нужный артист попадает в первую пятёрку в 75% случаев при случайном угадывании 3%.
+- Под капотом MERT — нейросеть, обученная на музыке. Она превращает бит в вектор из 768 чисел, который сравнивается с 1685 треками 32 артистов из готового индекса **и с треками артистов из твоей базы**.
+- Треки артистов из базы приложение слушает само: после импорта в фоне качает звук с SoundCloud и Audius, считает вектор и сразу удаляет файл. Если у артиста звука нет (Last.fm, Bandcamp, Jamendo), берутся 30-секундные превью с Deezer. На артиста — до 6 самых прослушиваемых треков. Прогресс и пауза — в нижней строке окна.
+- Проверено честной метрикой (прячем весь альбом, а не один трек): нужный артист попадает в первую пятёрку в 75% случаев при случайном угадывании 3%. База из 30-секундных превью Deezer вместо архива даёт почти то же — 73.5% (подробности в `ml/README.md`).
 - Результат сохраняется в базу и не пересчитывается при каждом открытии карточки. Один анализ занимает 5–7 секунд.
-- Обратная сторона: в карточке артиста видно, какие из твоих битов ему подходят. Работает для тех артистов, которых знает модель, — про остальных она честно сообщает, что не знает их.
+- Обратная сторона: в карточке артиста видно, какие из твоих битов ему подходят. Работает для артистов из индекса и для тех, чьи треки уже послушаны.
 - Модель (208 МБ) не входит в репозиторий и скачивается один раз при первом анализе.
 
 Все данные, кроме скачивания модели, лежат в локальном файле SQLite на твоём компьютере — ничего никуда не загружается. Свежая установка стартует пустой, с приглушённым превью того, как выглядит заполненная таблица.
@@ -97,13 +98,17 @@ Services/Parsing              пять площадок за общим инте
    |
 Services/Ml                   похожесть бита на артистов
    +-- AudioDecoder           WAV/MP3 -> моно 24 кГц (свой windowed-sinc ресемплер)
-   +-- BeatSimilarityService  ONNX-модель MERT -> вектор -> косинусы -> топ-5
+   +-- MertEmbedder           звук -> сырой вектор MERT; одна ONNX-сессия на приложение
+   +-- BeatSimilarityService  вектор бита -> косинусы с индексом и базой -> топ-5
+   +-- TrackEmbeddingQueue    фон: трек артиста -> звук из сети -> вектор в базу
+   +-- LiveIndex              векторы треков из базы для сравнения
    +-- ModelStore             докачка модели при первом анализе
    |
 Слой данных (EF Core)
    +-- AppDbContext --> SQLite app.db
         |-- Artists
         |-- ArtistTracks       (треки, найденные парсером)
+        |-- TrackEmbeddings    (вектор звучания трека, 3 КБ; звук не хранится)
         |-- Beats
         |-- BeatSimilarities   (на кого похож бит: артист, ранг, проценты)
         +-- SentBeatsLog       (связи бит <-> артист: назначен / отправлен / дата)
@@ -200,10 +205,11 @@ A local-first tool that turns a folder of beats and a list of artists into a wor
 
 ### Similar artists (by sound)
 - The ANALYZE button on a beat card shows which artists from the database it resembles **by sound**, not by tags: `Osamason 87% · Summrs 81% · Autumn! 74%`.
-- Powered by MERT, a neural network trained on music. It turns a beat into a 768-number vector compared against 1685 tracks by 32 artists.
+- Powered by MERT, a neural network trained on music. It turns a beat into a 768-number vector compared against 1685 tracks by 32 artists from a bundled index **and against tracks of the artists in your database**.
+- The app listens to your artists' tracks by itself: after an import it streams audio from SoundCloud and Audius in the background, computes a vector and deletes the file right away. Artists with no audio (Last.fm, Bandcamp, Jamendo) fall back to 30-second Deezer previews. Up to 6 most-played tracks per artist. Progress and a pause button live in the status bar.
 - Validated with a strict metric (the whole album is hidden, not just one track): the right artist lands in the top five 75% of the time, against 3% for random guessing.
 - Results are stored in the database and not recomputed every time you open the card. One analysis takes 5-7 seconds.
-- The reverse view: an artist card shows which of your beats fit them. It works for artists the model knows — for everyone else it says so plainly instead of showing an empty list.
+- The reverse view: an artist card shows which of your beats fit them. It works for artists in the index and for those whose tracks have already been listened to.
 - The model (208 MB) is not part of the repository and is downloaded once on first analysis.
 
 Apart from the one-off model download, all data lives in a local SQLite file on your machine — nothing is uploaded anywhere. A fresh install starts empty, with a dimmed preview of how a filled table looks.
@@ -238,13 +244,17 @@ Services/Parsing              five platforms behind one IArtistSource interface
    |
 Services/Ml                   beat-to-artist similarity
    +-- AudioDecoder           WAV/MP3 -> mono 24 kHz (own windowed-sinc resampler)
-   +-- BeatSimilarityService  MERT ONNX model -> vector -> cosines -> top 5
+   +-- MertEmbedder           audio -> raw MERT vector; one ONNX session per app
+   +-- BeatSimilarityService  beat vector -> cosines vs index and database -> top 5
+   +-- TrackEmbeddingQueue    background: artist track -> audio from the web -> vector in DB
+   +-- LiveIndex              database track vectors used for matching
    +-- ModelStore             downloads the model on first analysis
    |
 Data layer (EF Core)
    +-- AppDbContext --> SQLite app.db
         |-- Artists
         |-- ArtistTracks       (tracks found by the parser)
+        |-- TrackEmbeddings    (a track's sound vector, 3 KB; audio is not stored)
         |-- Beats
         |-- BeatSimilarities   (which artists a beat resembles: rank, percent)
         +-- SentBeatsLog       (beat <-> artist links: assigned / sent / date)

@@ -1,4 +1,5 @@
 using System;
+using System.IO;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Text;
@@ -49,6 +50,38 @@ public static class ParsingHttp
     {
         var body = await GetStringAsync(url, ct);
         return JsonDocument.Parse(body);
+    }
+
+    /// <summary>
+    /// Дописывает ответ в поток, но не больше maxBytes: всё, что длиннее, бросает
+    /// исключение. Защита от часовых миксов — декодированный час звука занимает
+    /// сотни мегабайт памяти.
+    /// </summary>
+    public static async Task<long> CopyToAsync(
+        string url, Stream destination, long maxBytes, CancellationToken ct)
+    {
+        using var response = await Client.GetAsync(url, HttpCompletionOption.ResponseHeadersRead, ct);
+        response.EnsureSuccessStatusCode();
+
+        if (response.Content.Headers.ContentLength > maxBytes)
+            throw new InvalidDataException($"файл больше {maxBytes / (1024 * 1024)} МБ");
+
+        await using var source = await response.Content.ReadAsStreamAsync(ct);
+
+        var buffer = new byte[81920];
+        long total = 0;
+        int read;
+
+        while ((read = await source.ReadAsync(buffer, ct)) > 0)
+        {
+            total += read;
+            if (total > maxBytes)
+                throw new InvalidDataException($"файл больше {maxBytes / (1024 * 1024)} МБ");
+
+            await destination.WriteAsync(buffer.AsMemory(0, read), ct);
+        }
+
+        return total;
     }
 
     public static async Task<byte[]> GetBytesAsync(string url, CancellationToken ct)
