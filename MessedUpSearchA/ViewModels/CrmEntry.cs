@@ -13,7 +13,7 @@ public class CrmEntry
     public bool HasBeats => Beats.Count > 0;
 
     public int SentCount => Beats.FindAll(b => b.IsSent).Count;
-    public string SentCountLabel => $"{SentCount}/{Beats.Count} sent";
+    public string SentCountLabel => Services.Localization.Localizer.Instance.Format("Crm.SentCount", SentCount, Beats.Count);
 }
 
 public class CrmBeatItem

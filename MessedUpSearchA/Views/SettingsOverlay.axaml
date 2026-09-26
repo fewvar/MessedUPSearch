@@ -20,7 +20,7 @@
     <Grid>
         <Border Background="#B0000000" PointerPressed="OnBackdropClick"/>
 
-        <Border Classes="modal" Width="920" Height="700">
+        <Border Classes="modal" Width="920" Margin="0,40" MaxHeight="900" VerticalAlignment="Stretch">
             <Grid RowDefinitions="Auto,*">
 
                 <Grid Grid.Row="0" Margin="28,18,18,4">

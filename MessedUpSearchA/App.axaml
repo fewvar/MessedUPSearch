@@ -30,7 +30,15 @@
         <SolidColorBrush x:Key="OnSurface"       Color="#1A1A1A"/>
         <SolidColorBrush x:Key="OnSurfaceMuted"  Color="#55585B"/>
         <SolidColorBrush x:Key="OnBackground"    Color="#C8C8C8"/>
-        <SolidColorBrush x:Key="OnBackgroundDim" Color="#6E7174"/>
+        <!-- #6E7174 давал 4.15:1 на фоне — меньше нормы 4.5 для мелкого текста. -->
+        <SolidColorBrush x:Key="OnBackgroundDim" Color="#7E8184"/>
+        <!-- Ползунки Fluent по умолчанию системно-синие — единственный цвет посреди монохрома. -->
+        <SolidColorBrush x:Key="SliderTrackValueFill" Color="#C8C8C8"/>
+        <SolidColorBrush x:Key="SliderTrackValueFillPointerOver" Color="#E0E0E0"/>
+        <SolidColorBrush x:Key="SliderTrackValueFillPressed" Color="#E0E0E0"/>
+        <SolidColorBrush x:Key="SliderThumbBackground" Color="#C8C8C8"/>
+        <SolidColorBrush x:Key="SliderThumbBackgroundPointerOver" Color="#E0E0E0"/>
+        <SolidColorBrush x:Key="SliderThumbBackgroundPressed" Color="#FFFFFF"/>
         <SolidColorBrush x:Key="Divider"         Color="#26000000"/>
 
         <ImageBrush x:Key="BackgroundTexture"

@@ -26,6 +26,8 @@ public partial class ArtistsViewModel : ViewModelBase
 
     [ObservableProperty] private bool _hasTracks;
 
+    [ObservableProperty] private bool _hasAssignedBeats;
+
     /// <summary>Ник артиста в открытой карточке — подпись в плеере.</summary>
     public string EditingArtistName => EditNickname;
 
@@ -175,6 +177,7 @@ public partial class ArtistsViewModel : ViewModelBase
         EditAvatarPath = string.Empty;
         EditAvatarColor = "#888888";
         AssignedBeats.Clear();
+        HasAssignedBeats = false;
         LoadSimilarBeats(0, string.Empty);
         LoadTracks(0);
         IsEditorOpen = true;
@@ -315,6 +318,8 @@ public partial class ArtistsViewModel : ViewModelBase
         var beatIds = db.SentBeatsLog.Where(s => s.ArtistId == artistId).Select(s => s.BeatId).ToList();
         foreach (var beat in db.Beats.Where(b => beatIds.Contains(b.Id)).OrderBy(b => b.BeatName).ToList())
             AssignedBeats.Add(beat);
+
+        HasAssignedBeats = AssignedBeats.Count > 0;
     }
 
     [RelayCommand]

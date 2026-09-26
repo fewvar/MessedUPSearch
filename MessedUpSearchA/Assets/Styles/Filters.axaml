@@ -1,5 +1,6 @@
 <Styles xmlns="https://github.com/avaloniaui"
-        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:conv="using:MessedUpSearchA.Converters">
 
     <Style Selector="Border.filterBox">
         <Setter Property="Background" Value="#E8E8E8"/>
@@ -41,10 +42,14 @@
         <Setter Property="Background" Value="Transparent"/>
         <Setter Property="BorderBrush" Value="Transparent"/>
     </Style>
-    <Style Selector="TextBox.search /template/ TextBlock#PART_Watermark">
-        <Setter Property="Foreground" Value="#88000000"/>
-        <Setter Property="FontWeight" Value="Bold"/>
-        <Setter Property="LetterSpacing" Value="1"/>
+    <!-- Плейсхолдер красится свойством, а не через PART_Watermark: в Avalonia 12 такого
+         элемента в шаблоне нет, стиль молча не применялся и текст был почти белым (1.07:1). -->
+    <Style Selector="TextBox.search">
+        <Setter Property="PlaceholderForeground" Value="{StaticResource OnSurfaceMuted}"/>
+    </Style>
+    <!-- Fluent рисует плейсхолдер полупрозрачным: вместо 5.8:1 выходило 2.1:1. -->
+    <Style Selector="TextBox.search /template/ :is(Control)#PART_Placeholder">
+        <Setter Property="Opacity" Value="1"/>
     </Style>
 
     <Style Selector="TextBlock.searchIcon">
@@ -65,6 +70,12 @@
         <Setter Property="VerticalContentAlignment" Value="Center"/>
         <Setter Property="Cursor" Value="Hand"/>
         <Setter Property="PlaceholderForeground" Value="{StaticResource OnSurface}"/>
+        <!-- «ALL», «All time», «Common» — данные; на экране переводим, см. DataLabelConverter. -->
+        <Setter Property="ItemTemplate">
+            <DataTemplate x:DataType="x:String">
+                <TextBlock Text="{Binding Converter={x:Static conv:DataLabelConverter.Instance}}"/>
+            </DataTemplate>
+        </Setter>
         <Setter Property="Template">
             <ControlTemplate TargetType="ComboBox" x:CompileBindings="False">
                 <Grid x:Name="PART_Root" ColumnDefinitions="*,Auto">

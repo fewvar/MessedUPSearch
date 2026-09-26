@@ -12,6 +12,6 @@ public class ArtistTrackItem
     public string Title => Track.Title;
 
     public string Meta => Track.PlayCount > 0
-        ? $"{Track.SourcePlatform} · {Track.PlayCount:N0}"
+        ? $"{Track.SourcePlatform} · {Track.PlayCount.ToString("N0", Services.Localization.Localizer.Instance.Culture)}"
         : Track.SourcePlatform;
 }
