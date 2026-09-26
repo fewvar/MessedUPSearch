@@ -57,6 +57,18 @@ public partial class BeatsView : UserControl
         vm.ImportFolder(path);
     }
 
+    /// <summary>▶ в строке. Плеер живёт в главном окне — достаём его через окно.</summary>
+    private void OnPlayBeatClick(object? sender, RoutedEventArgs e)
+    {
+        if (sender is Control { DataContext: Beat beat } &&
+            TopLevel.GetTopLevel(this) is Window { DataContext: MainWindowViewModel main })
+        {
+            main.Player.PlayBeat(beat);
+        }
+
+        e.Handled = true;
+    }
+
     private void OnBeatRowClick(object? sender, PointerPressedEventArgs e)
     {
         if (sender is Control { DataContext: Beat beat } && DataContext is BeatsViewModel vm)

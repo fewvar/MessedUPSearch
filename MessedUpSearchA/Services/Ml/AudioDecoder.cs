@@ -23,6 +23,16 @@ public static class AudioDecoder
 
     public static float[] Decode(string filePath)
     {
+        var (samples, sampleRate) = DecodeNative(filePath);
+        return sampleRate == TargetSampleRate ? samples : Resample(samples, sampleRate, TargetSampleRate);
+    }
+
+    /// <summary>
+    /// Моно в родной частоте файла, без ресемплинга. Для волны в плеере этого
+    /// хватает, а ресемплинг — больше половины времени всего декодирования.
+    /// </summary>
+    public static (float[] Samples, int SampleRate) DecodeNative(string filePath)
+    {
         if (!File.Exists(filePath))
             throw new FileNotFoundException("файл не найден", filePath);
 
@@ -38,7 +48,7 @@ public static class AudioDecoder
         if (samples.Length == 0)
             throw new InvalidDataException("в файле нет звука");
 
-        return sampleRate == TargetSampleRate ? samples : Resample(samples, sampleRate, TargetSampleRate);
+        return (samples, sampleRate);
     }
 
     private static (float[] Samples, int SampleRate) ReadMp3(string path)

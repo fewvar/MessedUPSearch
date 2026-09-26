@@ -21,6 +21,14 @@ public partial class ArtistsViewModel : ViewModelBase
     /// <summary>Мои биты, отсортированные по тому, насколько они подходят артисту.</summary>
     public ObservableCollection<SimilarBeatItem> SimilarBeats { get; } = new();
 
+    /// <summary>Треки артиста из парсера — их можно послушать прямо из карточки.</summary>
+    public ObservableCollection<ArtistTrackItem> Tracks { get; } = new();
+
+    [ObservableProperty] private bool _hasTracks;
+
+    /// <summary>Ник артиста в открытой карточке — подпись в плеере.</summary>
+    public string EditingArtistName => EditNickname;
+
     public IReadOnlyList<string> CrmStatusOptions { get; } =
         new[] { "", "NO REPLY", "OK", "POSTED FREE" };
 
@@ -168,6 +176,7 @@ public partial class ArtistsViewModel : ViewModelBase
         EditAvatarColor = "#888888";
         AssignedBeats.Clear();
         LoadSimilarBeats(0, string.Empty);
+        LoadTracks(0);
         IsEditorOpen = true;
     }
 
@@ -188,6 +197,7 @@ public partial class ArtistsViewModel : ViewModelBase
         EditAvatarPath = artist.AvatarPath;
         EditAvatarColor = string.IsNullOrWhiteSpace(artist.AvatarColor) ? "#888888" : artist.AvatarColor;
         LoadAssignedBeats(artist.Id);
+        LoadTracks(artist.Id);
         LoadSimilarBeats(artist.Id, artist.Nickname);
         IsEditorOpen = true;
     }
@@ -274,6 +284,29 @@ public partial class ArtistsViewModel : ViewModelBase
             .ToLowerInvariant()
             .Where(char.IsLetterOrDigit)
             .ToArray());
+
+    /// <summary>Сначала самые прослушиваемые — их и слушают первыми.</summary>
+    private void LoadTracks(int artistId)
+    {
+        Tracks.Clear();
+        HasTracks = false;
+
+        if (artistId == 0)
+            return;
+
+        using var db = new AppDbContext();
+
+        var tracks = db.ArtistTracks
+            .Where(t => t.ArtistId == artistId)
+            .OrderByDescending(t => t.PlayCount)
+            .Take(30)
+            .ToList();
+
+        foreach (var track in tracks)
+            Tracks.Add(new ArtistTrackItem(track));
+
+        HasTracks = Tracks.Count > 0;
+    }
 
     private void LoadAssignedBeats(int artistId)
     {

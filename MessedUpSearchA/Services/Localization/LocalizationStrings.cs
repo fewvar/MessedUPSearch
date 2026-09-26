@@ -26,6 +26,12 @@ public static class LocalizationStrings
         ["Status.EmbedFailed"] = "TRACK LISTENING STOPPED: {0}",
         ["Status.EmbedPause"] = "PAUSE",
         ["Status.EmbedResume"] = "RESUME",
+        ["Player.Loading"] = "Loading…",
+        ["Player.NoFile"] = "File not found — it was moved or deleted",
+        ["Player.NoAudio"] = "no audio available for this track",
+        ["Player.Failed"] = "Can't play: {0}",
+        ["ArtistEditor.Tracks"] = "TRACKS",
+        ["ArtistEditor.NoTracks"] = "No tracks yet — they appear after the parser imports the artist.",
         ["Parser.Idle"] = "Idle",
 
         // Кнопки на панелях
@@ -204,6 +210,12 @@ public static class LocalizationStrings
         ["Status.EmbedFailed"] = "ПРОСЛУШКА ОСТАНОВЛЕНА: {0}",
         ["Status.EmbedPause"] = "ПАУЗА",
         ["Status.EmbedResume"] = "ДАЛЬШЕ",
+        ["Player.Loading"] = "Загрузка…",
+        ["Player.NoFile"] = "Файл не найден — его перенесли или удалили",
+        ["Player.NoAudio"] = "у этого трека нет звука",
+        ["Player.Failed"] = "Не играет: {0}",
+        ["ArtistEditor.Tracks"] = "ТРЕКИ",
+        ["ArtistEditor.NoTracks"] = "Треков пока нет — они появятся после импорта артиста парсером.",
         ["Parser.Idle"] = "Ожидание",
 
         // Кнопки на панелях

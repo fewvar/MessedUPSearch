@@ -17,6 +17,8 @@
 - Массовый импорт целой папки разом — все WAV/MP3 заливаются одним действием, повторный импорт не плодит дубликаты (дедупликация по пути файла).
 - Статус бита: «потенциал», «фри» или «продан» (для проданного указывается тип лицензии). Статус подсвечивается цветным маркером в таблице.
 - Редактирование и удаление по клику на строку.
+- Встроенный плеер: ▶ в строке бита, панель над строкой состояния с пиксельной волной (клик — перемотка), ⏮ ⏭ и автопереход по отфильтрованному списку, громкость запоминается. Пробел — пауза, ←/→ — ±5 секунд.
+- В карточке артиста — его треки с площадок, их можно послушать тут же, не открывая SoundCloud.
 
 ### Артисты
 - Ручное добавление: никнейм, ссылки (SoundCloud / Instagram / Spotify), язык, жанровые теги, прослушивания.
@@ -76,6 +78,7 @@
 | Язык | C# / .NET 10 |
 | MVVM | CommunityToolkit.Mvvm (генерация свойств и команд) |
 | Данные | SQLite + Entity Framework Core 10 (code-first миграции) |
+| Звук | SoundFlow (miniaudio) — воспроизведение |
 | Настройки | локальный `settings.json` |
 
 ## Архитектура
@@ -163,6 +166,8 @@ A local-first tool that turns a folder of beats and a list of artists into a wor
 - Bulk-import a whole folder at once — every WAV/MP3 is added in one action, and re-importing doesn't create duplicates (deduplicated by file path).
 - Beat status: potential, free, or sold (sold ones carry a license type). Status is shown as a colored marker in the table.
 - Edit and delete by clicking a row.
+- Built-in player: ▶ on each beat row, a bar above the status line with a pixel waveform (click to seek), ⏮ ⏭ and auto-advance through the filtered list, remembered volume. Space pauses, ←/→ seek ±5 seconds.
+- An artist card lists their tracks from the platforms, playable right there without opening SoundCloud.
 
 ### Artists
 - Manual entry: nickname, links (SoundCloud / Instagram / Spotify), language, genre tags, plays.
@@ -222,6 +227,7 @@ Apart from the one-off model download, all data lives in a local SQLite file on 
 | Language | C# / .NET 10 |
 | MVVM | CommunityToolkit.Mvvm (source-generated properties & commands) |
 | Data | SQLite + Entity Framework Core 10 (code-first migrations) |
+| Audio | SoundFlow (miniaudio) — playback |
 | Settings | local `settings.json` |
 
 ## Architecture

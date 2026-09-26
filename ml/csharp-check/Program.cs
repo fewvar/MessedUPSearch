@@ -7,6 +7,35 @@ using MessedUpSearchA.Services.Parsing.Sources;
 if (args.Length >= 1 && args[0] == "online")
     return await Online(args[1..]);
 
+if (args.Length >= 2 && args[0] == "play")
+    return await Play(args[1]);
+
+// Где уходит время на один файл: декодирование с ресемплингом или сама модель.
+if (args.Length >= 3 && args[0] == "time")
+{
+    var sw = Stopwatch.StartNew();
+    using var timed = new MertEmbedder(args[1]);
+    Console.WriteLine($"LOAD\t{sw.ElapsedMilliseconds} мс");
+
+    foreach (var path in args.Skip(2))
+    {
+        sw.Restart();
+        AudioDecoder.DecodeNative(path);
+        var native = sw.ElapsedMilliseconds;
+
+        sw.Restart();
+        var samples = AudioDecoder.Decode(path);
+        var decode = sw.ElapsedMilliseconds;
+
+        sw.Restart();
+        timed.EmbedRaw(samples);
+        Console.WriteLine($"FILE\t{Path.GetFileName(path)}\t{samples.Length / AudioDecoder.TargetSampleRate} с звука\t" +
+                          $"без ресемплинга {native} мс\tс ресемплингом {decode} мс\tMERT {sw.ElapsedMilliseconds} мс");
+    }
+
+    return 0;
+}
+
 // Печатает эмбеддинг и топ-5 для каждого переданного файла — в том же формате,
 // в каком их печатает Python-эталон, чтобы сравнение было построчным.
 if (args.Length < 3)
@@ -144,5 +173,44 @@ static async Task<int> Online(string[] args)
 
     Console.WriteLine(string.Format(CultureInfo.InvariantCulture,
         "DONE\t{0} треков\tMERT {1:F2} с на трек", embedded, embedded == 0 ? 0 : embedTime.Elapsed.TotalSeconds / embedded));
+    return 0;
+}
+
+// Спайк плеера: проверка, что SoundFlow с нативом miniaudio живёт на этой машине.
+static async Task<int> Play(string path)
+{
+    using var engine = new SoundFlow.Backends.MiniAudio.MiniAudioEngine();
+    var format = SoundFlow.Structs.AudioFormat.DvdHq;
+    using var device = engine.InitializePlaybackDevice(null, format);
+
+    await using var file = File.OpenRead(path);
+    using var provider = new SoundFlow.Providers.StreamDataProvider(engine, format, file);
+    using var player = new SoundFlow.Components.SoundPlayer(engine, format, provider);
+
+    var ended = new TaskCompletionSource();
+    player.PlaybackEnded += (_, _) => ended.TrySetResult();
+
+    device.MasterMixer.AddComponent(player);
+    player.Volume = 0.3f;
+    device.Start();
+    player.Play();
+
+    void Report(string what) =>
+        Console.WriteLine($"{what,-12} state={player.State} time={player.Time:F2} dur={player.Duration:F2} vol={player.Volume}");
+
+    await Task.Delay(1500); Report("играет");
+    player.Seek(TimeSpan.FromSeconds(60), SeekOrigin.Begin);
+    await Task.Delay(300); Report("seek 60");
+    player.Volume = 0.3f;
+    player.Pause(); var paused = player.Time;
+    await Task.Delay(800); Report("пауза");
+    Console.WriteLine($"пауза держит позицию: {Math.Abs(player.Time - paused) < 0.05}");
+    player.Play();
+    player.Seek(TimeSpan.FromSeconds(player.Duration - 2), SeekOrigin.Begin);
+    var finished = await Task.WhenAny(ended.Task, Task.Delay(6000)) == ended.Task;
+    Report("конец");
+    Console.WriteLine($"PlaybackEnded пришёл: {finished}");
+
+    device.Stop();
     return 0;
 }

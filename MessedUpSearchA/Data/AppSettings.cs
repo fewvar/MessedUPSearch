@@ -23,6 +23,9 @@ public class AppSettings
     /// <summary>Писать ли прогоны парсера в app.log рядом с базой.</summary>
     public bool EnableParserLogs { get; set; } = true;
 
+    /// <summary>Громкость плеера, 0..1.</summary>
+    public double PlayerVolume { get; set; } = 0.8;
+
     public static string DefaultMediaFolder => Path.Combine(
         Environment.GetFolderPath(Environment.SpecialFolder.UserProfile),
         "Downloads", "MessedUpSearch");

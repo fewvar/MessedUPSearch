@@ -421,6 +421,39 @@
                     </Border>
                 </StackPanel>
 
+                <StackPanel Spacing="4">
+                    <TextBlock Classes="filterLabel" Text="{loc:Tr ArtistEditor.Tracks}"/>
+
+                    <TextBlock Text="{loc:Tr ArtistEditor.NoTracks}"
+                               IsVisible="{Binding !HasTracks}"
+                               FontSize="11" TextWrapping="Wrap"
+                               Foreground="{StaticResource OnBackgroundDim}"/>
+
+                    <Border BorderBrush="#33FFFFFF" BorderThickness="1" CornerRadius="6"
+                            Padding="6,4" IsVisible="{Binding HasTracks}">
+                        <ScrollViewer MaxHeight="150" VerticalScrollBarVisibility="Auto">
+                            <ItemsControl ItemsSource="{Binding Tracks}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate DataType="vm:ArtistTrackItem">
+                                        <Grid ColumnDefinitions="Auto,*,Auto">
+                                            <Button Grid.Column="0" Classes="playerButton" Click="OnPlayTrackClick">
+                                                <Path Data="M0,0 L8,4.5 L0,9 Z"/>
+                                            </Button>
+                                            <TextBlock Grid.Column="1" Text="{Binding Title}"
+                                                       FontSize="13" Margin="4,0"
+                                                       VerticalAlignment="Center"
+                                                       TextTrimming="CharacterEllipsis"/>
+                                            <TextBlock Grid.Column="2" Text="{Binding Meta}"
+                                                       FontSize="11" VerticalAlignment="Center"
+                                                       Foreground="{StaticResource OnBackgroundDim}"/>
+                                        </Grid>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </ScrollViewer>
+                    </Border>
+                </StackPanel>
+
                 <Grid Margin="0,8,0,0" ColumnDefinitions="Auto,*,Auto">
                     <Button Grid.Column="0" Classes="action" Content="{loc:Tr Buttons.Delete}"
                             HorizontalAlignment="Left"

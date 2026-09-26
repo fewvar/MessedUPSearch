@@ -38,6 +38,12 @@ public partial class BeatsViewModel : ViewModelBase
 
     [ObservableProperty] private bool _isPreviewVisible;
 
+    /// <summary>Какой бит сейчас в плеере — его строка подсвечивается. null — никакой.</summary>
+    [ObservableProperty] private int? _playingBeatId;
+
+    /// <summary>Играет ли плеер — чтобы в строке играющего бита был значок паузы, а не ▶.</summary>
+    [ObservableProperty] private bool _isPlayerPlaying;
+
     private readonly List<Beat> _allBeats = new();
 
     partial void OnFilterTypeChanged(string value) => ApplyFilter();

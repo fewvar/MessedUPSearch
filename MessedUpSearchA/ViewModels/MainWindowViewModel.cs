@@ -23,6 +23,7 @@ public partial class MainWindowViewModel : ViewModelBase
     private readonly ParserViewModel _parserVm = new();
 
     public BeatsViewModel BeatsVm => _beatsVm;
+    public PlayerViewModel Player { get; }
     public ArtistsViewModel ArtistsVm => _artistsVm;
     public ParserViewModel ParserVm => _parserVm;
 
@@ -65,6 +66,17 @@ public partial class MainWindowViewModel : ViewModelBase
     public MainWindowViewModel()
     {
         _currentViewModel = _beatsVm;
+
+        Player = new PlayerViewModel(_settings)
+        {
+            BeatListProvider = () => _beatsVm.Beats.ToList()
+        };
+        Player.PlayingBeatChanged += id => _beatsVm.PlayingBeatId = id;
+        Player.PropertyChanged += (_, e) =>
+        {
+            if (e.PropertyName == nameof(PlayerViewModel.IsPlaying))
+                _beatsVm.IsPlayerPlaying = Player.IsPlaying;
+        };
         _reminderDays = Math.Clamp(_settings.ReminderDays, 1, 14);
 
         _mediaFolder = _settings.ResolveMediaFolder();

@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Interactivity;
@@ -36,6 +37,20 @@ public partial class ArtistsView : UserControl
     private void OnAddArtistClick(object? sender, RoutedEventArgs e)
     {
         (DataContext as ArtistsViewModel)?.BeginAddArtist();
+    }
+
+    /// <summary>▶ у трека: плейлист — все треки из карточки, начиная с нажатого.</summary>
+    private void OnPlayTrackClick(object? sender, RoutedEventArgs e)
+    {
+        if (sender is not Control { DataContext: ArtistTrackItem item } ||
+            DataContext is not ArtistsViewModel vm ||
+            TopLevel.GetTopLevel(this) is not Window { DataContext: MainWindowViewModel main })
+        {
+            return;
+        }
+
+        var tracks = vm.Tracks.Select(t => t.Track).ToList();
+        main.Player.PlayArtistTracks(tracks, tracks.IndexOf(item.Track), vm.EditingArtistName);
     }
 
     private void OnArtistRowClick(object? sender, PointerPressedEventArgs e)
