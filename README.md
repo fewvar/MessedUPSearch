@@ -72,9 +72,9 @@
 | Слой | Технология |
 | :--- | :--- |
 | UI | Avalonia 12 (XAML), FluentTheme, MVVM |
-| Язык | C# / .NET 9 |
+| Язык | C# / .NET 10 |
 | MVVM | CommunityToolkit.Mvvm (генерация свойств и команд) |
-| Данные | SQLite + Entity Framework Core 9 (code-first миграции) |
+| Данные | SQLite + Entity Framework Core 10 (code-first миграции) |
 | Настройки | локальный `settings.json` |
 
 ## Архитектура
@@ -213,9 +213,9 @@ Apart from the one-off model download, all data lives in a local SQLite file on 
 | Layer | Tech |
 | :--- | :--- |
 | UI | Avalonia 12 (XAML), FluentTheme, MVVM |
-| Language | C# / .NET 9 |
+| Language | C# / .NET 10 |
 | MVVM | CommunityToolkit.Mvvm (source-generated properties & commands) |
-| Data | SQLite + Entity Framework Core 9 (code-first migrations) |
+| Data | SQLite + Entity Framework Core 10 (code-first migrations) |
 | Settings | local `settings.json` |
 
 ## Architecture
