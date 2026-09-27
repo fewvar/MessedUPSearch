@@ -57,7 +57,8 @@ public static class Cli
                 {
                     using var store = db();
                     Analysis.Query(store, Option(args, "--model") ?? DefaultModel, Option(args, "--index") ?? DefaultIndex,
-                        args.Skip(1).Where(a => !a.StartsWith("--") && File.Exists(a)));
+                        args.Skip(1).Where(a => !a.StartsWith("--") && File.Exists(a)),
+                        args.Contains("--no-hubs") ? null : Path.Combine(Root, "MessedUpSearchA", "Assets", "Models", "background_beats.bin"));
                     return 0;
                 }
                 case "export":
@@ -80,6 +81,12 @@ public static class Cli
                     ShowProducers(store);
                     return 0;
                 }
+                case "typebeats":
+                    await TypeBeats.RunAsync(Option(args, "--index") ?? DefaultIndex,
+                        Path.Combine(Root, "ml", "scripts", "deezer_aliases.tsv"),
+                        Option(args, "--out") ?? Path.Combine(DataDir, "typebeats"),
+                        int.Parse(Option(args, "--per-artist") ?? "8"), cts.Token);
+                    return 0;
                 case "slice-test":
                     return await SliceTestAsync(args[1], args[2..]);
                 default:
@@ -102,6 +109,7 @@ public static class Cli
           query      бит.mp3 ...                                топ-10 для битов — проверить ушами
           producers                                             кого отсёк фильтр и почему
           refilter                                              пересчитать фильтр по найденным
+          typebeats  [--per-artist 8]                           линейка: «<артист> type beat» по индексу друга
           export     [--out путь] [--min-vectors 2]             собрать artists_index_v2.bin
           общее:     [--db ml/data/crawl.db]
         """;

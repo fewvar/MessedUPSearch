@@ -16,6 +16,7 @@
     <Compile Include="../../MessedUpSearchA/Services/Ml/BeatSimilarityService.cs" Link="BeatSimilarityService.cs" />
     <Compile Include="../../MessedUpSearchA/Services/Ml/MertEmbedder.cs" Link="MertEmbedder.cs" />
     <Compile Include="../../MessedUpSearchA/Services/Ml/TargetIndex.cs" Link="TargetIndex.cs" />
+    <Compile Include="../../MessedUpSearchA/Services/Ml/HubCorrection.cs" Link="HubCorrection.cs" />
     <Compile Include="../../MessedUpSearchA/Services/Localization/Localizer.cs" Link="Localizer.cs" />
     <Compile Include="../../MessedUpSearchA/Services/Localization/LocalizationStrings.cs" Link="LocalizationStrings.cs" />
     <!-- Для режима online: качает превью Deezer тем же кодом, что и приложение. -->

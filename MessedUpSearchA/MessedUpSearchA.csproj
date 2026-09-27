@@ -16,6 +16,7 @@
              Avalonia: так его можно пересобрать скриптом из ml/ и подменить,
              не пересобирая приложение. -->
         <Content Include="Assets/Models/artist_index.bin" CopyToOutputDirectory="PreserveNewest" />
+        <Content Include="Assets/Models/background_beats.bin" CopyToOutputDirectory="PreserveNewest" />
     </ItemGroup>
 
     <ItemGroup>

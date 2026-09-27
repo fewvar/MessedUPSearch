@@ -116,42 +116,41 @@ public static class Analysis
         Console.WriteLine($"\nпо площадкам: {string.Join(", ", platforms)}");
     }
 
-    /// <summary>Биты -> топ-10 доступных артистов и топ-3 ориентира. Для проверки ушами.</summary>
-    public static void Query(CrawlDb db, string modelPath, string indexPath, IEnumerable<string> beats)
+    /// <summary>
+    /// Биты -> «звучит как» и топ-10 доступных артистов — тем же AnalyzeAll, что в приложении,
+    /// поэтому выдача здесь ровно та, которую увидит пользователь.
+    /// </summary>
+    public static void Query(CrawlDb db, string modelPath, string indexPath, IEnumerable<string> beats, string? backgroundPath)
     {
-        using var references = new BeatSimilarityService(modelPath, indexPath);
-        var center = references.Center;
-        var artists = LoadArtists(db, center);
-        var embedder = new MertEmbedder(modelPath);
+        using var service = new BeatSimilarityService(modelPath, indexPath);
+        var index = BuildIndex(db, service.Center);
+        var hubs = backgroundPath is null ? null : HubCorrection.TryLoad(backgroundPath, service.Center);
+        var urls = new Dictionary<string, string>();
+        foreach (var artist in index.Artists)
+            urls[artist.Nickname] = artist.SourceUrl;
+
+        Console.WriteLine(hubs is null ? "поправка на хабы: выключена" : "поправка на хабы: включена");
 
         foreach (var beat in beats)
         {
-            var vector = MertEmbedder.Centered(embedder.EmbedRaw(AudioDecoder.Decode(beat)), center);
-            var refs = references.Analyze(beat, top: 3);
+            var result = service.AnalyzeAll(beat, index, [], new Dictionary<string, int>(), hubs: hubs);
 
             Console.WriteLine($"\n== {Path.GetFileName(beat)}");
-            Console.WriteLine($"   звучит как: {string.Join(" · ", refs.Select(r => $"{r.Artist} {r.Percent}%"))}");
+            Console.WriteLine($"   звучит как: {string.Join(" · ", result.References.Select(r => $"{r.Artist} {r.Percent}%"))}");
 
-            var ranked = artists
-                .Select(a => (Artist: a, Score: a.Vectors.Select(v => Dot(vector, v)).OrderByDescending(s => s).Take(TopTracks).Average()))
-                .OrderByDescending(x => x.Score)
-                .Take(10);
-
-            foreach (var (artist, score) in ranked)
+            foreach (var match in result.Targets)
             {
                 Console.WriteLine(string.Format(CultureInfo.InvariantCulture,
-                    "   {0,-24} {1,6:F3}  {2,9:N0} прослуш.  {3,-10} {4}",
-                    Cut(artist.Nickname, 24), score, artist.Plays, artist.Genre, artist.Url));
+                    "   {0,-24} {1,6:F3} {2,4}%  {3,9:N0} прослуш.  {4}",
+                    Cut(match.Artist, 24), match.Similarity, match.Percent, match.Plays, match.SourceUrl));
             }
         }
     }
 
-    public static void Export(CrawlDb db, string indexPath, string outPath, int minVectors)
+    private static TargetIndex BuildIndex(CrawlDb db, float[] center)
     {
-        var center = ArtistIndex.Load(indexPath).Center;
-        var artists = LoadArtists(db, center).Where(a => a.Vectors.Count >= minVectors).ToList();
-
-        var index = new TargetIndex
+        var artists = LoadArtists(db, center);
+        return new TargetIndex
         {
             Center = center,
             Artists = artists.Select(a => new TargetArtist
@@ -160,6 +159,17 @@ public static class Analysis
                 AvatarUrl = a.Avatar, Genre = a.Genre, Plays = a.Plays, Vectors = a.Vectors.ToArray(),
                 TopTrackId = a.TopTrack.Id, TopTrackUrl = a.TopTrack.Url, TopTrackTitle = a.TopTrack.Title
             }).ToList()
+        };
+    }
+
+    public static void Export(CrawlDb db, string indexPath, string outPath, int minVectors)
+    {
+        var center = ArtistIndex.Load(indexPath).Center;
+        var full = BuildIndex(db, center);
+        var index = new TargetIndex
+        {
+            Center = center,
+            Artists = full.Artists.Where(a => a.Vectors.Length >= minVectors).ToList()
         };
 
         index.Save(outPath);

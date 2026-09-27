@@ -303,7 +303,8 @@ public partial class BeatsViewModel : ViewModelBase
                 // Сессия общая с фоновой очередью — вторая копия модели заняла бы ещё сотни МБ.
                 using var service = new BeatSimilarityService(
                     MertEmbedder.GetShared(ModelStore.ModelPath), ModelStore.IndexPath);
-                return service.AnalyzeAll(path, IndexStore.TryLoad(), LiveIndex.Load(), UserArtistIdsByUrl(), ct: ct);
+                var hubs = HubCorrection.TryLoad(ModelStore.BackgroundPath, service.Center);
+                return service.AnalyzeAll(path, IndexStore.TryLoad(), LiveIndex.Load(), UserArtistIdsByUrl(), ct: ct, hubs: hubs);
             }, ct);
 
             if (_editingId == 0)

@@ -118,17 +118,13 @@ public class BeatSimilarityService : IDisposable
         IReadOnlyDictionary<string, int> userArtistIdsByUrl,
         int referenceTop = 3,
         int targetTop = 10,
-        CancellationToken ct = default)
+        CancellationToken ct = default,
+        HubCorrection? hubs = null)
     {
         var raw = _embedder.EmbedRaw(AudioDecoder.Decode(audioPath), ct);
         var embedding = MertEmbedder.Centered(raw, _index.Center);
 
-        var references = Rank(embedding, referenceTop, [])
-            .Select(m => new ArtistMatch
-            {
-                Artist = m.Artist, Kind = MatchKind.Reference, Similarity = m.Similarity, Percent = m.Percent
-            })
-            .ToArray();
+        var references = RankReferences(embedding, referenceTop, hubs);
 
         var candidates = new Dictionary<string, Candidate>();
         var info = new Dictionary<string, TargetArtist>();
@@ -145,7 +141,7 @@ public class BeatSimilarityService : IDisposable
                 info[key] = artist;
 
                 foreach (var vector in artist.Vectors)
-                    candidate.Add(Dot(embedding, vector));
+                    candidate.Add(Dot(embedding, vector), vector);
             }
         }
 
@@ -155,12 +151,13 @@ public class BeatSimilarityService : IDisposable
                 continue;
 
             var candidate = GetCandidate(candidates, $"db:{id}", track.Artist, id);
-            candidate.Add(Dot(embedding, MertEmbedder.Centered(track.RawVector, _index.Center)));
+            var vector = MertEmbedder.Centered(track.RawVector, _index.Center);
+            candidate.Add(Dot(embedding, vector), vector);
         }
 
         var targetMatches = candidates
             .Where(c => c.Value.Count > 0)
-            .Select(c => (Key: c.Key, Candidate: c.Value, Score: c.Value.Score()))
+            .Select(c => (Key: c.Key, Candidate: c.Value, Score: Adjusted(c.Key, c.Value, hubs)))
             .OrderByDescending(c => c.Score)
             .Take(targetTop)
             .Select(c =>
@@ -173,7 +170,7 @@ public class BeatSimilarityService : IDisposable
                     ArtistId = c.Candidate.ArtistId,
                     Kind = MatchKind.Target,
                     Similarity = c.Score,
-                    Percent = ToPercent(c.Score),
+                    Percent = hubs is null ? ToPercent(c.Score) : HubCorrection.ToPercent(c.Score),
                     Platform = artist?.Platform ?? string.Empty,
                     SourceId = artist?.SourceId ?? string.Empty,
                     SourceUrl = artist?.SourceUrl ?? string.Empty,
@@ -187,6 +184,68 @@ public class BeatSimilarityService : IDisposable
             .ToArray();
 
         return new SimilarityResult { References = references, Targets = targetMatches };
+    }
+
+    /// <summary>«Звучит как» — артисты индекса друга, с той же поправкой на хабы, что и цели.</summary>
+    private ArtistMatch[] RankReferences(float[] embedding, int top, HubCorrection? hubs)
+    {
+        if (hubs is null)
+        {
+            return Rank(embedding, top, [])
+                .Select(m => new ArtistMatch
+                {
+                    Artist = m.Artist, Kind = MatchKind.Reference, Similarity = m.Similarity, Percent = m.Percent
+                })
+                .ToArray();
+        }
+
+        var groups = new Dictionary<string, Candidate>();
+        foreach (var (artistId, trackIds) in _tracksByArtist)
+        {
+            var name = _index.ArtistNames[artistId];
+            var candidate = GetCandidate(groups, $"ref:{name}", name, null);
+            foreach (var trackId in trackIds)
+                candidate.Add(Dot(embedding, _index.Vectors[trackId]), _index.Vectors[trackId]);
+        }
+
+        return groups
+            .Select(g => (g.Value.Name, Score: Adjusted(g.Key, g.Value, hubs)))
+            .OrderByDescending(g => g.Score)
+            .Take(top)
+            .Select(g => new ArtistMatch
+            {
+                Artist = g.Name, Kind = MatchKind.Reference, Similarity = g.Score, Percent = HubCorrection.ToPercent(g.Score)
+            })
+            .ToArray();
+    }
+
+    /// <summary>Оценка артиста; с поправкой — минус его средняя оценка по фоновым битам.</summary>
+    private static float Adjusted(string key, Candidate candidate, HubCorrection? hubs) =>
+        hubs is null
+            ? candidate.Score()
+            : candidate.Score() - hubs.Bias(key, candidate.Vectors, TopTracksScore);
+
+    /// <summary>Та же оценка «бит -> артист», что и Candidate.Score, но для произвольного вектора.</summary>
+    private static float TopTracksScore(float[] beat, IReadOnlyList<float[]> vectors)
+    {
+        var best = new float[Math.Min(TopTracksPerArtist, vectors.Count)];
+        Array.Fill(best, float.NegativeInfinity);
+
+        foreach (var vector in vectors)
+        {
+            var similarity = Dot(beat, vector);
+            for (var slot = 0; slot < best.Length; slot++)
+            {
+                if (similarity <= best[slot])
+                    continue;
+                for (var shift = best.Length - 1; shift > slot; shift--)
+                    best[shift] = best[shift - 1];
+                best[slot] = similarity;
+                break;
+            }
+        }
+
+        return best.Average();
     }
 
     private IReadOnlyList<ArtistMatch> Rank(float[] embedding, int top, IReadOnlyList<ReferenceTrack> extraTracks)
@@ -254,6 +313,15 @@ public class BeatSimilarityService : IDisposable
         public string Name { get; init; } = string.Empty;
         public int? ArtistId { get; set; }
         public int Count { get; private set; }
+
+        /// <summary>Векторы треков — нужны только поправке на хабы; без неё не копятся.</summary>
+        public List<float[]> Vectors { get; } = new();
+
+        public void Add(float similarity, float[] vector)
+        {
+            Vectors.Add(vector);
+            Add(similarity);
+        }
 
         public void Add(float similarity)
         {

@@ -51,6 +51,10 @@ public static class ModelStore
 
     public static bool IsIndexReady() => File.Exists(IndexPath);
 
+    /// <summary>Фоновые биты для поправки на хабы — тоже едут с приложением.</summary>
+    public static string BackgroundPath =>
+        Path.Combine(AppContext.BaseDirectory, "Assets", "Models", HubCorrection.FileName);
+
     /// <summary>
     /// Качает модель, сообщая прогресс в долях. Файл пишется во временный и
     /// переименовывается только целиком — так оборванная закачка не выглядит удачной.
