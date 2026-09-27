@@ -27,6 +27,8 @@ public static class Cli
 
         // --no-vocal выключает фильтр голоса (например, чтобы сравнить выдачу с ним и без).
         Analysis.VocalPath = args.Contains("--no-vocal") ? string.Empty : Path.Combine(DataDir, "vocal_lr.json");
+        Analysis.ReferencesPath = Path.Combine(Root, "MessedUpSearchA", "Assets", "Models", "references_v2.bin");
+        Analysis.FriendIndexPath = DefaultIndex;
 
         try
         {
@@ -37,6 +39,22 @@ public static class Cli
                     using var store = db();
                     var terms = Option(args, "--terms")?.Split(',', StringSplitOptions.TrimEntries) ?? Discover.DefaultTerms;
                     await Discover.RunAsync(store, int.Parse(Option(args, "--target") ?? "200"), terms, cts.Token);
+                    return 0;
+                }
+                case "listen" when args.Contains("--slices-only"):
+                {
+                    using var store = db();
+                    await Listen.SlicesOnlyAsync(store, Option(args, "--queue") ?? Path.Combine(DataDir, "slices"),
+                        int.Parse(Option(args, "--tracks") ?? "4"), cts.Token);
+                    return 0;
+                }
+                case "reset-listen":
+                {
+                    // Перейти на новый конвейер: всё, что слушал старый (C#, без разделения), —
+                    // заново. Старые векторы остаются в таблице vectors.
+                    using var store = db();
+                    var reset = store.Execute("UPDATE tracks SET status = 'new', error = '' WHERE status IN ('done', 'sliced')");
+                    Console.WriteLine($"сброшено треков: {reset}");
                     return 0;
                 }
                 case "listen":
@@ -50,7 +68,7 @@ public static class Cli
                 case "evaluate":
                 {
                     using var store = db();
-                    Analysis.Evaluate(store, Option(args, "--index") ?? DefaultIndex);
+                    Analysis.Evaluate(store);
                     return 0;
                 }
                 case "query":
@@ -64,7 +82,7 @@ public static class Cli
                 case "export":
                 {
                     using var store = db();
-                    Analysis.Export(store, Option(args, "--index") ?? DefaultIndex,
+                    Analysis.Export(store,
                         Option(args, "--out") ?? Path.Combine(DataDir, "artists_index_v2.bin"),
                         int.Parse(Option(args, "--min-vectors") ?? "2"));
                     return 0;
@@ -105,6 +123,8 @@ public static class Cli
           discover   [--target 200] [--terms rage,plugg,...]   найти рэперов
           listen     [--tracks 4] [--model путь]                послушать их треки
           listen     --negatives 150                            по треку от явных битмейкеров — для классификатора голоса
+          listen     --slices-only [--tracks 4]                 новый конвейер: куски в очередь для separate_embed.py
+          reset-listen                                          переслушать всё новым конвейером (с разделением вокала)
           evaluate   [--index artist_index.bin]                 качество: leave-one-track-out
           query      бит.mp3 ...                                топ-10 для битов — проверить ушами
           producers                                             кого отсёк фильтр и почему

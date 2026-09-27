@@ -147,26 +147,6 @@
                                FontSize="11" LetterSpacing="2"
                                Foreground="{StaticResource OnBackgroundDim}"/>
 
-                    <TextBlock Text="•" FontSize="11" VerticalAlignment="Center"
-                               Foreground="{StaticResource OnBackgroundDim}"
-                               IsVisible="{Binding EmbeddingStatus, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
-
-                    <TextBlock Text="{Binding EmbeddingStatus}"
-                               VerticalAlignment="Center" MaxWidth="420"
-                               TextTrimming="CharacterEllipsis"
-                               ToolTip.Tip="{Binding EmbeddingStatus}"
-                               FontFamily="{StaticResource HeadingFont}"
-                               FontSize="11" LetterSpacing="2"
-                               Foreground="{StaticResource OnBackgroundDim}"/>
-
-                    <Button Classes="statusButton"
-                            Content="{loc:Tr Status.EmbedPause}"
-                            IsVisible="{Binding CanPauseEmbedding}"
-                            Command="{Binding PauseEmbeddingCommand}"/>
-                    <Button Classes="statusButton"
-                            Content="{loc:Tr Status.EmbedResume}"
-                            IsVisible="{Binding CanResumeEmbedding}"
-                            Command="{Binding ResumeEmbeddingCommand}"/>
                 </StackPanel>
 
                 <TextBlock Grid.Column="2"

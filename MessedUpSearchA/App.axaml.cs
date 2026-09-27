@@ -3,7 +3,6 @@ using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Markup.Xaml;
 using Microsoft.EntityFrameworkCore;
 using MessedUpSearchA.Data;
-using MessedUpSearchA.Services.Ml;
 using MessedUpSearchA.ViewModels;
 
 namespace MessedUpSearchA;
@@ -33,8 +32,6 @@ public partial class App : Application
 #endif
         }
 
-        // Треки, которые не успели послушать в прошлый раз, — дослушиваем в фоне.
-        TrackEmbeddingQueue.Instance.Kick();
 
         base.OnFrameworkInitializationCompleted();
     }

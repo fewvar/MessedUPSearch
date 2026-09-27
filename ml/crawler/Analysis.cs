@@ -8,8 +8,10 @@ public static class Analysis
 {
     private const int TopTracks = 3;
 
+    /// <param name="Vectors">инструменталы (kind='inst'), центр — из references_v2.bin: по ним поиск</param>
+    /// <param name="FullVectors">куски с голосом (kind='full'), центр — artist_index.bin: по ним фильтр голоса</param>
     private sealed record Artist(long Id, string Nickname, string Platform, string SourceId, string Url,
-        string Avatar, string Genre, int Plays, List<float[]> Vectors)
+        string Avatar, string Genre, int Plays, List<float[]> Vectors, List<float[]> FullVectors)
     {
         /// <summary>Лучший из послушанных треков: его играет ▶ в выдаче приложения.</summary>
         public (string Id, string Url, string Title, int Plays) TopTrack { get; set; } = ("", "", "", -1);
@@ -18,31 +20,42 @@ public static class Analysis
     /// <summary>Веса классификатора голоса; нет файла — фильтр не применяется.</summary>
     public static string VocalPath { get; set; } = string.Empty;
 
+    /// <summary>Центр для инструменталов — общий с приложением (references_v2.bin).</summary>
+    public static string ReferencesPath { get; set; } = string.Empty;
+
+    /// <summary>Центр, которым учили фильтр голоса (векторы с голосом) — artist_index.bin.</summary>
+    public static string FriendIndexPath { get; set; } = string.Empty;
+
     /// <summary>
-    /// Рэперы с векторами; векторы центрированы центром из artist_index.bin — как в приложении.
-    /// Если есть классификатор голоса — без тех, у кого в треках нет голоса.
+    /// Рэперы с векторами. Если есть классификатор голоса — без тех, у кого в треках нет голоса
+    /// (считается по кускам С голосом: разделённый инструментал голоса не содержит по определению).
     /// </summary>
-    private static List<Artist> LoadArtists(CrawlDb db, float[] center)
+    private static List<Artist> LoadArtists(CrawlDb db)
     {
-        var all = LoadAllArtists(db, center);
+        var all = LoadAllArtists(db);
         var vocal = VocalFilter.TryLoad(VocalPath);
         if (vocal is null)
             return all;
 
-        var kept = all.Where(a => vocal.IsRapper(a.Vectors)).ToList();
+        var kept = all.Where(a => vocal.IsRapper(a.FullVectors)).ToList();
         Console.WriteLine($"фильтр голоса: оставлено {kept.Count} из {all.Count}");
         return kept;
     }
 
-    private static List<Artist> LoadAllArtists(CrawlDb db, float[] center)
+    private static List<Artist> LoadAllArtists(CrawlDb db)
     {
+        var instCenter = TargetIndex.Load(ReferencesPath).Center;
+        var fullCenter = ArtistIndex.Load(FriendIndexPath).Center;
         var artists = new Dictionary<long, Artist>();
 
         using var command = db.Command("""
-            SELECT a.id, a.nickname, a.platform, a.source_id, a.source_url, a.avatar_url, a.genre, a.plays, v.vector,
-                   t.source_track_id, t.url, t.title, t.plays
-            FROM vectors v JOIN tracks t ON t.id = v.track_id JOIN artists a ON a.id = t.artist_id
-            WHERE a.producer_reason = ''
+            SELECT a.id, a.nickname, a.platform, a.source_id, a.source_url, a.avatar_url, a.genre, a.plays,
+                   i.vector, f.vector, t.source_track_id, t.url, t.title, t.plays
+            FROM embeddings i
+            JOIN embeddings f ON f.track_id = i.track_id AND f.kind = 'full'
+            JOIN tracks t ON t.id = i.track_id
+            JOIN artists a ON a.id = t.artist_id
+            WHERE i.kind = 'inst' AND a.producer_reason = ''
             """);
 
         using var reader = command.ExecuteReader();
@@ -52,14 +65,16 @@ public static class Analysis
             if (!artists.TryGetValue(id, out var artist))
             {
                 artists[id] = artist = new Artist(id, reader.GetString(1), reader.GetString(2), reader.GetString(3),
-                    reader.GetString(4), reader.GetString(5), reader.GetString(6), reader.GetInt32(7), new List<float[]>());
+                    reader.GetString(4), reader.GetString(5), reader.GetString(6), reader.GetInt32(7),
+                    new List<float[]>(), new List<float[]>());
             }
 
-            artist.Vectors.Add(MertEmbedder.Centered(MertEmbedder.FromBytes((byte[])reader[8]), center));
+            artist.Vectors.Add(MertEmbedder.Centered(MertEmbedder.FromBytes((byte[])reader[8]), instCenter));
+            artist.FullVectors.Add(MertEmbedder.Centered(MertEmbedder.FromBytes((byte[])reader[9]), fullCenter));
 
-            var trackPlays = reader.GetInt32(12);
+            var trackPlays = reader.GetInt32(13);
             if (trackPlays > artist.TopTrack.Plays)
-                artist.TopTrack = (reader.GetString(9), reader.GetString(10), reader.GetString(11), trackPlays);
+                artist.TopTrack = (reader.GetString(10), reader.GetString(11), reader.GetString(12), trackPlays);
         }
 
         return artists.Values.ToList();
@@ -70,10 +85,9 @@ public static class Analysis
     /// ничего, но мягче leave-one-album-out: соседние треки артиста могут быть с одного
     /// релиза. Поэтому цифру сравниваем со случайным угадыванием, а не с 75% старого замера.
     /// </summary>
-    public static void Evaluate(CrawlDb db, string indexPath)
+    public static void Evaluate(CrawlDb db)
     {
-        var center = ArtistIndex.Load(indexPath).Center;
-        var artists = LoadArtists(db, center).Where(a => a.Vectors.Count >= 2).ToList();
+        var artists = LoadArtists(db).Where(a => a.Vectors.Count >= 2).ToList();
 
         var tracks = artists.SelectMany((a, ai) => a.Vectors.Select((v, ti) => (Artist: ai, Track: ti, Vector: v))).ToList();
         Console.WriteLine($"артистов с 2+ векторами: {artists.Count}, треков: {tracks.Count}");
@@ -123,17 +137,15 @@ public static class Analysis
     public static void Query(CrawlDb db, string modelPath, string indexPath, IEnumerable<string> beats, string? backgroundPath)
     {
         using var service = new BeatSimilarityService(modelPath, indexPath);
-        var index = BuildIndex(db, service.Center);
-        var hubs = backgroundPath is null ? null : HubCorrection.TryLoad(backgroundPath, service.Center);
-        var urls = new Dictionary<string, string>();
-        foreach (var artist in index.Artists)
-            urls[artist.Nickname] = artist.SourceUrl;
+        var references = TargetIndex.Load(ReferencesPath);
+        var index = BuildIndex(db, references.Center);
+        var hubs = backgroundPath is null ? null : HubCorrection.TryLoad(backgroundPath, references.Center);
 
-        Console.WriteLine(hubs is null ? "поправка на хабы: выключена" : "поправка на хабы: включена");
+        Console.WriteLine($"поправка на хабы: {(hubs is null ? "выключена" : "включена")}; в индексе {index.Artists.Count} артистов");
 
         foreach (var beat in beats)
         {
-            var result = service.AnalyzeAll(beat, index, [], new Dictionary<string, int>(), hubs: hubs);
+            var result = service.AnalyzeAll(beat, references, index, new Dictionary<string, int>(), hubs);
 
             Console.WriteLine($"\n== {Path.GetFileName(beat)}");
             Console.WriteLine($"   звучит как: {string.Join(" · ", result.References.Select(r => $"{r.Artist} {r.Percent}%"))}");
@@ -149,7 +161,7 @@ public static class Analysis
 
     private static TargetIndex BuildIndex(CrawlDb db, float[] center)
     {
-        var artists = LoadArtists(db, center);
+        var artists = LoadArtists(db);
         return new TargetIndex
         {
             Center = center,
@@ -162,9 +174,9 @@ public static class Analysis
         };
     }
 
-    public static void Export(CrawlDb db, string indexPath, string outPath, int minVectors)
+    public static void Export(CrawlDb db, string outPath, int minVectors)
     {
-        var center = ArtistIndex.Load(indexPath).Center;
+        var center = TargetIndex.Load(ReferencesPath).Center;
         var full = BuildIndex(db, center);
         var index = new TargetIndex
         {

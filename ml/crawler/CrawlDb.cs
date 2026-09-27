@@ -18,7 +18,9 @@ public sealed class CrawlDb : IDisposable
     public CrawlDb(string path)
     {
         Directory.CreateDirectory(Path.GetDirectoryName(Path.GetFullPath(path))!);
-        _connection = new SqliteConnection($"Data Source={path}");
+        // Pooling=False: базу параллельно пишет Python (separate_embed.py) — держать
+        // подключение в пуле после Dispose незачем. Таймаут — на время его записи.
+        _connection = new SqliteConnection($"Data Source={path};Pooling=False;Default Timeout=30");
         _connection.Open();
 
         Execute("""
@@ -54,6 +56,16 @@ public sealed class CrawlDb : IDisposable
                 kind TEXT NOT NULL
             );
             CREATE INDEX IF NOT EXISTS ix_tracks_artist ON tracks(artist_id);
+            -- Два вектора на кусок (ml/scripts/separate_embed.py): 'full' — как есть, с голосом,
+            -- для фильтра «рэпер или нет»; 'inst' — после Demucs, для поиска «бит -> артист».
+            -- Таблица vectors — старый конвейер (C#, без разделения), остаётся для истории.
+            CREATE TABLE IF NOT EXISTS embeddings (
+                track_id INTEGER NOT NULL REFERENCES tracks(id),
+                kind TEXT NOT NULL,
+                vector BLOB NOT NULL,
+                seconds REAL NOT NULL,
+                PRIMARY KEY (track_id, kind)
+            );
             """);
     }
 

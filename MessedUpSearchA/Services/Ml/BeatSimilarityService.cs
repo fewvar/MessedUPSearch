@@ -106,126 +106,93 @@ public class BeatSimilarityService : IDisposable
     }
 
     /// <summary>
-    /// Полная выдача для приложения. Ориентиры — только индекс друга (Yeat, Osamason…):
-    /// им бит не продашь, но «звучит как» помогает понять выдачу. Цели — большой индекс
-    /// доступных артистов плюс артисты из базы пользователя. Если артист из индекса уже
-    /// в базе (совпала ссылка на профиль), это один кандидат с номером из базы.
+    /// Полная выдача для приложения, по инструменталам (см. ml/README.md, шаг 2 плана качества).
+    ///
+    /// Ориентиры — references_v2.bin: крупные артисты, им бит не продашь, но «звучит как»
+    /// помогает понять выдачу. Цели — artists_index_v2.bin, доступные артисты. У обоих
+    /// индексов один центр — среднее инструменталов; бит центрируется им же. Бит считается
+    /// как обычно: в нём и так нет голоса, отделять нечего.
+    ///
+    /// Артисты из базы пользователя в выдаче — только если они есть в индексе (совпала
+    /// ссылка на профиль): их собственные векторы считались по трекам с голосом и
+    /// с инструменталами индекса несравнимы.
     /// </summary>
     public SimilarityResult AnalyzeAll(
         string audioPath,
+        TargetIndex references,
         TargetIndex? targets,
-        IReadOnlyList<ReferenceTrack> userTracks,
         IReadOnlyDictionary<string, int> userArtistIdsByUrl,
+        HubCorrection? hubs,
         int referenceTop = 3,
         int targetTop = 10,
-        CancellationToken ct = default,
-        HubCorrection? hubs = null)
+        CancellationToken ct = default)
     {
         var raw = _embedder.EmbedRaw(AudioDecoder.Decode(audioPath), ct);
-        var embedding = MertEmbedder.Centered(raw, _index.Center);
+        var embedding = MertEmbedder.Centered(raw, references.Center);
 
-        var references = RankReferences(embedding, referenceTop, hubs);
-
-        var candidates = new Dictionary<string, Candidate>();
-        var info = new Dictionary<string, TargetArtist>();
-
-        // Индекс v2 собирается с тем же центром; если нет — векторы несравнимы, лучше без него.
-        if (targets is not null && targets.Center.AsSpan().SequenceEqual(_index.Center))
-        {
-            foreach (var artist in targets.Artists)
+        var referenceMatches = RankIndex(embedding, references, "ref", hubs, referenceTop, userArtistIdsByUrl)
+            .Select(m => new ArtistMatch
             {
-                int? id = userArtistIdsByUrl.TryGetValue(artist.SourceUrl, out var found) ? found : null;
-                var key = id is { } known ? $"db:{known}" : $"url:{artist.SourceUrl}";
+                Artist = m.Artist, Kind = MatchKind.Reference, Similarity = m.Similarity, Percent = m.Percent
+            })
+            .ToArray();
 
-                var candidate = GetCandidate(candidates, key, artist.Nickname, id);
-                info[key] = artist;
+        // Индекс целей собирается с тем же центром; если нет — векторы несравнимы, лучше без него.
+        var targetMatches = targets is not null && targets.Center.AsSpan().SequenceEqual(references.Center)
+            ? RankIndex(embedding, targets, "url", hubs, targetTop, userArtistIdsByUrl)
+            : [];
 
-                foreach (var vector in artist.Vectors)
-                    candidate.Add(Dot(embedding, vector), vector);
-            }
-        }
+        return new SimilarityResult { References = referenceMatches, Targets = targetMatches };
+    }
 
-        foreach (var track in userTracks)
+    private static ArtistMatch[] RankIndex(
+        float[] embedding, TargetIndex index, string keyPrefix, HubCorrection? hubs, int top,
+        IReadOnlyDictionary<string, int> userArtistIdsByUrl)
+    {
+        var scored = new List<(TargetArtist Artist, float Score)>(index.Artists.Count);
+
+        foreach (var artist in index.Artists)
         {
-            if (track.ArtistId is not { } id || track.RawVector.Length != embedding.Length)
+            if (artist.Vectors.Length == 0 || artist.Vectors[0].Length != embedding.Length)
                 continue;
 
-            var candidate = GetCandidate(candidates, $"db:{id}", track.Artist, id);
-            var vector = MertEmbedder.Centered(track.RawVector, _index.Center);
-            candidate.Add(Dot(embedding, vector), vector);
+            var score = TopTracksScore(embedding, artist.Vectors);
+            if (hubs is not null)
+                score -= hubs.Bias($"{keyPrefix}:{artist.SourceUrl}:{artist.Nickname}", artist.Vectors, TopTracksScore);
+
+            scored.Add((artist, score));
         }
 
-        var targetMatches = candidates
-            .Where(c => c.Value.Count > 0)
-            .Select(c => (Key: c.Key, Candidate: c.Value, Score: Adjusted(c.Key, c.Value, hubs)))
-            .OrderByDescending(c => c.Score)
-            .Take(targetTop)
-            .Select(c =>
+        return scored
+            .OrderByDescending(s => s.Score)
+            .Take(top)
+            .Select(s =>
             {
-                info.TryGetValue(c.Key, out var artist);
+                int? id = s.Artist.SourceUrl.Length > 0 && userArtistIdsByUrl.TryGetValue(s.Artist.SourceUrl, out var found)
+                    ? found
+                    : null;
+
                 return new ArtistMatch
                 {
-                    // Ник из базы пользователя главнее: он мог его переименовать.
-                    Artist = c.Candidate.ArtistId is not null ? c.Candidate.Name : artist?.Nickname ?? c.Candidate.Name,
-                    ArtistId = c.Candidate.ArtistId,
+                    Artist = s.Artist.Nickname,
+                    ArtistId = id,
                     Kind = MatchKind.Target,
-                    Similarity = c.Score,
-                    Percent = hubs is null ? ToPercent(c.Score) : HubCorrection.ToPercent(c.Score),
-                    Platform = artist?.Platform ?? string.Empty,
-                    SourceId = artist?.SourceId ?? string.Empty,
-                    SourceUrl = artist?.SourceUrl ?? string.Empty,
-                    AvatarUrl = artist?.AvatarUrl ?? string.Empty,
-                    Plays = artist?.Plays ?? 0,
-                    TopTrackId = artist?.TopTrackId ?? string.Empty,
-                    TopTrackUrl = artist?.TopTrackUrl ?? string.Empty,
-                    TopTrackTitle = artist?.TopTrackTitle ?? string.Empty
+                    Similarity = s.Score,
+                    Percent = hubs is null ? ToPercent(s.Score) : HubCorrection.ToPercent(s.Score),
+                    Platform = s.Artist.Platform,
+                    SourceId = s.Artist.SourceId,
+                    SourceUrl = s.Artist.SourceUrl,
+                    AvatarUrl = s.Artist.AvatarUrl,
+                    Plays = s.Artist.Plays,
+                    TopTrackId = s.Artist.TopTrackId,
+                    TopTrackUrl = s.Artist.TopTrackUrl,
+                    TopTrackTitle = s.Artist.TopTrackTitle
                 };
             })
             .ToArray();
-
-        return new SimilarityResult { References = references, Targets = targetMatches };
     }
 
-    /// <summary>«Звучит как» — артисты индекса друга, с той же поправкой на хабы, что и цели.</summary>
-    private ArtistMatch[] RankReferences(float[] embedding, int top, HubCorrection? hubs)
-    {
-        if (hubs is null)
-        {
-            return Rank(embedding, top, [])
-                .Select(m => new ArtistMatch
-                {
-                    Artist = m.Artist, Kind = MatchKind.Reference, Similarity = m.Similarity, Percent = m.Percent
-                })
-                .ToArray();
-        }
-
-        var groups = new Dictionary<string, Candidate>();
-        foreach (var (artistId, trackIds) in _tracksByArtist)
-        {
-            var name = _index.ArtistNames[artistId];
-            var candidate = GetCandidate(groups, $"ref:{name}", name, null);
-            foreach (var trackId in trackIds)
-                candidate.Add(Dot(embedding, _index.Vectors[trackId]), _index.Vectors[trackId]);
-        }
-
-        return groups
-            .Select(g => (g.Value.Name, Score: Adjusted(g.Key, g.Value, hubs)))
-            .OrderByDescending(g => g.Score)
-            .Take(top)
-            .Select(g => new ArtistMatch
-            {
-                Artist = g.Name, Kind = MatchKind.Reference, Similarity = g.Score, Percent = HubCorrection.ToPercent(g.Score)
-            })
-            .ToArray();
-    }
-
-    /// <summary>Оценка артиста; с поправкой — минус его средняя оценка по фоновым битам.</summary>
-    private static float Adjusted(string key, Candidate candidate, HubCorrection? hubs) =>
-        hubs is null
-            ? candidate.Score()
-            : candidate.Score() - hubs.Bias(key, candidate.Vectors, TopTracksScore);
-
-    /// <summary>Та же оценка «бит -> артист», что и Candidate.Score, но для произвольного вектора.</summary>
+    /// <summary>Оценка артиста — среднее по трём его ближайшим к биту трекам (как Candidate.Score).</summary>
     private static float TopTracksScore(float[] beat, IReadOnlyList<float[]> vectors)
     {
         var best = new float[Math.Min(TopTracksPerArtist, vectors.Count)];
@@ -313,15 +280,6 @@ public class BeatSimilarityService : IDisposable
         public string Name { get; init; } = string.Empty;
         public int? ArtistId { get; set; }
         public int Count { get; private set; }
-
-        /// <summary>Векторы треков — нужны только поправке на хабы; без неё не копятся.</summary>
-        public List<float[]> Vectors { get; } = new();
-
-        public void Add(float similarity, float[] vector)
-        {
-            Vectors.Add(vector);
-            Add(similarity);
-        }
 
         public void Add(float similarity)
         {

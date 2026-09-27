@@ -24,6 +24,79 @@ public static class Listen
     /// Больше нуля — слушаем не рэперов, а явных битмейкеров («биты: 10/10»), по одному треку:
     /// это примеры «звука без голоса» для классификатора (ml/scripts/train_vocal.py).
     /// </param>
+    /// <summary>
+    /// Новый конвейер: только скачать куски в папку-очередь. Звук забирает
+    /// ml/scripts/separate_embed.py (Demucs + MERT на видеокарте) и удаляет сразу после расчёта.
+    /// Файл появляется в очереди целиком (пишется как .part и переименовывается) —
+    /// Python не схватит недокачанный. Если в очереди уже MaxQueued файлов, ждём:
+    /// сеть быстрее видеокарты, и без этого папка разрослась бы на гигабайты.
+    /// </summary>
+    public static async Task SlicesOnlyAsync(CrawlDb db, string queueDir, int tracksPerArtist, CancellationToken ct)
+    {
+        const int MaxQueued = 20;
+
+        Directory.CreateDirectory(queueDir);
+        File.Delete(Path.Combine(queueDir, ".done"));
+
+        var jobs = PlanJobs(db, tracksPerArtist, countStatuses: "'sliced','embedded'");
+        Console.WriteLine($"к скачиванию: {jobs.Count} кусков у {jobs.Select(j => j.ArtistId).Distinct().Count()} артистов");
+
+        var resolvers = AudioResolvers.CreateAll();
+        var temp = Path.Combine(Path.GetTempPath(), "crawler-slices");
+        var clock = Stopwatch.StartNew();
+        int queued = 0, failed = 0;
+
+        try
+        {
+            foreach (var job in jobs)
+            {
+                while (Directory.GetFiles(queueDir, "*.mp3").Length >= MaxQueued)
+                    await Task.Delay(1000, ct);
+
+                try
+                {
+                    var audio = resolvers.TryGetValue(job.Platform, out var resolver)
+                        ? await resolver.ResolveAsync(job.SourceTrackId, job.Url, ct)
+                        : null;
+
+                    if (audio is null)
+                    {
+                        Mark(db, job.TrackId, "noaudio", "звук недоступен");
+                        failed++;
+                        continue;
+                    }
+
+                    var slice = await AudioFetcher.DownloadSliceAsync(audio, temp, ct);
+                    var part = Path.Combine(queueDir, $"{job.TrackId}.part");
+                    File.Move(slice, part, overwrite: true);
+                    File.Move(part, Path.Combine(queueDir, $"{job.TrackId}.mp3"), overwrite: true);
+
+                    Mark(db, job.TrackId, "sliced", "");
+                    queued++;
+                }
+                catch (OperationCanceledException) when (ct.IsCancellationRequested)
+                {
+                    throw;
+                }
+                catch (Exception ex)
+                {
+                    Mark(db, job.TrackId, "failed", ex.Message);
+                    failed++;
+                }
+
+                Console.Write($"\r{queued + failed}/{jobs.Count}  в очереди {queued}, мимо {failed}  " +
+                              $"{(queued + failed) / Math.Max(1, clock.Elapsed.TotalMinutes):F1} кусок/мин   ");
+            }
+        }
+        finally
+        {
+            // Метка для Python: больше ничего не придёт, дочисти очередь и выходи.
+            File.WriteAllText(Path.Combine(queueDir, ".done"), DateTime.Now.ToString("O"));
+        }
+
+        Console.WriteLine($"\nскачано за {clock.Elapsed.TotalMinutes:F1} мин: {queued}, мимо {failed}");
+    }
+
     public static async Task RunAsync(CrawlDb db, string modelPath, int tracksPerArtist, CancellationToken ct, int negatives = 0)
     {
         var jobs = negatives > 0 ? PlanNegatives(db, negatives) : PlanJobs(db, tracksPerArtist);
@@ -127,11 +200,11 @@ public static class Listen
     /// чтобы вместе с уже готовыми вышло tracksPerArtist. Упавшие не повторяем: на их
     /// место следующий запуск listen возьмёт следующий по прослушиваниям трек.
     /// </summary>
-    private static List<Job> PlanJobs(CrawlDb db, int tracksPerArtist)
+    private static List<Job> PlanJobs(CrawlDb db, int tracksPerArtist, string countStatuses = "'done'")
     {
-        using var command = db.Command("""
+        using var command = db.Command($"""
             SELECT t.id, a.id, a.platform, t.source_track_id, t.url, a.nickname,
-                   (SELECT COUNT(*) FROM tracks d WHERE d.artist_id = a.id AND d.status = 'done') AS have
+                   (SELECT COUNT(*) FROM tracks d WHERE d.artist_id = a.id AND d.status IN ({countStatuses})) AS have
             FROM tracks t JOIN artists a ON a.id = t.artist_id
             WHERE a.producer_reason = '' AND t.status = 'new'
             ORDER BY a.id, t.plays DESC

@@ -1,3 +1,4 @@
+using System.IO;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -221,15 +222,15 @@ public partial class ArtistsViewModel : ViewModelBase
         SimilarBeats.Clear();
         HasSimilarBeats = false;
         IsArtistKnownToModel = false;
-        IsSimilarityAvailable = ModelStore.IsIndexReady();
+        IsSimilarityAvailable = File.Exists(ModelStore.ReferencesPath);
 
         if (!IsSimilarityAvailable || string.IsNullOrWhiteSpace(nickname))
             return;
 
         var wanted = NormalizeName(nickname);
-        // Модель знает артиста, если он в индексе по имени или если очередь уже послушала его треки.
-        IsArtistKnownToModel = KnownArtists().Contains(wanted) ||
-                               (artistId != 0 && LiveIndex.HasVectors(artistId));
+        // Модель знает артиста, если он есть в индексе: среди ориентиров по имени или среди
+        // доступных артистов по ссылке на профиль.
+        IsArtistKnownToModel = KnownArtists().Contains(wanted) || IsInTargetIndex(artistId);
 
         using var db = new AppDbContext();
 
@@ -270,8 +271,8 @@ public partial class ArtistsViewModel : ViewModelBase
 
         try
         {
-            _knownArtists = ArtistIndex.LoadNamesOnly(ModelStore.IndexPath)
-                .Select(NormalizeName)
+            _knownArtists = TargetIndex.Load(ModelStore.ReferencesPath).Artists
+                .Select(a => NormalizeName(a.Nickname))
                 .ToHashSet();
         }
         catch
@@ -280,6 +281,18 @@ public partial class ArtistsViewModel : ViewModelBase
         }
 
         return _knownArtists;
+    }
+
+    /// <summary>Есть ли артист из базы в большом индексе — по ссылке на профиль.</summary>
+    private static bool IsInTargetIndex(int artistId)
+    {
+        if (artistId == 0 || IndexStore.TryLoad() is not { } index)
+            return false;
+
+        using var db = new AppDbContext();
+        var url = db.Artists.Where(a => a.Id == artistId).Select(a => a.SourceUrl).FirstOrDefault();
+
+        return !string.IsNullOrWhiteSpace(url) && index.Artists.Any(a => a.SourceUrl == url);
     }
 
     private static string NormalizeName(string raw) =>

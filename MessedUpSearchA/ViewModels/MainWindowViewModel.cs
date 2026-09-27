@@ -9,8 +9,6 @@ using MessedUpSearchA.Models;
 using MessedUpSearchA.Converters;
 using MessedUpSearchA.Services;
 using MessedUpSearchA.Services.Localization;
-using MessedUpSearchA.Services.Ml;
-using Avalonia.Threading;
 
 namespace MessedUpSearchA.ViewModels;
 
@@ -97,24 +95,16 @@ public partial class MainWindowViewModel : ViewModelBase
         {
             OnPropertyChanged(nameof(ReminderDaysLabel));
             OnPropertyChanged(nameof(ParserStatus));
-            RefreshEmbeddingStatus();
         };
-
-        TrackEmbeddingQueue.Instance.StateChanged += () =>
-            Dispatcher.UIThread.Post(RefreshEmbeddingStatus);
 
         _beatsVm.ArtistImported += () =>
         {
             AvatarBrushConverter.Invalidate();
             _artistsVm.LoadArtists();
-            TrackEmbeddingQueue.Instance.Kick();
         };
 
         _parserVm.ImportDone += () =>
         {
-            // Новые артисты — новые треки, которые надо послушать.
-            TrackEmbeddingQueue.Instance.Kick();
-
             // Парсер мог перекачать аватарки — старые картинки в кэше уже неверны.
             AvatarBrushConverter.Invalidate();
             _artistsVm.LoadArtists();
@@ -122,42 +112,6 @@ public partial class MainWindowViewModel : ViewModelBase
 
         LoadReminders();
         IsReminderOpen = Reminders.Count > 0;
-    }
-
-    [ObservableProperty] private string _embeddingStatus = string.Empty;
-    [ObservableProperty] private bool _canPauseEmbedding;
-    [ObservableProperty] private bool _canResumeEmbedding;
-
-    /// <summary>Строка очереди в футере. Пока очереди нечего делать — пусто и не видно.</summary>
-    private void RefreshEmbeddingStatus()
-    {
-        var queue = TrackEmbeddingQueue.Instance;
-        var loc = Localizer.Instance;
-
-        EmbeddingStatus = queue.State switch
-        {
-            EmbeddingQueueState.Listening => loc.Format("Status.EmbedListening", queue.Done, queue.Total),
-            EmbeddingQueueState.DownloadingModel => loc.Format("Status.EmbedModel", queue.ModelProgress.ToString("P0")),
-            EmbeddingQueueState.Paused => loc["Status.EmbedPaused"],
-            EmbeddingQueueState.Failed => loc.Format("Status.EmbedFailed", queue.LastError),
-            _ => string.Empty
-        };
-
-        CanPauseEmbedding = queue.State is EmbeddingQueueState.Listening or EmbeddingQueueState.DownloadingModel;
-        CanResumeEmbedding = queue.State is EmbeddingQueueState.Paused or EmbeddingQueueState.Failed;
-    }
-
-    [RelayCommand]
-    private void PauseEmbedding() => TrackEmbeddingQueue.Instance.Pause();
-
-    [RelayCommand]
-    private void ResumeEmbedding()
-    {
-        var queue = TrackEmbeddingQueue.Instance;
-        if (queue.State == EmbeddingQueueState.Paused)
-            queue.Resume();
-        else
-            queue.Kick();
     }
 
     partial void OnIsBeatsSelectedChanged(bool? value)

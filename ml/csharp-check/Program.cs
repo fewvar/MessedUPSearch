@@ -7,6 +7,19 @@ using MessedUpSearchA.Services.Parsing.Sources;
 if (args.Length >= 1 && args[0] == "online")
     return await Online(args[1..]);
 
+// Сырой вектор боевым кодом в <файл>.cs.f32 — сверка с Python-конвейером краулера.
+if (args.Length >= 3 && args[0] == "raw")
+{
+    using var raw = new MertEmbedder(args[1]);
+    foreach (var path in args.Skip(2))
+    {
+        var vector = raw.EmbedRaw(AudioDecoder.Decode(path));
+        File.WriteAllBytes(Path.ChangeExtension(path, ".cs.f32"), MertEmbedder.ToBytes(vector));
+    }
+    Console.WriteLine($"посчитано: {args.Length - 2}");
+    return 0;
+}
+
 if (args.Length >= 2 && args[0] == "play")
     return await Play(args[1]);
 

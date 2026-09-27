@@ -51,6 +51,10 @@ public static class ModelStore
 
     public static bool IsIndexReady() => File.Exists(IndexPath);
 
+    /// <summary>«Звучит как»: инструменталы крупных артистов, центр для всех индексов v2. Едет с приложением.</summary>
+    public static string ReferencesPath =>
+        Path.Combine(AppContext.BaseDirectory, "Assets", "Models", "references_v2.bin");
+
     /// <summary>Фоновые биты для поправки на хабы — тоже едут с приложением.</summary>
     public static string BackgroundPath =>
         Path.Combine(AppContext.BaseDirectory, "Assets", "Models", HubCorrection.FileName);

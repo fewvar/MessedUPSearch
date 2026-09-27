@@ -405,6 +405,7 @@
                             <MultiBinding Converter="{x:Static BoolConverters.And}">
                                 <Binding Path="IsSimilarityAvailable"/>
                                 <Binding Path="!IsArtistKnownToModel"/>
+                                <Binding Path="!HasSimilarBeats"/>
                             </MultiBinding>
                         </TextBlock.IsVisible>
                     </TextBlock>

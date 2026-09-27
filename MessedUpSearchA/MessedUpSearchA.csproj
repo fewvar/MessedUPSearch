@@ -17,6 +17,7 @@
              не пересобирая приложение. -->
         <Content Include="Assets/Models/artist_index.bin" CopyToOutputDirectory="PreserveNewest" />
         <Content Include="Assets/Models/background_beats.bin" CopyToOutputDirectory="PreserveNewest" />
+        <Content Include="Assets/Models/references_v2.bin" CopyToOutputDirectory="PreserveNewest" />
     </ItemGroup>
 
     <ItemGroup>

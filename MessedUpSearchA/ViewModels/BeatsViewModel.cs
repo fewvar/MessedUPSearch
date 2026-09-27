@@ -259,7 +259,7 @@ public partial class BeatsViewModel : ViewModelBase
             return;
         }
 
-        if (!ModelStore.IsIndexReady())
+        if (!ModelStore.IsIndexReady() || !File.Exists(ModelStore.ReferencesPath))
         {
             AnalysisStatus = Localizer.Instance["Analysis.NoIndex"];
             return;
@@ -303,8 +303,9 @@ public partial class BeatsViewModel : ViewModelBase
                 // Сессия общая с фоновой очередью — вторая копия модели заняла бы ещё сотни МБ.
                 using var service = new BeatSimilarityService(
                     MertEmbedder.GetShared(ModelStore.ModelPath), ModelStore.IndexPath);
-                var hubs = HubCorrection.TryLoad(ModelStore.BackgroundPath, service.Center);
-                return service.AnalyzeAll(path, IndexStore.TryLoad(), LiveIndex.Load(), UserArtistIdsByUrl(), ct: ct, hubs: hubs);
+                var references = TargetIndex.Load(ModelStore.ReferencesPath);
+                var hubs = HubCorrection.TryLoad(ModelStore.BackgroundPath, references.Center);
+                return service.AnalyzeAll(path, references, IndexStore.TryLoad(), UserArtistIdsByUrl(), hubs, ct: ct);
             }, ct);
 
             if (_editingId == 0)

@@ -62,7 +62,8 @@
 ### Похожие артисты (по звучанию)
 - Кнопка ANALYZE на карточке бита показывает, на кого из базы он похож **по звучанию**, а не по тегам: `Osamason 87% · Summrs 81% · Autumn! 74%`.
 - Под капотом MERT — нейросеть, обученная на музыке. Она превращает бит в вектор из 768 чисел, который сравнивается с 1685 треками 32 артистов из готового индекса **и с треками артистов из твоей базы**.
-- Треки артистов из базы приложение слушает само: после импорта в фоне качает звук с SoundCloud и Audius, считает вектор и сразу удаляет файл. Если у артиста звука нет (Last.fm, Bandcamp, Jamendo), берутся 30-секундные превью с Deezer. На артиста — до 6 самых прослушиваемых треков. Прогресс и пауза — в нижней строке окна.
+- Выдача из двух частей: «звучит как» (крупные артисты — ориентир стиля) и до 10 доступных андеграунд-артистов из индекса, собранного краулером. У каждого — ▶ послушать его трек, ➕ добавить в свою базу, ↗ открыть профиль.
+- Сравнивается бит с ИНСТРУМЕНТАЛАМИ артистов (вокал отделяется при сборке индекса): на проверке type beat'ами это дало +8.8 п.п. к попаданию в топ-5.
 - Проверено честной метрикой (прячем весь альбом, а не один трек): нужный артист попадает в первую пятёрку в 75% случаев при случайном угадывании 3%. База из 30-секундных превью Deezer вместо архива даёт почти то же — 73.5% (подробности в `ml/README.md`).
 - Результат сохраняется в базу и не пересчитывается при каждом открытии карточки. Один анализ занимает 5–7 секунд.
 - Обратная сторона: в карточке артиста видно, какие из твоих битов ему подходят. Работает для артистов из индекса и для тех, чьи треки уже послушаны.
@@ -103,8 +104,8 @@ Services/Ml                   похожесть бита на артистов
    +-- AudioDecoder           WAV/MP3 -> моно 24 кГц (свой windowed-sinc ресемплер)
    +-- MertEmbedder           звук -> сырой вектор MERT; одна ONNX-сессия на приложение
    +-- BeatSimilarityService  вектор бита -> косинусы с индексом и базой -> топ-5
-   +-- TrackEmbeddingQueue    фон: трек артиста -> звук из сети -> вектор в базу
-   +-- LiveIndex              векторы треков из базы для сравнения
+   +-- TargetIndex/IndexStore индексы v2: «звучит как» (с приложением) и доступные артисты (качается)
+   +-- HubCorrection          поправка на артистов, похожих на всё подряд
    +-- ModelStore             докачка модели при первом анализе
    |
 Слой данных (EF Core)
@@ -211,7 +212,8 @@ A local-first tool that turns a folder of beats and a list of artists into a wor
 ### Similar artists (by sound)
 - The ANALYZE button on a beat card shows which artists from the database it resembles **by sound**, not by tags: `Osamason 87% · Summrs 81% · Autumn! 74%`.
 - Powered by MERT, a neural network trained on music. It turns a beat into a 768-number vector compared against 1685 tracks by 32 artists from a bundled index **and against tracks of the artists in your database**.
-- The app listens to your artists' tracks by itself: after an import it streams audio from SoundCloud and Audius in the background, computes a vector and deletes the file right away. Artists with no audio (Last.fm, Bandcamp, Jamendo) fall back to 30-second Deezer previews. Up to 6 most-played tracks per artist. Progress and a pause button live in the status bar.
+- Results come in two parts: "sounds like" (big artists as a style reference) and up to 10 reachable underground artists from a crawled index, each with ▶ play their track, ➕ add to your artists, ↗ open profile.
+- Beats are matched against artists' INSTRUMENTALS (vocals are removed when the index is built): +8.8 pp top-5 on a type-beat benchmark.
 - Validated with a strict metric (the whole album is hidden, not just one track): the right artist lands in the top five 75% of the time, against 3% for random guessing.
 - Results are stored in the database and not recomputed every time you open the card. One analysis takes 5-7 seconds.
 - The reverse view: an artist card shows which of your beats fit them. It works for artists in the index and for those whose tracks have already been listened to.
@@ -252,8 +254,8 @@ Services/Ml                   beat-to-artist similarity
    +-- AudioDecoder           WAV/MP3 -> mono 24 kHz (own windowed-sinc resampler)
    +-- MertEmbedder           audio -> raw MERT vector; one ONNX session per app
    +-- BeatSimilarityService  beat vector -> cosines vs index and database -> top 5
-   +-- TrackEmbeddingQueue    background: artist track -> audio from the web -> vector in DB
-   +-- LiveIndex              database track vectors used for matching
+   +-- TargetIndex/IndexStore v2 indexes: "sounds like" (bundled) and reachable artists (downloaded)
+   +-- HubCorrection          correction for artists that resemble everything
    +-- ModelStore             downloads the model on first analysis
    |
 Data layer (EF Core)
