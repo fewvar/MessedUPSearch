@@ -12,12 +12,14 @@
 
   python evaluate_all.py
 """
+import argparse
+import sqlite3
 import struct
 from pathlib import Path
 
 import numpy as np
 
-from train_head import FOLDS, TOP_K, load
+from train_head import FOLDS, TOP_K, load, load_center, unit
 
 BASE = Path(__file__).resolve().parent.parent
 TARGETS = BASE / "data/artists_index_v2.bin"
@@ -45,6 +47,19 @@ def read_index(path):
     return names, np.concatenate(vectors), np.array(owner)
 
 
+def read_refs_db(path, names, exclude):
+    """Ориентиры, прогнанные краулером (seed-refs): inst-векторы из базы, центр — общий v2."""
+    index = {n: i for i, n in enumerate(names)}
+    center = load_center()
+    rows = sqlite3.connect(path).execute(
+        "SELECT a.nickname, e.vector FROM embeddings e JOIN tracks t ON t.id = e.track_id "
+        "JOIN artists a ON a.id = t.artist_id WHERE e.kind = 'inst'").fetchall()
+    rows = [(n, v) for n, v in rows if n in index and n not in exclude]
+    G = unit(np.stack([np.frombuffer(v, "<f4") for _, v in rows]) - center)
+    ga = np.array([index[n] for n, _ in rows])
+    return G, ga
+
+
 def scores(Q, G, ga, n):
     sims = Q @ G.T
     out = np.full((len(Q), n), -np.inf, dtype=np.float32)
@@ -56,7 +71,19 @@ def scores(Q, G, ga, n):
 
 
 def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--refs-db", help="ориентиры из базы краулера вместо превью Deezer")
+    parser.add_argument("--exclude", default="", help="ники через запятую — не участвуют (неверный профиль и т.п.)")
+    args = parser.parse_args()
+
     ref_names, G, ga, Q, qa = load()
+    exclude = {x for x in args.exclude.split(",") if x}
+    if args.refs_db:
+        G, ga = read_refs_db(args.refs_db, ref_names, exclude)
+    # Биты артистов без векторов в галерее не считаем: их нельзя найти в принципе.
+    have = np.isin(qa, np.unique(ga)) & ~np.isin(qa, [ref_names.index(x) for x in exclude if x in ref_names])
+    Q, qa = Q[have], qa[have]
+    print(f"источник ориентиров: {args.refs_db or 'превью Deezer'}; ориентиров с векторами {len(np.unique(ga))}")
     n_ref = len(ref_names)
     und_names, U, ua = read_index(TARGETS)
 

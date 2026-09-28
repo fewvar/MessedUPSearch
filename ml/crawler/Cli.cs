@@ -105,6 +105,13 @@ public static class Cli
                         Option(args, "--out") ?? Path.Combine(DataDir, "typebeats"),
                         int.Parse(Option(args, "--per-artist") ?? "8"), cts.Token);
                     return 0;
+                case "seed-refs":
+                {
+                    using var store = db();
+                    await RefSeed.RunAsync(store, Analysis.ReferencesPath, Path.Combine(Root, "ml", "scripts", "deezer_aliases.tsv"),
+                        int.Parse(Option(args, "--tracks") ?? "10"), cts.Token);
+                    return 0;
+                }
                 case "slice-test":
                     return await SliceTestAsync(args[1], args[2..]);
                 default:
@@ -131,6 +138,7 @@ public static class Cli
           refilter                                              пересчитать фильтр по найденным
           typebeats  [--per-artist 8]                           линейка: «<артист> type beat» по индексу друга
           export     [--out путь] [--min-vectors 2]             собрать artists_index_v2.bin
+          seed-refs  [--tracks 10] --db другая.db               ориентиры как артисты SoundCloud (опыт с источником)
           общее:     [--db ml/data/crawl.db]
         """;
 
