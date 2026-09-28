@@ -12,6 +12,7 @@ namespace Crawler;
 ///   миксы и радио  «Asian Archive Mix 10», «Dark Trap Mix»
 ///   перезаливы     «Daniel Allan - Take Me Under»: в названии чужой артист через дефис
 ///   ремиксеры/DJ   «skrillex - summit (7amr Remix)»
+///   флипы          «into you paramore hoodtrap / jerk flip» — чужие поп-песни под бит
 ///   лейблы         «Coop Records», «BADMOUTH RECS»
 ///
 /// «prod.» с ЧУЖИМ ником — признак рэпера: он так указывает, чей бит взял.
@@ -22,7 +23,7 @@ public static partial class ProducerFilter
         RegexOptions.IgnoreCase)]
     private static partial Regex BeatTitle();
 
-    [GeneratedRegex(@"slowed|sped\s*up|reverb|nightcore|\bedit\b|\bmix\b|\bmixtape\s*mix\b|\bremix\b|\bset\b|\bpodcast\b|\bradio\b|\bepisode\b",
+    [GeneratedRegex(@"slowed|sped\s*up|reverb|nightcore|\bflip\b|\bedit\b|\bmix\b|\bmixtape\s*mix\b|\bremix\b|\bset\b|\bpodcast\b|\bradio\b|\bepisode\b",
         RegexOptions.IgnoreCase)]
     private static partial Regex EditTitle();
 

@@ -20,11 +20,14 @@ public sealed class HubCorrection
     public const string FileName = "background_beats.bin";
 
     /// <summary>
-    /// Шкала процентов для поправленной оценки. На линейке лучший артист для бита набирает
-    /// 0.10–0.29 (10–90 перцентиль), поэтому 0 -> 0%, 0.30 -> 100%. Это подгонка под
-    /// восприятие, как и старая шкала, а не вероятность.
+    /// Шкала процентов для поправленной оценки, откалибрована на индексе из 652 артистов
+    /// (28.09.2026): у первого места для type beat'а оценка 0.25–0.47 (10–90 перцентиль),
+    /// у десятого 0.17–0.38. Поэтому 0.10 -> 0%, 0.50 -> 100%: типичный первый ~65%,
+    /// десятый ~40%. Прежняя шкала (0 -> 0.30) на большом индексе упиралась в 100% у всех.
+    /// Это подгонка под восприятие, а не вероятность.
     /// </summary>
-    private const float PercentHigh = 0.30f;
+    private const float PercentLow = 0.10f;
+    private const float PercentHigh = 0.50f;
 
     private static readonly ConcurrentDictionary<string, float> Cache = new();
 
@@ -64,5 +67,5 @@ public sealed class HubCorrection
         Cache.GetOrAdd($"{key}|{vectors.Count}", _ => _background.Average(b => score(b, vectors)));
 
     public static int ToPercent(float adjusted) =>
-        (int)Math.Round(Math.Clamp(adjusted / PercentHigh, 0f, 1f) * 100);
+        (int)Math.Round(Math.Clamp((adjusted - PercentLow) / (PercentHigh - PercentLow), 0f, 1f) * 100);
 }

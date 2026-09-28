@@ -138,7 +138,9 @@ public static class Analysis
     {
         using var service = new BeatSimilarityService(modelPath, indexPath);
         var references = TargetIndex.Load(ReferencesPath);
-        var index = BuildIndex(db, references.Center);
+        // Как в экспорте: артист с одним куском — это один случайный трек, в индекс не идёт.
+        var full = BuildIndex(db, references.Center);
+        var index = new TargetIndex { Center = full.Center, Artists = full.Artists.Where(a => a.Vectors.Length >= 2).ToList() };
         var hubs = backgroundPath is null ? null : HubCorrection.TryLoad(backgroundPath, references.Center);
 
         Console.WriteLine($"поправка на хабы: {(hubs is null ? "выключена" : "включена")}; в индексе {index.Artists.Count} артистов");
