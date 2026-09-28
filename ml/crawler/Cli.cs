@@ -48,6 +48,12 @@ public static class Cli
                         int.Parse(Option(args, "--tracks") ?? "4"), cts.Token);
                     return 0;
                 }
+                case "reslice":
+                {
+                    using var store = db();
+                    await Listen.ResliceAsync(store, Option(args, "--out") ?? Path.Combine(DataDir, "audio"), cts.Token);
+                    return 0;
+                }
                 case "reset-listen":
                 {
                     // Перейти на новый конвейер: всё, что слушал старый (C#, без разделения), —
@@ -138,6 +144,7 @@ public static class Cli
           refilter                                              пересчитать фильтр по найденным
           typebeats  [--per-artist 8]                           линейка: «<артист> type beat» по индексу друга
           export     [--out путь] [--min-vectors 2]             собрать artists_index_v2.bin
+          reslice    [--out ml/data/audio]                      сохранить куски уже посчитанных треков (для других моделей)
           seed-refs  [--tracks 10] --db другая.db               ориентиры как артисты SoundCloud (опыт с источником)
           общее:     [--db ml/data/crawl.db]
         """;

@@ -97,6 +97,65 @@ public static class Listen
         Console.WriteLine($"\nскачано за {clock.Elapsed.TotalMinutes:F1} мин: {queued}, мимо {failed}");
     }
 
+    /// <summary>
+    /// Заново скачать куски треков, у которых уже есть векторы, и СОХРАНИТЬ их (outDir/<track_id>.mp3):
+    /// конвейер звук удалял, а для сравнения других моделей и дообучения нужен тот же звук.
+    /// Кусок берётся с того же места (35%), статусы в базе не трогаются, готовые файлы пропускаются.
+    /// </summary>
+    public static async Task ResliceAsync(CrawlDb db, string outDir, CancellationToken ct)
+    {
+        Directory.CreateDirectory(outDir);
+
+        using var command = db.Command("""
+            SELECT t.id, a.platform, t.source_track_id, t.url
+            FROM tracks t JOIN artists a ON a.id = t.artist_id
+            WHERE a.producer_reason = '' AND t.status = 'embedded'
+            ORDER BY a.id, t.plays DESC
+            """);
+
+        var jobs = new List<(long Id, string Platform, string SourceId, string Url)>();
+        using (var reader = command.ExecuteReader())
+            while (reader.Read())
+                if (!File.Exists(Path.Combine(outDir, $"{reader.GetInt64(0)}.mp3")))
+                    jobs.Add((reader.GetInt64(0), reader.GetString(1), reader.GetString(2), reader.GetString(3)));
+
+        Console.WriteLine($"к скачиванию: {jobs.Count} кусков");
+
+        var resolvers = AudioResolvers.CreateAll();
+        var temp = Path.Combine(Path.GetTempPath(), "crawler-reslice");
+        var clock = Stopwatch.StartNew();
+        int saved = 0, failed = 0;
+
+        foreach (var job in jobs)
+        {
+            ct.ThrowIfCancellationRequested();
+            try
+            {
+                var audio = resolvers.TryGetValue(job.Platform, out var resolver)
+                    ? await resolver.ResolveAsync(job.SourceId, job.Url, ct)
+                    : null;
+                if (audio is null)
+                {
+                    failed++;
+                    continue;
+                }
+
+                var slice = await AudioFetcher.DownloadSliceAsync(audio, temp, ct);
+                File.Move(slice, Path.Combine(outDir, $"{job.Id}.mp3"), overwrite: true);
+                saved++;
+            }
+            catch (Exception ex) when (ex is not OperationCanceledException)
+            {
+                failed++;
+            }
+
+            Console.Write($"\r{saved + failed}/{jobs.Count}  сохранено {saved}, мимо {failed}  " +
+                          $"{(saved + failed) / Math.Max(1, clock.Elapsed.TotalMinutes):F1} кусок/мин   ");
+        }
+
+        Console.WriteLine($"\nготово за {clock.Elapsed.TotalMinutes:F1} мин: сохранено {saved}, мимо {failed}");
+    }
+
     public static async Task RunAsync(CrawlDb db, string modelPath, int tracksPerArtist, CancellationToken ct, int negatives = 0)
     {
         var jobs = negatives > 0 ? PlanNegatives(db, negatives) : PlanJobs(db, tracksPerArtist);
