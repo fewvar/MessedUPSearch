@@ -18,7 +18,7 @@ public static class IndexStore
     public const string FileName = "artists_index_v3.bin";
 
     private static readonly string DownloadUrl =
-        $"https://github.com/fewvar/MessedUPSearch/releases/download/v0.7/{FileName}";
+        $"https://github.com/fewvar/MessedUPSearch/releases/download/v1.0/{FileName}";
 
     private static readonly object Gate = new();
     private static TargetIndex? _cached;

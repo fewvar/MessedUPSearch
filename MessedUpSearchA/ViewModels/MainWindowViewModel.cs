@@ -49,7 +49,7 @@ public partial class MainWindowViewModel : ViewModelBase
 
     public IReadOnlyList<string> LanguageOptions { get; } = new[] { "English", "Русский" };
 
-    public string AppVersion => "v0.6";
+    public string AppVersion => "v1.0";
 
     /// <summary>
     /// Подпись в футере. Парсер работает только по кнопке, фонового прогона нет,
