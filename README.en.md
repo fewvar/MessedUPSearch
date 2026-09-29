@@ -30,7 +30,7 @@ Open a beat, hit **ANALYZE** — a second later the app shows:
 - **"sounds like"** — three big artists whose style the beat resembles;
 - **who to pitch** — ten underground artists (1,000 to 300,000 plays) from a base of 650+ rappers on SoundCloud and Audius. Each one has ▶ play their track right in the app, ＋ add to your roster, ↗ open the profile to reach out.
 
-<p align="center"><img src="docs/en-analyze.gif" alt="Beat analysis" width="90%"></p>
+<p align="center"><img src="docs/en-analyze.jpg" alt="Beat analysis" width="90%"></p>
 
 It compares the actual sound: a neural network listens to the beat and compares it with the instrumentals of the artists' tracks (vocals are removed beforehand). No genre tags or BPM needed.
 
