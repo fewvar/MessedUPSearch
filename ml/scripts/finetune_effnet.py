@@ -246,7 +246,7 @@ def train(unfreeze, epochs=150, patience=12, seed=0):
                 break
 
     OUT.mkdir(parents=True, exist_ok=True)
-    torch.save({"unfreeze": unfreeze, "params": best_state[0], "W": best_state[1], "best": best},
+    torch.save({"unfreeze": unfreeze, "params": best_state[0], "W": best_state[1], "best": float(best)},
                OUT / f"{unfreeze}.pt")
     print(f"лучшее: отложенные LOO top-5 {best:.1%} -> {OUT / f'{unfreeze}.pt'}")
 
@@ -258,7 +258,7 @@ def evaluate(unfreeze):
     merged = np.where(np.isin(roles, ["deezer", "sc"]), "ref", roles)
 
     base_net = load_net().to(DEVICE)
-    state = torch.load(OUT / f"{unfreeze}.pt")
+    state = torch.load(OUT / f"{unfreeze}.pt", weights_only=False)   # свой файл, из этого же скрипта
     tuned = load_net().to(DEVICE)
     with torch.no_grad():
         for n, p in tuned.named_parameters():
