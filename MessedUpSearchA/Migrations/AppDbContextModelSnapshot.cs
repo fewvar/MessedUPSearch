@@ -14,7 +14,7 @@ namespace MessedUpSearchA.Migrations
         protected override void BuildModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
-            modelBuilder.HasAnnotation("ProductVersion", "9.0.11");
+            modelBuilder.HasAnnotation("ProductVersion", "10.0.12");
 
             modelBuilder.Entity("MessedUpSearchA.Models.Artist", b =>
                 {
@@ -39,6 +39,10 @@ namespace MessedUpSearchA.Migrations
                         .HasColumnType("TEXT");
 
                     b.Property<string>("CrmStatus")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("DeezerCheckedAt")
                         .IsRequired()
                         .HasColumnType("TEXT");
 
@@ -115,6 +119,13 @@ namespace MessedUpSearchA.Migrations
                     b.Property<int>("ArtistId")
                         .HasColumnType("INTEGER");
 
+                    b.Property<int>("EmbedAttempts")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("EmbedError")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
                     b.Property<string>("FetchedAt")
                         .IsRequired()
                         .HasColumnType("TEXT");
@@ -134,6 +145,10 @@ namespace MessedUpSearchA.Migrations
                         .HasColumnType("TEXT");
 
                     b.Property<string>("SourcePlatform")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("SourceTrackId")
                         .IsRequired()
                         .HasColumnType("TEXT");
 
@@ -218,6 +233,13 @@ namespace MessedUpSearchA.Migrations
                         .IsRequired()
                         .HasColumnType("TEXT");
 
+                    b.Property<int?>("ArtistId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("AvatarUrl")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
                     b.Property<int>("BeatId")
                         .HasColumnType("INTEGER");
 
@@ -225,7 +247,18 @@ namespace MessedUpSearchA.Migrations
                         .IsRequired()
                         .HasColumnType("TEXT");
 
+                    b.Property<string>("Kind")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
                     b.Property<int>("Percent")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Platform")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("Plays")
                         .HasColumnType("INTEGER");
 
                     b.Property<int>("Rank")
@@ -234,7 +267,29 @@ namespace MessedUpSearchA.Migrations
                     b.Property<double>("Similarity")
                         .HasColumnType("REAL");
 
+                    b.Property<string>("SourceId")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("SourceUrl")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("TopTrackId")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("TopTrackTitle")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("TopTrackUrl")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
                     b.HasKey("Id");
+
+                    b.HasIndex("ArtistId");
 
                     b.HasIndex("BeatId");
 
@@ -273,6 +328,42 @@ namespace MessedUpSearchA.Migrations
                     b.ToTable("SentBeatsLog");
                 });
 
+            modelBuilder.Entity("MessedUpSearchA.Models.TrackEmbedding", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("ArtistTrackId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("AudioKind")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("ComputedAt")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("ModelVersion")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<double>("Seconds")
+                        .HasColumnType("REAL");
+
+                    b.Property<byte[]>("Vector")
+                        .IsRequired()
+                        .HasColumnType("BLOB");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ArtistTrackId", "ModelVersion")
+                        .IsUnique();
+
+                    b.ToTable("TrackEmbeddings");
+                });
+
             modelBuilder.Entity("MessedUpSearchA.Models.ArtistTrack", b =>
                 {
                     b.HasOne("MessedUpSearchA.Models.Artist", "Artist")
@@ -286,6 +377,11 @@ namespace MessedUpSearchA.Migrations
 
             modelBuilder.Entity("MessedUpSearchA.Models.BeatSimilarity", b =>
                 {
+                    b.HasOne("MessedUpSearchA.Models.Artist", null)
+                        .WithMany()
+                        .HasForeignKey("ArtistId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
                     b.HasOne("MessedUpSearchA.Models.Beat", "Beat")
                         .WithMany()
                         .HasForeignKey("BeatId")
@@ -312,6 +408,17 @@ namespace MessedUpSearchA.Migrations
                     b.Navigation("Artist");
 
                     b.Navigation("Beat");
+                });
+
+            modelBuilder.Entity("MessedUpSearchA.Models.TrackEmbedding", b =>
+                {
+                    b.HasOne("MessedUpSearchA.Models.ArtistTrack", "ArtistTrack")
+                        .WithMany()
+                        .HasForeignKey("ArtistTrackId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("ArtistTrack");
                 });
 #pragma warning restore 612, 618
         }

@@ -182,6 +182,7 @@ public class ArtistImportService
                     Title = track.Title,
                     Url = track.Url,
                     SourcePlatform = candidate.Platform,
+                    SourceTrackId = track.SourceId,
                     PlayCount = track.PlayCount,
                     ReleasedAt = track.ReleasedAt,
                     Tags = track.Tags,
@@ -195,6 +196,10 @@ public class ArtistImportService
                 existing.PlayCount = track.PlayCount;
                 existing.IsDownloadable = track.IsDownloadable;
                 existing.FetchedAt = now;
+
+                // Треки, сохранённые до v0.7, пришли без id — добиваем при повторном парсинге.
+                if (string.IsNullOrWhiteSpace(existing.SourceTrackId))
+                    existing.SourceTrackId = track.SourceId;
             }
         }
 

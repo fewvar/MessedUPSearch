@@ -1,3 +1,4 @@
+using System.IO;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -20,6 +21,16 @@ public partial class ArtistsViewModel : ViewModelBase
 
     /// <summary>Мои биты, отсортированные по тому, насколько они подходят артисту.</summary>
     public ObservableCollection<SimilarBeatItem> SimilarBeats { get; } = new();
+
+    /// <summary>Треки артиста из парсера — их можно послушать прямо из карточки.</summary>
+    public ObservableCollection<ArtistTrackItem> Tracks { get; } = new();
+
+    [ObservableProperty] private bool _hasTracks;
+
+    [ObservableProperty] private bool _hasAssignedBeats;
+
+    /// <summary>Ник артиста в открытой карточке — подпись в плеере.</summary>
+    public string EditingArtistName => EditNickname;
 
     public IReadOnlyList<string> CrmStatusOptions { get; } =
         new[] { "", "NO REPLY", "OK", "POSTED FREE" };
@@ -167,7 +178,9 @@ public partial class ArtistsViewModel : ViewModelBase
         EditAvatarPath = string.Empty;
         EditAvatarColor = "#888888";
         AssignedBeats.Clear();
-        LoadSimilarBeats(string.Empty);
+        HasAssignedBeats = false;
+        LoadSimilarBeats(0, string.Empty);
+        LoadTracks(0);
         IsEditorOpen = true;
     }
 
@@ -188,7 +201,8 @@ public partial class ArtistsViewModel : ViewModelBase
         EditAvatarPath = artist.AvatarPath;
         EditAvatarColor = string.IsNullOrWhiteSpace(artist.AvatarColor) ? "#888888" : artist.AvatarColor;
         LoadAssignedBeats(artist.Id);
-        LoadSimilarBeats(artist.Nickname);
+        LoadTracks(artist.Id);
+        LoadSimilarBeats(artist.Id, artist.Nickname);
         IsEditorOpen = true;
     }
 
@@ -203,23 +217,25 @@ public partial class ArtistsViewModel : ViewModelBase
     /// "tudrill". Разное написание одного артиста ("2Holis" против "2hollis")
     /// это не лечит — тут нужен уже словарь синонимов, а не нормализация.
     /// </summary>
-    private void LoadSimilarBeats(string nickname)
+    private void LoadSimilarBeats(int artistId, string nickname)
     {
         SimilarBeats.Clear();
         HasSimilarBeats = false;
         IsArtistKnownToModel = false;
-        IsSimilarityAvailable = ModelStore.IsIndexReady();
+        IsSimilarityAvailable = File.Exists(MlAssets.ReferencesPath);
 
         if (!IsSimilarityAvailable || string.IsNullOrWhiteSpace(nickname))
             return;
 
         var wanted = NormalizeName(nickname);
-        IsArtistKnownToModel = KnownArtists().Contains(wanted);
+        // Модель знает артиста, если он есть в индексе: среди ориентиров по имени или среди
+        // доступных артистов по ссылке на профиль.
+        IsArtistKnownToModel = KnownArtists().Contains(wanted) || IsInTargetIndex(artistId);
 
         using var db = new AppDbContext();
 
         var matches = db.BeatSimilarities.ToList()
-            .Where(s => NormalizeName(s.Artist) == wanted)
+            .Where(s => (artistId != 0 && s.ArtistId == artistId) || NormalizeName(s.Artist) == wanted)
             .ToList();
 
         if (matches.Count == 0)
@@ -255,8 +271,8 @@ public partial class ArtistsViewModel : ViewModelBase
 
         try
         {
-            _knownArtists = ArtistIndex.LoadNamesOnly(ModelStore.IndexPath)
-                .Select(NormalizeName)
+            _knownArtists = TargetIndex.Load(MlAssets.ReferencesPath).Artists
+                .Select(a => NormalizeName(a.Nickname))
                 .ToHashSet();
         }
         catch
@@ -267,11 +283,46 @@ public partial class ArtistsViewModel : ViewModelBase
         return _knownArtists;
     }
 
+    /// <summary>Есть ли артист из базы в большом индексе — по ссылке на профиль.</summary>
+    private static bool IsInTargetIndex(int artistId)
+    {
+        if (artistId == 0 || IndexStore.TryLoad() is not { } index)
+            return false;
+
+        using var db = new AppDbContext();
+        var url = db.Artists.Where(a => a.Id == artistId).Select(a => a.SourceUrl).FirstOrDefault();
+
+        return !string.IsNullOrWhiteSpace(url) && index.Artists.Any(a => a.SourceUrl == url);
+    }
+
     private static string NormalizeName(string raw) =>
         new string((raw ?? string.Empty)
             .ToLowerInvariant()
             .Where(char.IsLetterOrDigit)
             .ToArray());
+
+    /// <summary>Сначала самые прослушиваемые — их и слушают первыми.</summary>
+    private void LoadTracks(int artistId)
+    {
+        Tracks.Clear();
+        HasTracks = false;
+
+        if (artistId == 0)
+            return;
+
+        using var db = new AppDbContext();
+
+        var tracks = db.ArtistTracks
+            .Where(t => t.ArtistId == artistId)
+            .OrderByDescending(t => t.PlayCount)
+            .Take(30)
+            .ToList();
+
+        foreach (var track in tracks)
+            Tracks.Add(new ArtistTrackItem(track));
+
+        HasTracks = Tracks.Count > 0;
+    }
 
     private void LoadAssignedBeats(int artistId)
     {
@@ -280,6 +331,8 @@ public partial class ArtistsViewModel : ViewModelBase
         var beatIds = db.SentBeatsLog.Where(s => s.ArtistId == artistId).Select(s => s.BeatId).ToList();
         foreach (var beat in db.Beats.Where(b => beatIds.Contains(b.Id)).OrderBy(b => b.BeatName).ToList())
             AssignedBeats.Add(beat);
+
+        HasAssignedBeats = AssignedBeats.Count > 0;
     }
 
     [RelayCommand]

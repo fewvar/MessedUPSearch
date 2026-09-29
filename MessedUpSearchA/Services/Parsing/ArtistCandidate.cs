@@ -32,6 +32,10 @@ public class TrackInfo
 {
     public string Title { get; init; } = string.Empty;
     public string Url { get; init; } = string.Empty;
+
+    /// <summary>Id трека на площадке — по нему потом достаётся звук. Пусто, если площадка звук не отдаёт.</summary>
+    public string SourceId { get; init; } = string.Empty;
+
     public int PlayCount { get; init; }
     public string ReleasedAt { get; init; } = string.Empty;
     public string Tags { get; init; } = string.Empty;

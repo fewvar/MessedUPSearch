@@ -1,36 +1,69 @@
-using System.Globalization;
 using MessedUpSearchA.Services.Ml;
 
-// Печатает эмбеддинг и топ-5 для каждого переданного файла — в том же формате,
-// в каком их печатает Python-эталон, чтобы сравнение было построчным.
-if (args.Length < 3)
+// Сверка EffNet + голова: C# против Python (ml/scripts/check_effnet.py).
+//
+//   MlCheck vectors <список.txt> <out.bin>
+//
+// Список — по пути на строку. Выход: int файлов, int размерность, затем на файл
+// сырой вектор EffNet и финальный (после головы), float32. Не посчитался — нули.
+
+// Отладка входа: MlCheck decode <файл> <out.f32> — сэмплы 16 кГц, как их видит EffNet.
+if (args.Length == 3 && args[0] == "decode")
 {
-    Console.Error.WriteLine("использование: MlCheck <модель.onnx> <индекс.bin> <аудио...>");
+    var samples = AudioDecoder.Decode(args[1], EffNetEmbedder.SampleRate);
+    var bytes = new byte[samples.Length * sizeof(float)];
+    Buffer.BlockCopy(samples, 0, bytes, 0, bytes.Length);
+    File.WriteAllBytes(args[2], bytes);
+    return 0;
+}
+
+// Скорость анализа как в приложении: MlCheck time <файл> — EmbedFile (центральная минута, перемотка mp3).
+if (args.Length == 2 && args[0] == "time")
+{
+    using var timed = new EffNetEmbedder(MlAssets.ModelPath, MlAssets.HeadPath);
+    timed.EmbedFile(args[1]);                       // прогрев: первая сессия ONNX медленнее
+    var sw = System.Diagnostics.Stopwatch.StartNew();
+    for (var i = 0; i < 3; i++)
+        timed.EmbedFile(args[1]);
+    Console.WriteLine($"{Path.GetFileName(args[1])}: {sw.Elapsed.TotalSeconds / 3:F2} с на анализ");
+    return 0;
+}
+
+if (args.Length != 3 || args[0] != "vectors")
+{
+    Console.Error.WriteLine("MlCheck vectors <список.txt> <out.bin>");
     return 1;
 }
 
-using var service = new BeatSimilarityService(args[0], args[1]);
+var paths = File.ReadAllLines(args[1]).Where(l => l.Length > 0).ToArray();
+using var embedder = new EffNetEmbedder(MlAssets.ModelPath, MlAssets.HeadPath);
+var dim = embedder.Dimension;
 
-foreach (var path in args.Skip(2))
+using var writer = new BinaryWriter(File.Create(args[2]));
+writer.Write(paths.Length);
+writer.Write(dim);
+
+var clock = System.Diagnostics.Stopwatch.StartNew();
+var failed = 0;
+foreach (var path in paths)
 {
+    float[] raw, final;
     try
     {
-        var samples = AudioDecoder.Decode(path);
-        var matches = service.Analyze(path);
-
-        Console.WriteLine($"FILE\t{Path.GetFileName(path)}");
-        Console.WriteLine($"SAMPLES\t{samples.Length}");
-
-        foreach (var match in matches)
-        {
-            Console.WriteLine(string.Format(CultureInfo.InvariantCulture,
-                "MATCH\t{0}\t{1:F6}\t{2}", match.Artist, match.Similarity, match.Percent));
-        }
+        raw = embedder.EmbedRaw(AudioDecoder.Decode(path, EffNetEmbedder.SampleRate));
+        final = embedder.Project(raw);
     }
     catch (Exception ex)
     {
-        Console.WriteLine($"ERROR\t{Path.GetFileName(path)}\t{ex.Message}");
+        Console.Error.WriteLine($"{Path.GetFileName(path)}: {ex.Message}");
+        raw = new float[dim];
+        final = new float[dim];
+        failed++;
     }
+
+    foreach (var v in raw) writer.Write(v);
+    foreach (var v in final) writer.Write(v);
 }
 
+Console.WriteLine($"файлов {paths.Length}, не посчиталось {failed}, {clock.Elapsed.TotalSeconds / Math.Max(1, paths.Length):F2} с на файл");
 return 0;

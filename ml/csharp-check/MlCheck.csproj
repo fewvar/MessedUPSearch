@@ -1,9 +1,9 @@
 <Project Sdk="Microsoft.NET.Sdk">
-  <!-- Одноразовая утилита сверки: гоняет ровно тот же код, что и приложение,
-       но из консоли, чтобы сравнить числа с Python. В релиз не входит. -->
+  <!-- Утилита сверки: гоняет ровно тот же код, что и приложение, из консоли, чтобы сравнить
+       числа с Python. В релиз не входит. -->
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <TargetFramework>net9.0</TargetFramework>
+    <TargetFramework>net10.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <RootNamespace>MlCheck</RootNamespace>
@@ -11,13 +11,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Include="../../MessedUpSearchA/Services/Ml/AudioDecoder.cs" Link="AudioDecoder.cs" />
-    <Compile Include="../../MessedUpSearchA/Services/Ml/ArtistIndex.cs" Link="ArtistIndex.cs" />
-    <Compile Include="../../MessedUpSearchA/Services/Ml/BeatSimilarityService.cs" Link="BeatSimilarityService.cs" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <PackageReference Include="Microsoft.ML.OnnxRuntime" Version="1.29.0" />
-    <PackageReference Include="NLayer" Version="3.0.0" />
+    <ProjectReference Include="../../MessedUpSearchA/MessedUpSearchA.csproj" />
   </ItemGroup>
 </Project>

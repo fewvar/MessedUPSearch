@@ -1,3 +1,6 @@
+using MessedUpSearchA.Data;
+using System.Linq;
+using System;
 using System.Collections.Generic;
 using Avalonia.Controls;
 using Avalonia.Input;
@@ -55,6 +58,70 @@ public partial class BeatsView : UserControl
 
         var path = folders[0].TryGetLocalPath() ?? folders[0].Path.LocalPath;
         vm.ImportFolder(path);
+    }
+
+    /// <summary>▶ в строке. Плеер живёт в главном окне — достаём его через окно.</summary>
+    private void OnPlayBeatClick(object? sender, RoutedEventArgs e)
+    {
+        if (sender is Control { DataContext: Beat beat } &&
+            TopLevel.GetTopLevel(this) is Window { DataContext: MainWindowViewModel main })
+        {
+            main.Player.PlayBeat(beat);
+        }
+
+        e.Handled = true;
+    }
+
+    /// <summary>
+    /// ▶ у артиста из выдачи. Из большого индекса — его лучший трек (стримом),
+    /// из базы — его треки, как в карточке артиста.
+    /// </summary>
+    private void OnPlaySimilarClick(object? sender, RoutedEventArgs e)
+    {
+        if (sender is not Control { DataContext: SimilarArtistItem item } ||
+            TopLevel.GetTopLevel(this) is not Window { DataContext: MainWindowViewModel main })
+        {
+            return;
+        }
+
+        List<ArtistTrack> tracks;
+        if (item.ArtistId is { } id)
+        {
+            using var db = new AppDbContext();
+            tracks = db.ArtistTracks.Where(t => t.ArtistId == id).OrderByDescending(t => t.PlayCount).Take(30).ToList();
+        }
+        else
+        {
+            tracks = new List<ArtistTrack>();
+        }
+
+        if (tracks.Count == 0 && item.CanPlay)
+        {
+            tracks.Add(new ArtistTrack
+            {
+                Title = item.TopTrackTitle, SourcePlatform = item.Platform,
+                SourceTrackId = item.TopTrackId, Url = item.TopTrackUrl
+            });
+        }
+
+        if (tracks.Count > 0)
+            main.Player.PlayArtistTracks(tracks, 0, item.Artist);
+    }
+
+    private async void OnImportSimilarClick(object? sender, RoutedEventArgs e)
+    {
+        if (sender is Control { DataContext: SimilarArtistItem item } && DataContext is BeatsViewModel vm)
+            await vm.ImportArtistAsync(item);
+    }
+
+    private async void OnOpenSimilarClick(object? sender, RoutedEventArgs e)
+    {
+        if (sender is Control { DataContext: SimilarArtistItem { CanOpen: true } item } &&
+            TopLevel.GetTopLevel(this)?.Launcher is { } launcher &&
+            Uri.TryCreate(item.SourceUrl, UriKind.Absolute, out var uri))
+        {
+            await launcher.LaunchUriAsync(uri);
+        }
     }
 
     private void OnBeatRowClick(object? sender, PointerPressedEventArgs e)

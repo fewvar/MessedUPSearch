@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
     <PropertyGroup>
         <OutputType>WinExe</OutputType>
-        <TargetFramework>net9.0</TargetFramework>
+        <TargetFramework>net10.0</TargetFramework>
         <Nullable>enable</Nullable>
         <ApplicationManifest>app.manifest</ApplicationManifest>
         <ApplicationIcon>Assets/Icons/app.ico</ApplicationIcon>
@@ -12,11 +12,13 @@
         <AvaloniaResource Include="Assets/Fonts/**" />
         <AvaloniaResource Include="Assets/Textures/**" />
         <AvaloniaResource Include="Assets/Icons/**" />
-        <!-- Индекс артистов читается с диска как обычный файл, а не как ресурс
-             Avalonia: так его можно пересобрать скриптом из ml/ и подменить,
-             не пересобирая приложение. -->
-        <Content Include="Assets/Models/artist_index.bin"
-                 CopyToOutputDirectory="PreserveNewest" />
+        <!-- Модель подбора по звуку и её файлы читаются с диска как обычные файлы, а не как
+             ресурсы Avalonia: ONNX Runtime нужен путь, а индексы можно пересобрать скриптом
+             из ml/ и подменить, не пересобирая приложение. -->
+        <Content Include="Assets/Models/effnet_style.onnx" CopyToOutputDirectory="PreserveNewest" />
+        <Content Include="Assets/Models/effnet_head.bin" CopyToOutputDirectory="PreserveNewest" />
+        <Content Include="Assets/Models/references_v3.bin" CopyToOutputDirectory="PreserveNewest" />
+        <Content Include="Assets/Models/background_v3.bin" CopyToOutputDirectory="PreserveNewest" />
     </ItemGroup>
 
     <ItemGroup>
@@ -29,12 +31,13 @@
             <PrivateAssets Condition="'$(Configuration)' != 'Debug'">All</PrivateAssets>
         </PackageReference>
         <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.2" />
-        <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="9.0.11">
+        <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="10.0.12">
           <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
           <PrivateAssets>all</PrivateAssets>
         </PackageReference>
-        <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="9.0.11" />
+        <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="10.0.12" />
         <PackageReference Include="Microsoft.ML.OnnxRuntime" Version="1.29.0" />
         <PackageReference Include="NLayer" Version="3.0.0" />
+        <PackageReference Include="SoundFlow" Version="1.4.1" />
     </ItemGroup>
 </Project>

@@ -58,6 +58,21 @@ public class Localizer
 
     public string Get(string key) => this[key];
 
+    /// <summary>Есть ли строка под этим ключом — в текущем языке или в английском.</summary>
+    public bool TryGet(string key, out string value)
+    {
+        var table = _language == AppLanguage.Russian ? Ru : En;
+        if (table.TryGetValue(key, out value!) || En.TryGetValue(key, out value!))
+            return true;
+
+        value = string.Empty;
+        return false;
+    }
+
+    /// <summary>Культура для чисел и дат: «191 716» по-русски, «191,716» по-английски.</summary>
+    public System.Globalization.CultureInfo Culture =>
+        System.Globalization.CultureInfo.GetCultureInfo(_language == AppLanguage.Russian ? "ru-RU" : "en-US");
+
     /// <summary>Строка с подстановкой: Format("Parser.Found", 12).</summary>
     public string Format(string key, params object[] args)
     {

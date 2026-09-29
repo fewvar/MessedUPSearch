@@ -24,11 +24,14 @@ public partial class App : Application
 
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
         {
-            desktop.MainWindow = new MainWindow
-            {
-                DataContext = new MainWindowViewModel()
-            };
+            var main = new MainWindowViewModel();
+            desktop.MainWindow = new MainWindow { DataContext = main };
+
+#if DEBUG
+            Services.UiScenes.Apply(main);
+#endif
         }
+
 
         base.OnFrameworkInitializationCompleted();
     }

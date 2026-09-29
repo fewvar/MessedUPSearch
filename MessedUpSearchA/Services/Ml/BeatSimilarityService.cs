@@ -2,16 +2,34 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
-using System.Threading.Tasks;
-using MessedUpSearchA.Services.Localization;
-using Microsoft.ML.OnnxRuntime;
-using Microsoft.ML.OnnxRuntime.Tensors;
 
 namespace MessedUpSearchA.Services.Ml;
+
+/// <summary>Ориентир стиля (крупный артист из индекса друга) или цель — кому можно предложить бит.</summary>
+public enum MatchKind
+{
+    Target,
+    Reference
+}
 
 public class ArtistMatch
 {
     public string Artist { get; init; } = string.Empty;
+
+    public MatchKind Kind { get; init; } = MatchKind.Target;
+
+    /// <summary>Для артистов большого индекса: откуда он и как его импортировать и послушать.</summary>
+    public string Platform { get; init; } = string.Empty;
+    public string SourceId { get; init; } = string.Empty;
+    public string SourceUrl { get; init; } = string.Empty;
+    public string AvatarUrl { get; init; } = string.Empty;
+    public int Plays { get; init; }
+    public string TopTrackId { get; init; } = string.Empty;
+    public string TopTrackUrl { get; init; } = string.Empty;
+    public string TopTrackTitle { get; init; } = string.Empty;
+
+    /// <summary>Артист из нашей базы, если совпадение пришло из его треков. Для индекса — null.</summary>
+    public int? ArtistId { get; init; }
 
     /// <summary>Сырая косинусная близость, от -1 до 1. Для отладки, не для показа.</summary>
     public float Similarity { get; init; }
@@ -20,204 +38,134 @@ public class ArtistMatch
     public int Percent { get; init; }
 }
 
-/// <summary>
-/// Бит -> список артистов, на которых он похож по звучанию.
-///
-/// Порядок действий ровно тот же, что в Python при построении базы, иначе числа
-/// не сойдутся: декодируем в 24 кГц моно -> режем на окна по 10 секунд ->
-/// прогоняем через MERT -> усредняем окна -> вычитаем центр базы -> нормируем ->
-/// считаем косинусы с треками и агрегируем по артистам.
-/// </summary>
-public class BeatSimilarityService : IDisposable
+/// <summary>Результат анализа: «звучит как» и «кому предложить».</summary>
+public sealed class SimilarityResult
 {
-    private const int WindowSamples = 10 * AudioDecoder.TargetSampleRate;
-    private const int MaxWindows = 6;      // 6 окон = минута звука, хватает и не тормозит
+    public IReadOnlyList<ArtistMatch> References { get; init; } = [];
+    public IReadOnlyList<ArtistMatch> Targets { get; init; } = [];
+}
+
+/// <summary>
+/// Бит -> «звучит как» (ориентиры) и «кому предложить» (большой индекс).
+///
+/// Бит считается EffNet + голова (<see cref="EffNetEmbedder"/>) — тем же конвейером, что векторы
+/// индексов v3, поэтому сравнение — просто косинус. Оценка артиста — среднее по трём его ближайшим
+/// трекам минус его средняя оценка по фону (поправка на хабы).
+///
+/// Артисты из базы пользователя в выдаче — только если они есть в индексе (совпала ссылка на профиль).
+/// </summary>
+public class BeatSimilarityService
+{
     private const int TopTracksPerArtist = 3;
 
-    private readonly InferenceSession _session;
-    private readonly ArtistIndex _index;
-    private readonly Dictionary<int, List<int>> _tracksByArtist;
+    private readonly EffNetEmbedder _embedder;
 
-    public BeatSimilarityService(string modelPath, string indexPath)
+    public BeatSimilarityService(EffNetEmbedder embedder) => _embedder = embedder;
+
+    public SimilarityResult AnalyzeAll(
+        string audioPath,
+        TargetIndex references,
+        TargetIndex? targets,
+        IReadOnlyDictionary<string, int> userArtistIdsByUrl,
+        HubCorrection? hubs,
+        int referenceTop = 3,
+        int targetTop = 10,
+        CancellationToken ct = default)
+        => Rank(_embedder.EmbedFile(audioPath, ct), references, targets, userArtistIdsByUrl, hubs, referenceTop, targetTop);
+
+    /// <summary>Готовый вектор бита -> выдача. Отдельно — чтобы краулер и сверка звали без звука.</summary>
+    public static SimilarityResult Rank(
+        float[] embedding,
+        TargetIndex references,
+        TargetIndex? targets,
+        IReadOnlyDictionary<string, int> userArtistIdsByUrl,
+        HubCorrection? hubs,
+        int referenceTop = 3,
+        int targetTop = 10)
     {
-        var options = new SessionOptions
-        {
-            // Считаем на всех ядрах: анализ одного бита — это секунды, и пользователь
-            // их ждёт. Оставляем одно ядро системе, чтобы интерфейс не подтормаживал.
-            IntraOpNumThreads = Math.Max(1, Environment.ProcessorCount - 1),
-            InterOpNumThreads = 1,
-            GraphOptimizationLevel = GraphOptimizationLevel.ORT_ENABLE_ALL
-        };
-
-        _session = new InferenceSession(modelPath, options);
-        _index = ArtistIndex.Load(indexPath);
-        _tracksByArtist = _index.GroupByArtist();
-    }
-
-    public IReadOnlyList<string> KnownArtists => _index.ArtistNames;
-
-    public Task<IReadOnlyList<ArtistMatch>> AnalyzeAsync(
-        string audioPath, int top = 5, CancellationToken ct = default)
-        => Task.Run(() => Analyze(audioPath, top, ct), ct);
-
-    public IReadOnlyList<ArtistMatch> Analyze(string audioPath, int top = 5, CancellationToken ct = default)
-    {
-        var samples = AudioDecoder.Decode(audioPath);
-        var windows = SliceWindows(samples);
-
-        if (windows.Count == 0)
-            throw new InvalidOperationException(Localizer.Instance["Analysis.TooShort"]);
-
-        var embedding = Embed(windows, ct);
-        return Rank(embedding, top);
-    }
-
-    /// <summary>
-    /// Берём окна равномерно по всему биту. Только начало брать нельзя: там часто
-    /// интро без бочки, и оно не показательно для звучания целиком.
-    /// </summary>
-    private static List<float[]> SliceWindows(float[] samples)
-    {
-        var windows = new List<float[]>();
-
-        if (samples.Length < 3 * AudioDecoder.TargetSampleRate)
-            return windows;
-
-        if (samples.Length <= WindowSamples)
-        {
-            var padded = new float[WindowSamples];
-            Array.Copy(samples, padded, samples.Length);
-            windows.Add(padded);
-            return windows;
-        }
-
-        var count = Math.Min(MaxWindows, samples.Length / WindowSamples);
-        var step = count > 1 ? (double)(samples.Length - WindowSamples) / (count - 1) : 0;
-
-        for (var i = 0; i < count; i++)
-        {
-            var window = new float[WindowSamples];
-            Array.Copy(samples, (int)(i * step), window, 0, WindowSamples);
-            windows.Add(window);
-        }
-
-        return windows;
-    }
-
-    private float[] Embed(List<float[]> windows, CancellationToken ct)
-    {
-        ct.ThrowIfCancellationRequested();
-
-        // Все окна одним прогоном: по одному это выходило вдвое дольше — модель
-        // распараллеливает батч сама, а мы платили за запуск графа каждый раз.
-        var batch = new float[windows.Count * WindowSamples];
-        for (var w = 0; w < windows.Count; w++)
-            Array.Copy(windows[w], 0, batch, w * WindowSamples, WindowSamples);
-
-        var tensor = new DenseTensor<float>(batch, new[] { windows.Count, WindowSamples });
-        var inputs = new List<NamedOnnxValue>
-        {
-            NamedOnnxValue.CreateFromTensor("waveform", tensor)
-        };
-
-        using var results = _session.Run(inputs);
-        var output = results.First().AsTensor<float>();
-
-        var dimension = _index.Dimension;
-        if (output.Dimensions.Length != 2 || output.Dimensions[1] != dimension)
-        {
-            throw new InvalidOperationException(
-                $"модель вернула форму [{string.Join(",", output.Dimensions.ToArray())}], " +
-                $"а индекс ждёт {dimension} чисел — модель и индекс из разных сборок");
-        }
-
-        var accumulated = new float[dimension];
-
-        for (var w = 0; w < windows.Count; w++)
-        {
-            for (var i = 0; i < dimension; i++)
-                accumulated[i] += output[w, i];
-        }
-
-        for (var i = 0; i < accumulated.Length; i++)
-            accumulated[i] /= windows.Count;
-
-        // Центрирование и нормировка — точно как при построении базы.
-        for (var i = 0; i < accumulated.Length; i++)
-            accumulated[i] -= _index.Center[i];
-
-        var norm = 0f;
-        for (var i = 0; i < accumulated.Length; i++)
-            norm += accumulated[i] * accumulated[i];
-
-        norm = MathF.Sqrt(norm);
-        if (norm > 1e-9f)
-        {
-            for (var i = 0; i < accumulated.Length; i++)
-                accumulated[i] /= norm;
-        }
-
-        return accumulated;
-    }
-
-    private IReadOnlyList<ArtistMatch> Rank(float[] embedding, int top)
-    {
-        var scores = new List<(string Artist, float Score)>(_tracksByArtist.Count);
-
-        foreach (var (artistId, trackIds) in _tracksByArtist)
-        {
-            // Оценка артиста — среднее по трём его ближайшим трекам. Один трек
-            // слишком случаен, среднее по всем размывает: у Yeat 153 трека.
-            var best = new float[TopTracksPerArtist];
-            Array.Fill(best, float.NegativeInfinity);
-
-            foreach (var trackId in trackIds)
+        var referenceMatches = RankIndex(embedding, references, "ref", hubs, referenceTop, userArtistIdsByUrl)
+            .Select(m => new ArtistMatch
             {
-                var similarity = Dot(embedding, _index.Vectors[trackId]);
+                Artist = m.Artist, Kind = MatchKind.Reference, Similarity = m.Similarity, Percent = m.Percent
+            })
+            .ToArray();
 
-                for (var slot = 0; slot < best.Length; slot++)
-                {
-                    if (similarity <= best[slot])
-                        continue;
+        // Индекс целей из другой сборки головы (другой центр) несравним — лучше без него.
+        var targetMatches = targets is not null && targets.Center.AsSpan().SequenceEqual(references.Center)
+            ? RankIndex(embedding, targets, "url", hubs, targetTop, userArtistIdsByUrl)
+            : [];
 
-                    for (var shift = best.Length - 1; shift > slot; shift--)
-                        best[shift] = best[shift - 1];
+        return new SimilarityResult { References = referenceMatches, Targets = targetMatches };
+    }
 
-                    best[slot] = similarity;
-                    break;
-                }
-            }
+    private static ArtistMatch[] RankIndex(
+        float[] embedding, TargetIndex index, string keyPrefix, HubCorrection? hubs, int top,
+        IReadOnlyDictionary<string, int> userArtistIdsByUrl)
+    {
+        var scored = new List<(TargetArtist Artist, float Score)>(index.Artists.Count);
 
-            var taken = best.Where(v => !float.IsNegativeInfinity(v)).ToArray();
-            if (taken.Length > 0)
-                scores.Add((_index.ArtistNames[artistId], taken.Average()));
+        foreach (var artist in index.Artists)
+        {
+            if (artist.Vectors.Length == 0 || artist.Vectors[0].Length != embedding.Length)
+                continue;
+
+            var score = TopTracksScore(embedding, artist.Vectors);
+            if (hubs is not null)
+                score -= hubs.Bias($"{keyPrefix}:{artist.SourceUrl}:{artist.Nickname}", artist.Vectors, TopTracksScore);
+
+            scored.Add((artist, score));
         }
 
-        return scores
+        return scored
             .OrderByDescending(s => s.Score)
             .Take(top)
-            .Select(s => new ArtistMatch
+            .Select(s =>
             {
-                Artist = s.Artist,
-                Similarity = s.Score,
-                Percent = ToPercent(s.Score)
+                int? id = s.Artist.SourceUrl.Length > 0 && userArtistIdsByUrl.TryGetValue(s.Artist.SourceUrl, out var found)
+                    ? found
+                    : null;
+
+                return new ArtistMatch
+                {
+                    Artist = s.Artist.Nickname,
+                    ArtistId = id,
+                    Kind = MatchKind.Target,
+                    Similarity = s.Score,
+                    Percent = HubCorrection.ToPercent(s.Score, reference: keyPrefix == "ref"),
+                    Platform = s.Artist.Platform,
+                    SourceId = s.Artist.SourceId,
+                    SourceUrl = s.Artist.SourceUrl,
+                    AvatarUrl = s.Artist.AvatarUrl,
+                    Plays = s.Artist.Plays,
+                    TopTrackId = s.Artist.TopTrackId,
+                    TopTrackUrl = s.Artist.TopTrackUrl,
+                    TopTrackTitle = s.Artist.TopTrackTitle
+                };
             })
             .ToArray();
     }
 
-    /// <summary>
-    /// Косинус в проценты. Честного способа нет: даже у чужих друг другу треков
-    /// близость редко уходит сильно ниже нуля, а у похожих редко превышает 0.6.
-    /// Поэтому растягиваем рабочий диапазон 0.05..0.65 на всю шкалу — это подгонка
-    /// под восприятие, а не физическая величина.
-    /// </summary>
-    private static int ToPercent(float similarity)
+    /// <summary>Оценка артиста — среднее по трём его ближайшим к биту трекам (как Candidate.Score).</summary>
+    private static float TopTracksScore(float[] beat, IReadOnlyList<float[]> vectors)
     {
-        const float low = 0.05f;
-        const float high = 0.65f;
+        var best = new float[Math.Min(TopTracksPerArtist, vectors.Count)];
+        Array.Fill(best, float.NegativeInfinity);
 
-        var normalized = (similarity - low) / (high - low);
-        return (int)Math.Round(Math.Clamp(normalized, 0f, 1f) * 100);
+        foreach (var vector in vectors)
+        {
+            var similarity = Dot(beat, vector);
+            for (var slot = 0; slot < best.Length; slot++)
+            {
+                if (similarity <= best[slot])
+                    continue;
+                for (var shift = best.Length - 1; shift > slot; shift--)
+                    best[shift] = best[shift - 1];
+                best[slot] = similarity;
+                break;
+            }
+        }
+
+        return best.Average();
     }
 
     private static float Dot(float[] a, float[] b)
@@ -227,6 +175,4 @@ public class BeatSimilarityService : IDisposable
             sum += a[i] * b[i];
         return sum;
     }
-
-    public void Dispose() => _session.Dispose();
 }

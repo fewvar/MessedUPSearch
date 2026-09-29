@@ -20,7 +20,7 @@
     <Grid>
         <Border Background="#B0000000" PointerPressed="OnBackdropClick"/>
 
-        <Border Classes="modal" Width="920" Height="700">
+        <Border Classes="modal" Width="920" Margin="0,40" MaxHeight="900" VerticalAlignment="Stretch">
             <Grid RowDefinitions="Auto,*">
 
                 <Grid Grid.Row="0" Margin="28,18,18,4">
@@ -191,6 +191,10 @@
                                            TextWrapping="Wrap"
                                            Text="{loc:Tr Settings.BuiltWith}"
                                            Margin="0,8,0,2"/>
+                                <TextBlock Classes="settingsAbout"
+                                           TextWrapping="Wrap"
+                                           Text="{loc:Tr Settings.ModelCredit}"
+                                           Margin="0,0,0,2"/>
                                 <TextBlock Classes="settingsAbout"
                                            TextWrapping="Wrap"
                                            Text="by @fewvar"/>

@@ -80,4 +80,62 @@
         <Setter Property="Foreground" Value="{StaticResource OnBackground}"/>
     </Style>
 
+    <!-- Кнопки плеера: только значок, без рамки. Значки — Path, красятся через Fill. -->
+    <Style Selector="Button.playerButton">
+        <Setter Property="Cursor" Value="Hand"/>
+        <Setter Property="Template">
+            <ControlTemplate TargetType="Button">
+                <Border Background="Transparent" Width="30" Height="30" CornerRadius="4">
+                    <ContentPresenter Content="{TemplateBinding Content}"
+                                      HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                </Border>
+            </ControlTemplate>
+        </Setter>
+    </Style>
+    <Style Selector="Button.playerButton Path">
+        <Setter Property="Fill" Value="{StaticResource OnBackgroundDim}"/>
+    </Style>
+    <Style Selector="Button.playerButton:pointerover Path">
+        <Setter Property="Fill" Value="{StaticResource OnBackground}"/>
+    </Style>
+
+    <!-- ▶ в строке таблицы: тёмный квадрат на светлой карточке. -->
+    <Style Selector="Button.rowPlay">
+        <Setter Property="Cursor" Value="Hand"/>
+        <Setter Property="Template">
+            <ControlTemplate TargetType="Button">
+                <Border Name="box" Background="{StaticResource OnSurface}" Width="24" Height="24" CornerRadius="4">
+                    <ContentPresenter Content="{TemplateBinding Content}"
+                                      HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                </Border>
+            </ControlTemplate>
+        </Setter>
+    </Style>
+    <Style Selector="Button.rowPlay Path">
+        <Setter Property="Fill" Value="{StaticResource Surface}"/>
+    </Style>
+    <Style Selector="Button.rowPlay:pointerover /template/ Border#box">
+        <Setter Property="Background" Value="{StaticResource OnSurfaceMuted}"/>
+    </Style>
+
+    <!-- Мелкая текстовая кнопка для строки состояния. -->
+    <Style Selector="Button.statusButton">
+        <Setter Property="Cursor" Value="Hand"/>
+        <Setter Property="Foreground" Value="{StaticResource OnBackgroundDim}"/>
+        <Setter Property="Template">
+            <ControlTemplate TargetType="Button">
+                <Border BorderBrush="{TemplateBinding Foreground}" BorderThickness="1"
+                        CornerRadius="3" Padding="8,1" Background="Transparent">
+                    <ContentPresenter Content="{TemplateBinding Content}"
+                                      FontFamily="{StaticResource HeadingFont}"
+                                      FontSize="10"
+                                      Foreground="{TemplateBinding Foreground}"/>
+                </Border>
+            </ControlTemplate>
+        </Setter>
+    </Style>
+    <Style Selector="Button.statusButton:pointerover">
+        <Setter Property="Foreground" Value="{StaticResource OnBackground}"/>
+    </Style>
+
 </Styles>

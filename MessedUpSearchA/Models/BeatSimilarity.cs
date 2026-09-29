@@ -13,6 +13,12 @@ public class BeatSimilarity
 
     public string Artist { get; set; } = string.Empty;
 
+    /// <summary>
+    /// Артист из нашей базы, если совпадение пришло из его треков. Для 32 артистов
+    /// из artist_index.bin пусто — у них нет карточки, только имя.
+    /// </summary>
+    public int? ArtistId { get; set; }
+
     /// <summary>Позиция в выдаче, 1 — самый похожий.</summary>
     public int Rank { get; set; }
 
@@ -23,4 +29,17 @@ public class BeatSimilarity
     public double Similarity { get; set; }
 
     public string ComputedAt { get; set; } = string.Empty;
+
+    /// <summary>"Target" — кому предложить, "Reference" — «звучит как» (крупные артисты).</summary>
+    public string Kind { get; set; } = "Target";
+
+    // Для артистов большого индекса, которых ещё нет в базе: как импортировать и что сыграть.
+    public string Platform { get; set; } = string.Empty;
+    public string SourceId { get; set; } = string.Empty;
+    public string SourceUrl { get; set; } = string.Empty;
+    public string AvatarUrl { get; set; } = string.Empty;
+    public int Plays { get; set; }
+    public string TopTrackId { get; set; } = string.Empty;
+    public string TopTrackUrl { get; set; } = string.Empty;
+    public string TopTrackTitle { get; set; } = string.Empty;
 }

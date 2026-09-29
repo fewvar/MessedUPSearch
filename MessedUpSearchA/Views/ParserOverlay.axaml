@@ -17,7 +17,7 @@
     <Grid>
         <Border Background="#B0000000" PointerPressed="OnBackdropClick"/>
 
-        <Border Classes="modal" Width="920" Height="680">
+        <Border Classes="modal" Width="920" Margin="0,40" MaxHeight="900" VerticalAlignment="Stretch">
             <Grid RowDefinitions="Auto,*,Auto" DataContext="{Binding ParserVm}"
                   x:DataType="vm:ParserViewModel">
 

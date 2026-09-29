@@ -3,6 +3,7 @@
              xmlns:vm="using:MessedUpSearchA.ViewModels"
              xmlns:models="using:MessedUpSearchA.Models"
              xmlns:loc="using:MessedUpSearchA.Services.Localization"
+             xmlns:conv="using:MessedUpSearchA.Converters"
              x:Class="MessedUpSearchA.Views.ArtistsView"
              x:DataType="vm:ArtistsViewModel">
 
@@ -85,37 +86,56 @@
                                     <TextBlock Grid.Column="1"
                                                Text="{Binding Nickname}"
                                                FontWeight="Bold" FontSize="15"
-                                               Margin="14,0,0,0"
+                                               Margin="14,0,8,0"
+                                               TextTrimming="CharacterEllipsis"
+                                               ToolTip.Tip="{Binding Nickname}"
                                                VerticalAlignment="Center"/>
 
                                     <TextBlock Grid.Column="2"
                                                Text="{Binding AiGenreTags}"
                                                FontSize="14"
-                                               Margin="14,0,0,0"
+                                               Margin="14,0,8,0"
+                                               TextTrimming="CharacterEllipsis"
+                                               ToolTip.Tip="{Binding AiGenreTags}"
                                                VerticalAlignment="Center"/>
 
                                     <TextBlock Grid.Column="3"
-                                               Text="{Binding TotalPlays}"
+                                               Text="{Binding TotalPlays, Converter={x:Static conv:CountConverter.Instance}}"
                                                FontSize="14"
                                                Margin="14,0,0,0"
                                                VerticalAlignment="Center"/>
 
+                                    <!-- Пустые «inst:» и «spotify:» в каждой строке были шумом: показываем
+                                         только то, что есть, а если нет ничего — прочерк. -->
                                     <StackPanel Grid.Column="4"
                                                 Margin="14,0,14,0"
                                                 VerticalAlignment="Center">
                                         <TextBlock Text="{Binding IgLink, StringFormat='inst: {0}'}"
+                                                   IsVisible="{Binding IgLink, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
                                                    FontSize="13" Cursor="Hand"
+                                                   TextTrimming="CharacterEllipsis"
                                                    PointerPressed="OnIgLinkClick"/>
                                         <TextBlock Text="{Binding SpotifyLink, StringFormat='spotify: {0}'}"
+                                                   IsVisible="{Binding SpotifyLink, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
                                                    FontSize="13" Cursor="Hand"
+                                                   TextTrimming="CharacterEllipsis"
                                                    PointerPressed="OnSpotifyLinkClick"/>
+                                        <TextBlock Text="—" FontSize="13">
+                                            <TextBlock.IsVisible>
+                                                <MultiBinding Converter="{x:Static BoolConverters.And}">
+                                                    <Binding Path="IgLink" Converter="{x:Static StringConverters.IsNullOrEmpty}"/>
+                                                    <Binding Path="SpotifyLink" Converter="{x:Static StringConverters.IsNullOrEmpty}"/>
+                                                </MultiBinding>
+                                            </TextBlock.IsVisible>
+                                        </TextBlock>
                                     </StackPanel>
 
                                     <Grid Grid.Column="5" ColumnDefinitions="*,Auto,Auto"
                                           Margin="14,0,14,0" VerticalAlignment="Center">
                                         <TextBlock Grid.Column="0"
-                                                   Text="{Binding Language}"
+                                                   Text="{Binding Language, Converter={x:Static conv:DataLabelConverter.Instance}, ConverterParameter=short}"
                                                    FontSize="14"
+                                                   TextTrimming="CharacterEllipsis"
                                                    VerticalAlignment="Center"/>
 
                                         <Panel Grid.Column="1"
@@ -145,7 +165,8 @@
                                                        IsVisible="{Binding IsRedFlagged}"/>
                                             <TextBlock Text="⚑" FontSize="18"
                                                        HorizontalAlignment="Center" VerticalAlignment="Center"
-                                                       Foreground="#55FFFFFF"
+                                                       Foreground="{StaticResource OnSurfaceMuted}"
+                                                       Opacity="0.55"
                                                        IsVisible="{Binding !IsRedFlagged}"/>
                                         </Panel>
                                     </Grid>
@@ -258,7 +279,9 @@
 
     <Grid IsVisible="{Binding IsEditorOpen}">
         <Border Background="#B0000000"/>
-        <Border Classes="modal" Width="560" VerticalAlignment="Center" HorizontalAlignment="Center">
+        <!-- Две колонки: слева поля, справа биты и треки. В одну колонку треки и подходящие
+             биты уходили за нижний край окна. -->
+        <Border Classes="modal" Width="960" Margin="0,12" VerticalAlignment="Center" HorizontalAlignment="Center">
             <StackPanel Margin="28,18,28,24" Spacing="12">
                 <StackPanel.Styles>
 
@@ -284,6 +307,8 @@
                             Command="{Binding CancelCommand}"/>
                 </Grid>
 
+                <Grid ColumnDefinitions="*,32,*">
+                <StackPanel Grid.Column="0" Spacing="12">
                 <Grid ColumnDefinitions="*,14,*">
                     <StackPanel Grid.Column="0" Spacing="4">
                         <TextBlock Classes="filterLabel" Text="{loc:Tr Artists.Nickname}"/>
@@ -334,12 +359,19 @@
                     <TextBlock Classes="filterLabel" Text="{loc:Tr ArtistEditor.Notes}"/>
                     <TextBox Text="{Binding EditNotes}"
                              AcceptsReturn="True" TextWrapping="Wrap"
-                             Height="70"/>
+                             Height="110"/>
+                </StackPanel>
                 </StackPanel>
 
+                <StackPanel Grid.Column="2" Spacing="12">
                 <StackPanel Spacing="4" IsVisible="{Binding IsEditMode}">
                     <TextBlock Classes="filterLabel" Text="{loc:Tr ArtistEditor.AssignedBeats}"/>
-                    <Border BorderBrush="#33FFFFFF" BorderThickness="1" CornerRadius="6" Padding="10,8">
+                    <TextBlock Text="{loc:Tr ArtistEditor.NoAssignedBeats}"
+                               IsVisible="{Binding !HasAssignedBeats}"
+                               FontSize="11" TextWrapping="Wrap"
+                               Foreground="{StaticResource OnBackgroundDim}"/>
+                    <Border BorderBrush="#33FFFFFF" BorderThickness="1" CornerRadius="6" Padding="10,8"
+                            IsVisible="{Binding HasAssignedBeats}">
                         <ScrollViewer MaxHeight="110" VerticalScrollBarVisibility="Auto">
                             <ItemsControl ItemsSource="{Binding AssignedBeats}">
                                 <ItemsControl.ItemTemplate>
@@ -373,6 +405,7 @@
                             <MultiBinding Converter="{x:Static BoolConverters.And}">
                                 <Binding Path="IsSimilarityAvailable"/>
                                 <Binding Path="!IsArtistKnownToModel"/>
+                                <Binding Path="!HasSimilarBeats"/>
                             </MultiBinding>
                         </TextBlock.IsVisible>
                     </TextBlock>
@@ -420,6 +453,42 @@
                         </ScrollViewer>
                     </Border>
                 </StackPanel>
+
+                <StackPanel Spacing="4">
+                    <TextBlock Classes="filterLabel" Text="{loc:Tr ArtistEditor.Tracks}"/>
+
+                    <TextBlock Text="{loc:Tr ArtistEditor.NoTracks}"
+                               IsVisible="{Binding !HasTracks}"
+                               FontSize="11" TextWrapping="Wrap"
+                               Foreground="{StaticResource OnBackgroundDim}"/>
+
+                    <Border BorderBrush="#33FFFFFF" BorderThickness="1" CornerRadius="6"
+                            Padding="6,4" IsVisible="{Binding HasTracks}">
+                        <ScrollViewer MaxHeight="150" VerticalScrollBarVisibility="Auto">
+                            <ItemsControl ItemsSource="{Binding Tracks}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate DataType="vm:ArtistTrackItem">
+                                        <Grid ColumnDefinitions="Auto,*,Auto">
+                                            <Button Grid.Column="0" Classes="playerButton" Click="OnPlayTrackClick">
+                                                <Path Data="M0,0 L8,4.5 L0,9 Z"/>
+                                            </Button>
+                                            <TextBlock Grid.Column="1" Text="{Binding Title}"
+                                                       FontSize="13" Margin="4,0"
+                                                       VerticalAlignment="Center"
+                                                       TextTrimming="CharacterEllipsis"/>
+                                            <TextBlock Grid.Column="2" Text="{Binding Meta}"
+                                                       FontSize="11" VerticalAlignment="Center"
+                                                       Foreground="{StaticResource OnBackgroundDim}"/>
+                                        </Grid>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </ScrollViewer>
+                    </Border>
+                </StackPanel>
+
+                </StackPanel>
+                </Grid>
 
                 <Grid Margin="0,8,0,0" ColumnDefinitions="Auto,*,Auto">
                     <Button Grid.Column="0" Classes="action" Content="{loc:Tr Buttons.Delete}"

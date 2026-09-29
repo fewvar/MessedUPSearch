@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace MessedUpSearchA.Services.Parsing.Sources;
 
-public class AudiusSource : IArtistSource
+public class AudiusSource : IArtistSource, IAudioResolver
 {
     private const string Host = "https://api.audius.co";
     private const string AppName = "MessedUpSearch";
@@ -96,6 +96,7 @@ public class AudiusSource : IArtistSource
             {
                 Title = track.Str("title"),
                 Url = string.IsNullOrWhiteSpace(permalink) ? string.Empty : Web + permalink,
+                SourceId = track.Str("id"),
                 PlayCount = track.Int("play_count"),
                 ReleasedAt = NormalizeDate(track.Str("release_date")),
                 Tags = (track.Str("tags") ?? string.Empty).Replace(",", ", "),
@@ -104,6 +105,33 @@ public class AudiusSource : IArtistSource
         }
 
         return tracks;
+    }
+
+    /// <summary>
+    /// Audius отдаёт полный трек открыто: /stream редиректит на mp3 в хранилище.
+    /// Трекам, сохранённым до v0.7, id не досталось — достаём его по ссылке через /resolve.
+    /// </summary>
+    public async Task<ResolvedAudio?> ResolveAsync(string trackId, string trackUrl, CancellationToken ct)
+    {
+        if (string.IsNullOrWhiteSpace(trackId))
+        {
+            if (string.IsNullOrWhiteSpace(trackUrl))
+                return null;
+
+            await _limiter.WaitAsync(ct);
+            using var doc = JsonDocument.Parse(await _fetch(
+                $"{Host}/v1/resolve?url={Uri.EscapeDataString(trackUrl)}&app_name={AppName}", ct));
+
+            trackId = doc.RootElement.Obj("data")?.Str("id") ?? string.Empty;
+            if (string.IsNullOrWhiteSpace(trackId))
+                return null;
+        }
+
+        return new ResolvedAudio
+        {
+            Urls = [$"{Host}/v1/tracks/{Uri.EscapeDataString(trackId)}/stream?app_name={AppName}"],
+            AudioKind = AudioKinds.Full
+        };
     }
 
     private string BuildSearchUrl(ArtistSearchQuery query, int offset)

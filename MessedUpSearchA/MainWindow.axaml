@@ -5,6 +5,7 @@
         xmlns:vm="using:MessedUpSearchA.ViewModels"
         xmlns:views="using:MessedUpSearchA.Views"
         xmlns:loc="using:MessedUpSearchA.Services.Localization"
+        xmlns:controls="using:MessedUpSearchA.Controls"
         mc:Ignorable="d" d:DesignWidth="1280" d:DesignHeight="960"
         x:Class="MessedUpSearchA.MainWindow"
         x:DataType="vm:MainWindowViewModel"
@@ -21,7 +22,7 @@
 
         <Rectangle Fill="{StaticResource BackgroundTexture}"/>
 
-        <Grid Margin="72,40,72,16" RowDefinitions="180,*,Auto" RowSpacing="20">
+        <Grid Margin="72,40,72,16" RowDefinitions="180,*,Auto,Auto" RowSpacing="20">
 
         <Grid Grid.Row="0" x:CompileBindings="False">
 
@@ -53,6 +54,64 @@
         <ContentControl Grid.Row="1" Content="{Binding CurrentViewModel}"/>
 
         <Border Grid.Row="2"
+                IsVisible="{Binding Player.HasTrack}"
+                Background="#0DFFFFFF"
+                CornerRadius="8"
+                Padding="10,8">
+            <Grid ColumnDefinitions="Auto,220,*,Auto,Auto" ColumnSpacing="16">
+                <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="2" VerticalAlignment="Center">
+                    <Button Classes="playerButton" Command="{Binding Player.PreviousCommand}">
+                        <Path Data="M0,0 H2 V10 H0 Z M10,0 L3,5 L10,10 Z"/>
+                    </Button>
+                    <Button Classes="playerButton" Command="{Binding Player.TogglePlayCommand}">
+                        <Panel>
+                            <Path Data="M0,0 L9,5 L0,10 Z" IsVisible="{Binding !Player.IsPlaying}"/>
+                            <Path Data="M0,0 H3 V10 H0 Z M6,0 H9 V10 H6 Z" IsVisible="{Binding Player.IsPlaying}"/>
+                        </Panel>
+                    </Button>
+                    <Button Classes="playerButton" Command="{Binding Player.NextCommand}">
+                        <Path Data="M0,0 L7,5 L0,10 Z M8,0 H10 V10 H8 Z"/>
+                    </Button>
+                </StackPanel>
+
+                <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="2">
+                    <TextBlock Text="{Binding Player.Title}"
+                               FontFamily="{StaticResource HeadingFont}"
+                               FontSize="14" LetterSpacing="1"
+                               TextTrimming="CharacterEllipsis"
+                               Foreground="{StaticResource OnBackground}"/>
+                    <TextBlock Text="{Binding Player.Caption}"
+                               FontSize="11"
+                               TextTrimming="CharacterEllipsis"
+                               ToolTip.Tip="{Binding Player.Caption}"
+                               Foreground="{StaticResource OnBackgroundDim}"/>
+                </StackPanel>
+
+                <controls:PixelWaveform Grid.Column="2" Height="36"
+                                        Peaks="{Binding Player.Peaks}"
+                                        Progress="{Binding Player.Progress}"
+                                        SeekCommand="{Binding Player.SeekToCommand}"
+                                        PlayedBrush="{StaticResource OnBackground}"
+                                        RestBrush="#33FFFFFF"/>
+
+                <TextBlock Grid.Column="3" Text="{Binding Player.TimeLabel}"
+                           VerticalAlignment="Center"
+                           FontSize="11"
+                           Foreground="{StaticResource OnBackgroundDim}"/>
+
+                <StackPanel Grid.Column="4" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                    <Path Data="M0,3 H3 L7,0 V10 L3,7 H0 Z M8.5,3 V7 M10.5,1.5 V8.5"
+                          Fill="{StaticResource OnBackgroundDim}"
+                          Stroke="{StaticResource OnBackgroundDim}" StrokeThickness="1"
+                          VerticalAlignment="Center"/>
+                    <Slider Width="90" Minimum="0" Maximum="1"
+                            Value="{Binding Player.Volume}"
+                            VerticalAlignment="Center"/>
+                </StackPanel>
+            </Grid>
+        </Border>
+
+        <Border Grid.Row="3"
                 BorderBrush="#22FFFFFF"
                 BorderThickness="0,1,0,0"
                 Padding="4,8,4,4"
@@ -80,12 +139,15 @@
                                Foreground="{StaticResource OnBackgroundDim}"/>
                 </StackPanel>
 
-                <TextBlock Grid.Column="1"
-                           Text="{Binding ParserStatus}"
-                           HorizontalAlignment="Center"
-                           FontFamily="{StaticResource HeadingFont}"
-                           FontSize="11" LetterSpacing="2"
-                           Foreground="{StaticResource OnBackgroundDim}"/>
+                <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="10"
+                            HorizontalAlignment="Center">
+                    <TextBlock Text="{Binding ParserStatus}"
+                               VerticalAlignment="Center"
+                               FontFamily="{StaticResource HeadingFont}"
+                               FontSize="11" LetterSpacing="2"
+                               Foreground="{StaticResource OnBackgroundDim}"/>
+
+                </StackPanel>
 
                 <TextBlock Grid.Column="2"
                            Text="{Binding AppVersion}"

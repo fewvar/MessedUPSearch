@@ -1,7 +1,9 @@
+using CommunityToolkit.Mvvm.ComponentModel;
+
 namespace MessedUpSearchA.ViewModels;
 
-/// <summary>Строка в блоке «на кого похож бит».</summary>
-public class SimilarArtistItem
+/// <summary>Строка в блоке «кому предложить бит».</summary>
+public partial class SimilarArtistItem : ObservableObject
 {
     public string Artist { get; init; } = string.Empty;
 
@@ -10,5 +12,26 @@ public class SimilarArtistItem
     public string PercentLabel => $"{Percent}%";
 
     /// <summary>Ширина полоски в списке — рисуем её вместо диаграммы.</summary>
-    public double BarWidth => Percent * 1.6;
+    public double BarWidth => Percent * 1.2;
+
+    /// <summary>Номер артиста в базе. null — он только в большом индексе.</summary>
+    [ObservableProperty, NotifyPropertyChangedFor(nameof(CanImport))] private int? _artistId;
+
+    [ObservableProperty, NotifyPropertyChangedFor(nameof(CanImport))] private bool _isImporting;
+
+    public string Platform { get; init; } = string.Empty;
+    public string SourceId { get; init; } = string.Empty;
+    public string SourceUrl { get; init; } = string.Empty;
+    public string AvatarUrl { get; init; } = string.Empty;
+    public int Plays { get; init; }
+    public string TopTrackId { get; init; } = string.Empty;
+    public string TopTrackUrl { get; init; } = string.Empty;
+    public string TopTrackTitle { get; init; } = string.Empty;
+
+    /// <summary>➕ — только тем, кого ещё нет в базе.</summary>
+    public bool CanImport => ArtistId is null && !IsImporting && SourceUrl.Length > 0;
+
+    public bool CanOpen => SourceUrl.Length > 0;
+
+    public bool CanPlay => TopTrackUrl.Length > 0 || TopTrackId.Length > 0;
 }

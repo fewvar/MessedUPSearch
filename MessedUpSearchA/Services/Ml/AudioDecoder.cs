@@ -7,7 +7,7 @@ using NLayer;
 namespace MessedUpSearchA.Services.Ml;
 
 /// <summary>
-/// WAV/MP3 -> моно float 24 кГц, то есть ровно то, что ждёт модель.
+/// WAV/MP3 -> моно float в той частоте, что ждёт модель (EffNet — 16 кГц).
 ///
 /// Ресемплинг здесь не для галочки: эмбеддинги базы считались после ffmpeg, и если
 /// подсунуть модели грубо передискретизированный звук, вектор бита уедет в сторону,
@@ -16,12 +16,25 @@ namespace MessedUpSearchA.Services.Ml;
 /// </summary>
 public static class AudioDecoder
 {
-    public const int TargetSampleRate = 24000;
-
     /// <summary>Ширина ядра ресемплера: больше — точнее и медленнее. 16 хватает с запасом.</summary>
     private const int SincHalfWidth = 16;
 
-    public static float[] Decode(string filePath)
+    /// <summary>
+    /// Моно в нужной частоте: 16 кГц для EffNet, 24 кГц для MERT в краулере.
+    /// maxSeconds > 0 — только центральный кусок такой длины: mp3 перематывается к нему, а не
+    /// декодируется целиком, и ресемплится только он. Для 4-минутного бита это в разы быстрее.
+    /// </summary>
+    public static float[] Decode(string filePath, int sampleRate, int maxSeconds = 0)
+    {
+        var (samples, nativeRate) = DecodeNative(filePath, maxSeconds);
+        return nativeRate == sampleRate ? samples : Resample(samples, nativeRate, sampleRate);
+    }
+
+    /// <summary>
+    /// Моно в родной частоте файла, без ресемплинга. Для волны в плеере этого
+    /// хватает, а ресемплинг — больше половины времени всего декодирования.
+    /// </summary>
+    public static (float[] Samples, int SampleRate) DecodeNative(string filePath, int maxSeconds = 0)
     {
         if (!File.Exists(filePath))
             throw new FileNotFoundException("файл не найден", filePath);
@@ -31,17 +44,21 @@ public static class AudioDecoder
         var (samples, sampleRate) = extension switch
         {
             ".wav" => ReadWav(filePath),
-            ".mp3" => ReadMp3(filePath),
+            ".mp3" => ReadMp3(filePath, maxSeconds),
             _ => throw new NotSupportedException($"формат {extension} не поддерживается")
         };
 
         if (samples.Length == 0)
             throw new InvalidDataException("в файле нет звука");
 
-        return sampleRate == TargetSampleRate ? samples : Resample(samples, sampleRate, TargetSampleRate);
+        var limit = maxSeconds > 0 ? (long)maxSeconds * sampleRate : long.MaxValue;
+        if (samples.Length > limit)
+            samples = samples.AsSpan((int)((samples.Length - limit) / 2), (int)limit).ToArray();
+
+        return (samples, sampleRate);
     }
 
-    private static (float[] Samples, int SampleRate) ReadMp3(string path)
+    private static (float[] Samples, int SampleRate) ReadMp3(string path, int maxSeconds)
     {
         using var file = new MpegFile(path);
 
@@ -49,8 +66,16 @@ public static class AudioDecoder
         var buffer = new float[16384];
         var mono = new List<float>((int)Math.Max(1024, file.Length / Math.Max(1, channels)));
 
+        // С запасом в секунду с каждой стороны: перемотка mp3 — по кадрам, не до сэмпла.
+        var wanted = long.MaxValue;
+        if (maxSeconds > 0 && file.Duration.TotalSeconds > maxSeconds + 2)
+        {
+            file.Time = TimeSpan.FromSeconds((file.Duration.TotalSeconds - maxSeconds) / 2 - 1);
+            wanted = (long)(maxSeconds + 2) * file.SampleRate;
+        }
+
         int read;
-        while ((read = file.ReadSamples(buffer, 0, buffer.Length)) > 0)
+        while (mono.Count < wanted && (read = file.ReadSamples(buffer, 0, buffer.Length)) > 0)
         {
             if (channels == 1)
             {

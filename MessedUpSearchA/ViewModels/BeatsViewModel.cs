@@ -10,7 +10,9 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using MessedUpSearchA.Data;
 using MessedUpSearchA.Models;
+using MessedUpSearchA.Services;
 using MessedUpSearchA.Services.Localization;
+using MessedUpSearchA.Services.Parsing;
 using MessedUpSearchA.Services.Ml;
 
 namespace MessedUpSearchA.ViewModels;
@@ -38,6 +40,12 @@ public partial class BeatsViewModel : ViewModelBase
 
     [ObservableProperty] private bool _isPreviewVisible;
 
+    /// <summary>Какой бит сейчас в плеере — его строка подсвечивается. null — никакой.</summary>
+    [ObservableProperty] private int? _playingBeatId;
+
+    /// <summary>Играет ли плеер — чтобы в строке играющего бита был значок паузы, а не ▶.</summary>
+    [ObservableProperty] private bool _isPlayerPlaying;
+
     private readonly List<Beat> _allBeats = new();
 
     partial void OnFilterTypeChanged(string value) => ApplyFilter();
@@ -64,6 +72,15 @@ public partial class BeatsViewModel : ViewModelBase
     [ObservableProperty] private string _analysisStatus = string.Empty;
     [ObservableProperty] private bool _hasSimilarity;
 
+    /// <summary>«звучит как: Osamason · Summrs» — крупные артисты-ориентиры, им бит не продашь.</summary>
+    [ObservableProperty] private string _styleReferences = string.Empty;
+
+    /// <summary>Артиста из выдачи добавили в базу — вкладке артистов пора перечитать список.</summary>
+    public event Action? ArtistImported;
+
+    /// <summary>Индекс не скачался — второй раз за сессию не пробуем, чтобы не тормозить каждый анализ.</summary>
+    private static bool _indexDownloadFailed;
+
     private CancellationTokenSource? _analysisCts;
 
     /// <summary>
@@ -71,7 +88,7 @@ public partial class BeatsViewModel : ViewModelBase
     /// к которому привязывается результат. Держим его здесь и сохраняем вместе
     /// с самим битом — иначе пользователь видит выдачу на экране, а она пропадает.
     /// </summary>
-    private IReadOnlyList<ArtistMatch> _pendingSimilarity = Array.Empty<ArtistMatch>();
+    private SimilarityResult? _pendingSimilarity;
 
     private int _editingId;
     private string _editFilePath = string.Empty;
@@ -226,9 +243,8 @@ public partial class BeatsViewModel : ViewModelBase
     }
 
     /// <summary>
-    /// Анализ идёт секунды и требует 208-мегабайтной модели, поэтому: результат
-    /// пишем в базу и при следующем открытии карточки просто достаём оттуда,
-    /// а саму модель качаем один раз при первом запуске.
+    /// Анализ идёт около секунды; модель едет с приложением. Результат пишем в базу и при
+    /// следующем открытии карточки достаём оттуда. Качается только большой индекс артистов.
     /// </summary>
     [RelayCommand]
     private async Task AnalyzeSimilarityAsync()
@@ -242,7 +258,7 @@ public partial class BeatsViewModel : ViewModelBase
             return;
         }
 
-        if (!ModelStore.IsIndexReady())
+        if (!MlAssets.IsReady())
         {
             AnalysisStatus = Localizer.Instance["Analysis.NoIndex"];
             return;
@@ -253,32 +269,39 @@ public partial class BeatsViewModel : ViewModelBase
 
         try
         {
-            if (!ModelStore.IsModelReady())
+            if (!IndexStore.IsReady() && !_indexDownloadFailed)
             {
-                var progress = new Progress<double>(value =>
-                    AnalysisStatus = Localizer.Instance.Format("Analysis.DownloadingProgress", value.ToString("P0")));
-
-                AnalysisStatus = Localizer.Instance["Analysis.Downloading"];
-                await ModelStore.DownloadModelAsync(progress, _analysisCts.Token);
+                AnalysisStatus = Localizer.Instance["Analysis.DownloadingIndex"];
+                try
+                {
+                    await IndexStore.DownloadAsync(_analysisCts.Token);
+                }
+                catch (Exception ex) when (ex is not OperationCanceledException)
+                {
+                    // Без большого индекса остаётся «звучит как» — не повод падать.
+                    _indexDownloadFailed = true;
+                    AppLog.Write($"индекс артистов не скачался: {ex.Message}");
+                }
             }
 
             AnalysisStatus = Localizer.Instance["Analysis.Listening"];
 
-            var matches = await Task.Run(() =>
+            var path = _editFilePath;
+            var ct = _analysisCts.Token;
+            var result = await Task.Run(() =>
             {
-                using var service = new BeatSimilarityService(ModelStore.ModelPath, ModelStore.IndexPath);
-                return service.Analyze(_editFilePath, top: 5, _analysisCts.Token);
-            }, _analysisCts.Token);
+                var embedder = EffNetEmbedder.GetShared();
+                var references = TargetIndex.Load(MlAssets.ReferencesPath);
+                var hubs = HubCorrection.TryLoad(MlAssets.BackgroundPath, embedder.Dimension);
+                return new BeatSimilarityService(embedder)
+                    .AnalyzeAll(path, references, IndexStore.TryLoad(), UserArtistIdsByUrl(), hubs, ct: ct);
+            }, ct);
 
             if (_editingId == 0)
-                _pendingSimilarity = matches;   // бит ещё не сохранён — запишем при сохранении
+                _pendingSimilarity = result;   // бит ещё не сохранён — запишем при сохранении
             else
-                SaveSimilarity(_editingId, matches);
-            ShowSimilarity(matches.Select((m, i) => new SimilarArtistItem
-            {
-                Artist = m.Artist,
-                Percent = m.Percent
-            }));
+                SaveSimilarity(_editingId, result);
+            ShowSimilarity(result);
 
             AnalysisStatus = string.Empty;
         }
@@ -301,8 +324,20 @@ public partial class BeatsViewModel : ViewModelBase
     [RelayCommand]
     private void CancelAnalysis() => _analysisCts?.Cancel();
 
-    private void SaveSimilarity(int beatId, IReadOnlyList<ArtistMatch> matches)
+    private static Dictionary<string, int> UserArtistIdsByUrl()
     {
+        using var db = new AppDbContext();
+        return db.Artists
+            .Where(a => a.SourceUrl != null && a.SourceUrl != "")
+            .Select(a => new { a.SourceUrl, a.Id })
+            .ToList()
+            .GroupBy(a => a.SourceUrl!)
+            .ToDictionary(g => g.Key, g => g.First().Id);
+    }
+
+    private void SaveSimilarity(int beatId, SimilarityResult result)
+    {
+        var matches = result.Targets.Concat(result.References).ToList();
         if (beatId == 0 || matches.Count == 0)
             return;
 
@@ -317,6 +352,16 @@ public partial class BeatsViewModel : ViewModelBase
             {
                 BeatId = beatId,
                 Artist = matches[i].Artist,
+                ArtistId = matches[i].ArtistId,
+                Kind = matches[i].Kind.ToString(),
+                Platform = matches[i].Platform,
+                SourceId = matches[i].SourceId,
+                SourceUrl = matches[i].SourceUrl,
+                AvatarUrl = matches[i].AvatarUrl,
+                Plays = matches[i].Plays,
+                TopTrackId = matches[i].TopTrackId,
+                TopTrackUrl = matches[i].TopTrackUrl,
+                TopTrackTitle = matches[i].TopTrackTitle,
                 Rank = i + 1,
                 Percent = matches[i].Percent,
                 Similarity = matches[i].Similarity,
@@ -332,7 +377,8 @@ public partial class BeatsViewModel : ViewModelBase
         SimilarArtists.Clear();
         HasSimilarity = false;
         AnalysisStatus = string.Empty;
-        _pendingSimilarity = Array.Empty<ArtistMatch>();
+        _pendingSimilarity = null;
+        StyleReferences = string.Empty;
 
         if (beatId == 0)
             return;
@@ -343,20 +389,76 @@ public partial class BeatsViewModel : ViewModelBase
             .OrderBy(s => s.Rank)
             .ToList();
 
-        ShowSimilarity(saved.Select(s => new SimilarArtistItem
-        {
-            Artist = s.Artist,
-            Percent = s.Percent
-        }));
+        // Строки до v0.7 без Kind считаются целями — так их и показывали раньше.
+        ShowSimilarity(
+            saved.Where(s => s.Kind != nameof(MatchKind.Reference)).Select(ToItem),
+            saved.Where(s => s.Kind == nameof(MatchKind.Reference)).Select(s => s.Artist));
     }
 
-    private void ShowSimilarity(IEnumerable<SimilarArtistItem> items)
+    private static SimilarArtistItem ToItem(BeatSimilarity s) => new()
+    {
+        Artist = s.Artist, Percent = s.Percent, ArtistId = s.ArtistId,
+        Platform = s.Platform, SourceId = s.SourceId, SourceUrl = s.SourceUrl, AvatarUrl = s.AvatarUrl,
+        Plays = s.Plays, TopTrackId = s.TopTrackId, TopTrackUrl = s.TopTrackUrl, TopTrackTitle = s.TopTrackTitle
+    };
+
+    private void ShowSimilarity(SimilarityResult result) =>
+        ShowSimilarity(
+            result.Targets.Select(m => new SimilarArtistItem
+            {
+                Artist = m.Artist, Percent = m.Percent, ArtistId = m.ArtistId,
+                Platform = m.Platform, SourceId = m.SourceId, SourceUrl = m.SourceUrl, AvatarUrl = m.AvatarUrl,
+                Plays = m.Plays, TopTrackId = m.TopTrackId, TopTrackUrl = m.TopTrackUrl, TopTrackTitle = m.TopTrackTitle
+            }),
+            result.References.Select(m => m.Artist));
+
+    private void ShowSimilarity(IEnumerable<SimilarArtistItem> items, IEnumerable<string> references)
     {
         SimilarArtists.Clear();
         foreach (var item in items)
             SimilarArtists.Add(item);
 
-        HasSimilarity = SimilarArtists.Count > 0;
+        var names = references.ToList();
+        StyleReferences = names.Count > 0
+            ? Localizer.Instance.Format("BeatEditor.SoundsLike", string.Join(" · ", names))
+            : string.Empty;
+
+        HasSimilarity = SimilarArtists.Count > 0 || names.Count > 0;
+    }
+
+    /// <summary>➕ у артиста из большого индекса: импорт тем же путём, что и парсер.</summary>
+    public async Task ImportArtistAsync(SimilarArtistItem item)
+    {
+        if (!item.CanImport)
+            return;
+
+        item.IsImporting = true;
+        try
+        {
+            var id = await IndexArtistImporter.ImportAsync(
+                item.Platform, item.SourceId, item.SourceUrl, item.Artist, item.AvatarUrl);
+
+            item.ArtistId = id;
+
+            // Все выдачи, где он встречался, теперь ведут на карточку в базе.
+            using (var db = new AppDbContext())
+            {
+                foreach (var row in db.BeatSimilarities.Where(s => s.SourceUrl == item.SourceUrl))
+                    row.ArtistId = id;
+                db.SaveChanges();
+            }
+
+            ArtistImported?.Invoke();
+        }
+        catch (Exception ex)
+        {
+            AnalysisStatus = Localizer.Instance.Format("Analysis.ImportFailed", item.Artist, ex.Message);
+            AppLog.Write($"импорт из выдачи: {item.Artist}: {ex}");
+        }
+        finally
+        {
+            item.IsImporting = false;
+        }
     }
 
     private void LoadArtistPicks(int beatId)
@@ -407,10 +509,10 @@ public partial class BeatsViewModel : ViewModelBase
         SyncArtistLinks(db, beat.Id);
         db.SaveChanges();
 
-        if (_pendingSimilarity.Count > 0)
+        if (_pendingSimilarity is not null)
         {
             SaveSimilarity(beat.Id, _pendingSimilarity);
-            _pendingSimilarity = Array.Empty<ArtistMatch>();
+            _pendingSimilarity = null;
         }
 
         IsEditorOpen = false;

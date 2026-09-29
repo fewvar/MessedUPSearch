@@ -147,7 +147,7 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--embeddings", default="data/embeddings_mert.npz")
     parser.add_argument("--manifest", default="data/manifest24.csv")
-    parser.add_argument("--models-dir", default="../MessedUpSearchA/Assets/Models")
+    parser.add_argument("--models-dir", default="../crawler/Mert")
     args = parser.parse_args()
 
     base = Path(__file__).resolve().parent.parent

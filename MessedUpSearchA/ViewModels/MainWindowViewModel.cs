@@ -21,6 +21,7 @@ public partial class MainWindowViewModel : ViewModelBase
     private readonly ParserViewModel _parserVm = new();
 
     public BeatsViewModel BeatsVm => _beatsVm;
+    public PlayerViewModel Player { get; }
     public ArtistsViewModel ArtistsVm => _artistsVm;
     public ParserViewModel ParserVm => _parserVm;
 
@@ -48,7 +49,7 @@ public partial class MainWindowViewModel : ViewModelBase
 
     public IReadOnlyList<string> LanguageOptions { get; } = new[] { "English", "Русский" };
 
-    public string AppVersion => "v0.6";
+    public string AppVersion => "v1.0";
 
     /// <summary>
     /// Подпись в футере. Парсер работает только по кнопке, фонового прогона нет,
@@ -63,6 +64,17 @@ public partial class MainWindowViewModel : ViewModelBase
     public MainWindowViewModel()
     {
         _currentViewModel = _beatsVm;
+
+        Player = new PlayerViewModel(_settings)
+        {
+            BeatListProvider = () => _beatsVm.Beats.ToList()
+        };
+        Player.PlayingBeatChanged += id => _beatsVm.PlayingBeatId = id;
+        Player.PropertyChanged += (_, e) =>
+        {
+            if (e.PropertyName == nameof(PlayerViewModel.IsPlaying))
+                _beatsVm.IsPlayerPlaying = Player.IsPlaying;
+        };
         _reminderDays = Math.Clamp(_settings.ReminderDays, 1, 14);
 
         _mediaFolder = _settings.ResolveMediaFolder();
@@ -83,6 +95,12 @@ public partial class MainWindowViewModel : ViewModelBase
         {
             OnPropertyChanged(nameof(ReminderDaysLabel));
             OnPropertyChanged(nameof(ParserStatus));
+        };
+
+        _beatsVm.ArtistImported += () =>
+        {
+            AvatarBrushConverter.Invalidate();
+            _artistsVm.LoadArtists();
         };
 
         _parserVm.ImportDone += () =>
