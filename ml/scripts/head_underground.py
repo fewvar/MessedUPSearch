@@ -25,9 +25,11 @@ TAU = 0.1
 
 def load(features):
     label = cm.labels()
-    z = {m: np.load(BASE / f"data/models/{m}.npz", allow_pickle=True) for m in ("effnet", "muq")}
+    models = ("effnet", "muq") if "muq" in features else ("effnet",)
+    z = {m: np.load(BASE / f"data/models/{m}.npz", allow_pickle=True) for m in models}
     keys = z["effnet"]["keys"].astype(str)
-    assert (z["muq"]["keys"].astype(str) == keys).all()
+    if "muq" in z:
+        assert (z["muq"]["keys"].astype(str) == keys).all()
     lab = [label(k) for k in keys]
     roles = np.array([r or "" for r, _ in lab])
     artists = np.array([a or "" for _, a in lab])
