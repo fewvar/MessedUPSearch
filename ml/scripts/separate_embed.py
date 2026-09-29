@@ -6,7 +6,6 @@
   2. считает векторы:
        'full'   — MERT слой 5 по куску с голосом: по нему фильтр «рэпер или нет»;
        'effnet' — EffNet style по инструменталу: по нему поиск «бит -> артист» (приложение, индекс v3);
-       'inst'   — MERT по инструменталу (история; индекс v2);
   3. пишет их в crawl.db (таблица embeddings), трек -> 'embedded';
   4. сохраняет звук: кусок -> data/audio/<id>.mp3, инструментал -> data/inst/underground/<id>.mp3
      (с 29.09.2026: иначе новую модель не проверить без ночи скачивания).
@@ -122,9 +121,9 @@ def process(path, mert, demucs, db, effnet=None):
 
     full = embed(mert, to_mono24(wav, demucs.samplerate))
     separated = separate(demucs, wav)
-    inst = embed(mert, to_mono24(separated, demucs.samplerate))
 
-    vectors = {"full": full, "inst": inst}
+    # MERT по инструменталу ('inst') больше не считаем: индекс v2 отжил, поиск — по EffNet.
+    vectors = {"full": full}
     if effnet is not None:
         # Инструментал — в файл, и EffNet считается уже по файлу: ровно как индекс v3 (embed_models.py).
         from embed_models import load as load_audio

@@ -31,7 +31,9 @@ public static class Listen
     /// Python не схватит недокачанный. Если в очереди уже MaxQueued файлов, ждём:
     /// сеть быстрее видеокарты, и без этого папка разрослась бы на гигабайты.
     /// </summary>
-    public static async Task SlicesOnlyAsync(CrawlDb db, string queueDir, int tracksPerArtist, CancellationToken ct)
+    /// <param name="onlyIndexPath">если задан — только артисты этого индекса (докачка треков уже отобранным)</param>
+    public static async Task SlicesOnlyAsync(CrawlDb db, string queueDir, int tracksPerArtist, CancellationToken ct,
+        string? onlyIndexPath = null)
     {
         const int MaxQueued = 20;
 
@@ -39,6 +41,17 @@ public static class Listen
         File.Delete(Path.Combine(queueDir, ".done"));
 
         var jobs = PlanJobs(db, tracksPerArtist, countStatuses: "'sliced','embedded'");
+        if (onlyIndexPath is not null)
+        {
+            var urls = TargetIndex.Load(onlyIndexPath).Artists.Select(a => a.SourceUrl).ToHashSet();
+            var ids = new HashSet<long>();
+            using (var command = db.Command("SELECT id, source_url FROM artists"))
+            using (var reader = command.ExecuteReader())
+                while (reader.Read())
+                    if (urls.Contains(reader.GetString(1)))
+                        ids.Add(reader.GetInt64(0));
+            jobs = jobs.Where(j => ids.Contains(j.ArtistId)).ToList();
+        }
         Console.WriteLine($"к скачиванию: {jobs.Count} кусков у {jobs.Select(j => j.ArtistId).Distinct().Count()} артистов");
 
         var resolvers = AudioResolvers.CreateAll();

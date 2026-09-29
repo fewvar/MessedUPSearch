@@ -46,7 +46,7 @@ public static class Cli
                 {
                     using var store = db();
                     await Listen.SlicesOnlyAsync(store, Option(args, "--queue") ?? Path.Combine(DataDir, "slices"),
-                        int.Parse(Option(args, "--tracks") ?? "4"), cts.Token);
+                        int.Parse(Option(args, "--tracks") ?? "4"), cts.Token, Option(args, "--only-index"));
                     return 0;
                 }
                 case "reslice":
@@ -137,7 +137,7 @@ public static class Cli
           discover   [--target 200] [--terms rage,plugg,...]   найти рэперов
           listen     [--tracks 4] [--model путь]                послушать их треки
           listen     --negatives 150                            по треку от явных битмейкеров — для классификатора голоса
-          listen     --slices-only [--tracks 4]                 новый конвейер: куски в очередь для separate_embed.py
+          listen     --slices-only [--tracks 4] [--only-index ф] куски в очередь для separate_embed.py (--only-index: только артисты индекса)
           reset-listen                                          переслушать всё новым конвейером (с разделением вокала)
           evaluate   [--index artist_index.bin]                 качество: leave-one-track-out
           query      бит.mp3 ...                                топ-10 для битов — проверить ушами
