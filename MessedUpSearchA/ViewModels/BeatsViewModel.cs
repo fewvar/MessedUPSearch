@@ -243,9 +243,8 @@ public partial class BeatsViewModel : ViewModelBase
     }
 
     /// <summary>
-    /// Анализ идёт секунды и требует 208-мегабайтной модели, поэтому: результат
-    /// пишем в базу и при следующем открытии карточки просто достаём оттуда,
-    /// а саму модель качаем один раз при первом запуске.
+    /// Анализ идёт около секунды; модель едет с приложением. Результат пишем в базу и при
+    /// следующем открытии карточки достаём оттуда. Качается только большой индекс артистов.
     /// </summary>
     [RelayCommand]
     private async Task AnalyzeSimilarityAsync()
@@ -259,7 +258,7 @@ public partial class BeatsViewModel : ViewModelBase
             return;
         }
 
-        if (!ModelStore.IsIndexReady() || !File.Exists(ModelStore.ReferencesPath))
+        if (!MlAssets.IsReady())
         {
             AnalysisStatus = Localizer.Instance["Analysis.NoIndex"];
             return;
@@ -270,15 +269,6 @@ public partial class BeatsViewModel : ViewModelBase
 
         try
         {
-            if (!ModelStore.IsModelReady())
-            {
-                var progress = new Progress<double>(value =>
-                    AnalysisStatus = Localizer.Instance.Format("Analysis.DownloadingProgress", value.ToString("P0")));
-
-                AnalysisStatus = Localizer.Instance["Analysis.Downloading"];
-                await ModelStore.DownloadModelAsync(progress, _analysisCts.Token);
-            }
-
             if (!IndexStore.IsReady() && !_indexDownloadFailed)
             {
                 AnalysisStatus = Localizer.Instance["Analysis.DownloadingIndex"];
@@ -288,7 +278,7 @@ public partial class BeatsViewModel : ViewModelBase
                 }
                 catch (Exception ex) when (ex is not OperationCanceledException)
                 {
-                    // Без большого индекса выдача строится по базе пользователя — не повод падать.
+                    // Без большого индекса остаётся «звучит как» — не повод падать.
                     _indexDownloadFailed = true;
                     AppLog.Write($"индекс артистов не скачался: {ex.Message}");
                 }
@@ -300,12 +290,11 @@ public partial class BeatsViewModel : ViewModelBase
             var ct = _analysisCts.Token;
             var result = await Task.Run(() =>
             {
-                // Сессия общая с фоновой очередью — вторая копия модели заняла бы ещё сотни МБ.
-                using var service = new BeatSimilarityService(
-                    MertEmbedder.GetShared(ModelStore.ModelPath), ModelStore.IndexPath);
-                var references = TargetIndex.Load(ModelStore.ReferencesPath);
-                var hubs = HubCorrection.TryLoad(ModelStore.BackgroundPath, references.Center);
-                return service.AnalyzeAll(path, references, IndexStore.TryLoad(), UserArtistIdsByUrl(), hubs, ct: ct);
+                var embedder = EffNetEmbedder.GetShared();
+                var references = TargetIndex.Load(MlAssets.ReferencesPath);
+                var hubs = HubCorrection.TryLoad(MlAssets.BackgroundPath, embedder.Dimension);
+                return new BeatSimilarityService(embedder)
+                    .AnalyzeAll(path, references, IndexStore.TryLoad(), UserArtistIdsByUrl(), hubs, ct: ct);
             }, ct);
 
             if (_editingId == 0)

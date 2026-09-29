@@ -222,7 +222,7 @@ public partial class ArtistsViewModel : ViewModelBase
         SimilarBeats.Clear();
         HasSimilarBeats = false;
         IsArtistKnownToModel = false;
-        IsSimilarityAvailable = File.Exists(ModelStore.ReferencesPath);
+        IsSimilarityAvailable = File.Exists(MlAssets.ReferencesPath);
 
         if (!IsSimilarityAvailable || string.IsNullOrWhiteSpace(nickname))
             return;
@@ -271,7 +271,7 @@ public partial class ArtistsViewModel : ViewModelBase
 
         try
         {
-            _knownArtists = TargetIndex.Load(ModelStore.ReferencesPath).Artists
+            _knownArtists = TargetIndex.Load(MlAssets.ReferencesPath).Artists
                 .Select(a => NormalizeName(a.Nickname))
                 .ToHashSet();
         }

@@ -7,27 +7,29 @@ using System.Linq;
 namespace MessedUpSearchA.Services.Ml;
 
 /// <summary>
-/// Поправка на «хабы» — артистов, похожих на любой бит. Без неё Yeat (153 трека в базе:
-/// три похожих найдутся всегда) стоял в топ-5 у 66% битов линейки. Из оценки артиста
-/// вычитается его средняя оценка по фоновым битам (248 type beat'ов, background_beats.bin):
+/// Поправка на «хабы» — артистов, похожих на любой бит. Без неё один артист с сотней треков
+/// (три похожих найдутся всегда) стоит в топ-5 у большинства битов. Из оценки артиста
+/// вычитается его средняя оценка по фоновым битам (877 type beat'ов, background_v3.bin):
 /// остаётся «насколько этот бит похож на артиста сильнее, чем бит вообще».
 ///
-/// Замер на линейке (ml/scripts/evaluate_beats.py): top-5 41.5% против 40.7% без поправки —
-/// точность та же, а самый частый артист в топ-5 теперь у 32% битов, а не у 66%.
+/// Формат: int битов, int размерность, затем биты × размерность × Half — векторы уже финальные
+/// (EffNet + голова, ml/scripts/export_effnet.py).
 /// </summary>
 public sealed class HubCorrection
 {
-    public const string FileName = "background_beats.bin";
+    public const string FileName = "background_v3.bin";
 
     /// <summary>
-    /// Шкала процентов для поправленной оценки, откалибрована на индексе из 652 артистов
-    /// (28.09.2026): у первого места для type beat'а оценка 0.25–0.47 (10–90 перцентиль),
-    /// у десятого 0.17–0.38. Поэтому 0.10 -> 0%, 0.50 -> 100%: типичный первый ~65%,
-    /// десятый ~40%. Прежняя шкала (0 -> 0.30) на большом индексе упиралась в 100% у всех.
+    /// Шкалы процентов для поправленной оценки (EffNet + голова, 29.09.2026). Перцентили по 877 type
+    /// beat'ам (10/50/90): ориентиры — 1-е место 0.14/0.25/0.38, 3-е 0.07/0.17/0.28; андеграунд 652 —
+    /// 1-е 0.26/0.36/0.51, 10-е 0.18/0.25/0.38. Голова училась на андеграунде и собирает его плотнее,
+    /// поэтому шкалы две: в обоих списках типичное первое место ~65%, последнее ~40–45%.
     /// Это подгонка под восприятие, а не вероятность.
     /// </summary>
-    private const float PercentLow = 0.10f;
-    private const float PercentHigh = 0.50f;
+    private const float ReferenceLow = -0.01f;
+    private const float ReferenceHigh = 0.39f;
+    private const float TargetLow = 0.086f;
+    private const float TargetHigh = 0.506f;
 
     private static readonly ConcurrentDictionary<string, float> Cache = new();
 
@@ -35,24 +37,24 @@ public sealed class HubCorrection
 
     private HubCorrection(float[][] background) => _background = background;
 
-    public static HubCorrection? TryLoad(string path, float[] center)
+    public static HubCorrection? TryLoad(string path, int dimension)
     {
         if (!File.Exists(path))
             return null;
 
         using var reader = new BinaryReader(File.OpenRead(path));
         var count = reader.ReadInt32();
-        var dimension = reader.ReadInt32();
-        if (count <= 0 || dimension != center.Length)
+        var fileDimension = reader.ReadInt32();
+        if (count <= 0 || fileDimension != dimension)
             return null;
 
         var background = new float[count][];
         for (var i = 0; i < count; i++)
         {
-            var raw = new float[dimension];
+            var vector = new float[dimension];
             for (var d = 0; d < dimension; d++)
-                raw[d] = reader.ReadSingle();
-            background[i] = MertEmbedder.Centered(raw, center);
+                vector[d] = (float)BitConverter.UInt16BitsToHalf(reader.ReadUInt16());
+            background[i] = vector;
         }
 
         return new HubCorrection(background);
@@ -60,12 +62,14 @@ public sealed class HubCorrection
 
     /// <summary>
     /// Средняя оценка артиста по фону — тем же способом, что и по биту (top-N треков).
-    /// Для артистов индекса не меняется, поэтому кэшируется; ключ включает число треков,
-    /// чтобы артист из базы, у которого очередь дослушала новые треки, пересчитался.
+    /// Для артистов индекса не меняется, поэтому кэшируется.
     /// </summary>
     public float Bias(string key, IReadOnlyList<float[]> vectors, Func<float[], IReadOnlyList<float[]>, float> score) =>
         Cache.GetOrAdd($"{key}|{vectors.Count}", _ => _background.Average(b => score(b, vectors)));
 
-    public static int ToPercent(float adjusted) =>
-        (int)Math.Round(Math.Clamp((adjusted - PercentLow) / (PercentHigh - PercentLow), 0f, 1f) * 100);
+    public static int ToPercent(float adjusted, bool reference)
+    {
+        var (low, high) = reference ? (ReferenceLow, ReferenceHigh) : (TargetLow, TargetHigh);
+        return (int)Math.Round(Math.Clamp((adjusted - low) / (high - low), 0f, 1f) * 100);
+    }
 }

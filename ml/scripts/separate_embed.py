@@ -3,13 +3,13 @@
 
 Забирает куски треков из папки-очереди (ml/data/slices/<track_id>.mp3), для каждого:
   1. Demucs htdemucs отделяет вокал (модель загружена один раз, MPS);
-  2. считает два вектора MERT слоя 5 — ровно как ONNX в приложении: 24 кГц моно,
-     до 6 окон по 10 с, нормализация каждого окна, среднее по времени и окнам:
-       'full' — кусок как есть, с голосом: по нему фильтр «рэпер или нет»;
-       'inst' — только инструментал: по нему поиск «бит -> артист»
-       (замер: +8.8 п.п. top-5 против треков с голосом, см. ml/README.md);
-  3. пишет оба в crawl.db (таблица embeddings), трек -> 'embedded';
-  4. удаляет mp3 сразу — звук на диске не копится.
+  2. считает векторы:
+       'full'   — MERT слой 5 по куску с голосом: по нему фильтр «рэпер или нет»;
+       'effnet' — EffNet style по инструменталу: по нему поиск «бит -> артист» (приложение, индекс v3);
+       'inst'   — MERT по инструменталу (история; индекс v2);
+  3. пишет их в crawl.db (таблица embeddings), трек -> 'embedded';
+  4. сохраняет звук: кусок -> data/audio/<id>.mp3, инструментал -> data/inst/underground/<id>.mp3
+     (с 29.09.2026: иначе новую модель не проверить без ночи скачивания).
 
 Работает, пока C# качает: ждёт новые файлы; когда C# кладёт метку .done и очередь пуста — выходит.
 
@@ -102,7 +102,12 @@ def read_audio(path, demucs):
     return wav
 
 
-def process(path, mert, demucs, db):
+def load_effnet():
+    from embed_models import EffNet
+    return EffNet(variants=())
+
+
+def process(path, mert, demucs, db, effnet=None):
     track_id = int(path.stem)
     wav = read_audio(path, demucs)
     keep = MAX_SECONDS * demucs.samplerate
@@ -116,13 +121,24 @@ def process(path, mert, demucs, db):
         return "short"
 
     full = embed(mert, to_mono24(wav, demucs.samplerate))
-    inst = embed(mert, to_mono24(separate(demucs, wav), demucs.samplerate))
+    separated = separate(demucs, wav)
+    inst = embed(mert, to_mono24(separated, demucs.samplerate))
 
-    if full is None or inst is None or not (np.isfinite(full).all() and np.isfinite(inst).all()):
+    vectors = {"full": full, "inst": inst}
+    if effnet is not None:
+        # Инструментал — в файл, и EffNet считается уже по файлу: ровно как индекс v3 (embed_models.py).
+        from embed_models import load as load_audio
+        from inst_cache import save_mp3
+        inst_path = BASE / "data/inst/underground" / f"{track_id}.mp3"
+        inst_path.parent.mkdir(parents=True, exist_ok=True)
+        save_mp3(separated, demucs.samplerate, inst_path)
+        vectors["effnet"] = effnet(load_audio(inst_path, effnet.rate))["style"]
+
+    if any(v is None or not np.isfinite(v).all() for v in vectors.values()):
         db.execute("UPDATE tracks SET status='failed', error='не посчитался вектор' WHERE id=?", (track_id,))
         return "bad"
 
-    for kind, vector in (("full", full), ("inst", inst)):
+    for kind, vector in vectors.items():
         db.execute("INSERT OR REPLACE INTO embeddings (track_id, kind, vector, seconds) VALUES (?, ?, ?, ?)",
                    (track_id, kind, vector.astype(np.float32).tobytes(), round(seconds, 1)))
     db.execute("UPDATE tracks SET status='embedded', error='' WHERE id=?", (track_id,))
@@ -130,7 +146,7 @@ def process(path, mert, demucs, db):
 
 
 def run(queue, db_path):
-    mert, demucs = load_mert(), load_demucs()
+    mert, demucs, effnet = load_mert(), load_demucs(), load_effnet()
     db = sqlite3.connect(db_path, timeout=30, isolation_level=None)
     db.execute("PRAGMA journal_mode=WAL")
     print(f"устройство {DEVICE}; жду куски в {queue}", flush=True)
@@ -146,12 +162,15 @@ def run(queue, db_path):
 
         for path in files:
             try:
-                stats[process(path, mert, demucs, db)] += 1
+                stats[process(path, mert, demucs, db, effnet)] += 1
             except Exception as ex:   # один битый файл не должен ронять ночной прогон
                 stats["error"] += 1
                 db.execute("UPDATE tracks SET status='failed', error=? WHERE id=?", (str(ex)[:300], int(path.stem)))
             finally:
-                path.unlink(missing_ok=True)
+                # Звук храним (data/audio), как reslice: для проверки других моделей без повторного скачивания.
+                keep = BASE / "data/audio" / path.name
+                keep.parent.mkdir(parents=True, exist_ok=True)
+                path.replace(keep) if path.exists() else None
 
             done = sum(stats.values())
             print(f"\r{done} кусков  {stats}  {(time.time() - started) / done:.1f} с/кусок   ", end="", flush=True)

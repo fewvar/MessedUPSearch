@@ -3,12 +3,12 @@ using MessedUpSearchA.Services.Ml;
 
 namespace Crawler;
 
-/// <summary>Оценка пилота, пробный запрос битом и экспорт индекса v2.</summary>
+/// <summary>Оценка индекса, пробный запрос битом и экспорт индекса v3 (EffNet + голова).</summary>
 public static class Analysis
 {
     private const int TopTracks = 3;
 
-    /// <param name="Vectors">инструменталы (kind='inst'), центр — из references_v2.bin: по ним поиск</param>
+    /// <param name="Vectors">инструменталы: сырой EffNet (kind='effnet') через голову — по ним поиск</param>
     /// <param name="FullVectors">куски с голосом (kind='full'), центр — artist_index.bin: по ним фильтр голоса</param>
     private sealed record Artist(long Id, string Nickname, string Platform, string SourceId, string Url,
         string Avatar, string Genre, int Plays, List<float[]> Vectors, List<float[]> FullVectors)
@@ -20,8 +20,11 @@ public static class Analysis
     /// <summary>Веса классификатора голоса; нет файла — фильтр не применяется.</summary>
     public static string VocalPath { get; set; } = string.Empty;
 
-    /// <summary>Центр для инструменталов — общий с приложением (references_v2.bin).</summary>
+    /// <summary>Ориентиры приложения (references_v3.bin): их центр c2 пишется в индекс для сверки сборок.</summary>
     public static string ReferencesPath { get; set; } = string.Empty;
+
+    /// <summary>Голова EffNet (effnet_head.bin) — та же, что в приложении.</summary>
+    public static string HeadPath { get; set; } = string.Empty;
 
     /// <summary>Центр, которым учили фильтр голоса (векторы с голосом) — artist_index.bin.</summary>
     public static string FriendIndexPath { get; set; } = string.Empty;
@@ -44,7 +47,7 @@ public static class Analysis
 
     private static List<Artist> LoadAllArtists(CrawlDb db)
     {
-        var instCenter = TargetIndex.Load(ReferencesPath).Center;
+        var head = EffNetHead.Load(HeadPath);
         var fullCenter = ArtistIndex.Load(FriendIndexPath).Center;
         var artists = new Dictionary<long, Artist>();
 
@@ -55,7 +58,7 @@ public static class Analysis
             JOIN embeddings f ON f.track_id = i.track_id AND f.kind = 'full'
             JOIN tracks t ON t.id = i.track_id
             JOIN artists a ON a.id = t.artist_id
-            WHERE i.kind = 'inst' AND a.producer_reason = ''
+            WHERE i.kind = 'effnet' AND a.producer_reason = ''
             """);
 
         using var reader = command.ExecuteReader();
@@ -69,7 +72,7 @@ public static class Analysis
                     new List<float[]>(), new List<float[]>());
             }
 
-            artist.Vectors.Add(MertEmbedder.Centered(MertEmbedder.FromBytes((byte[])reader[8]), instCenter));
+            artist.Vectors.Add(head.Project(MertEmbedder.FromBytes((byte[])reader[8])));
             artist.FullVectors.Add(MertEmbedder.Centered(MertEmbedder.FromBytes((byte[])reader[9]), fullCenter));
 
             var trackPlays = reader.GetInt32(13);
@@ -134,14 +137,15 @@ public static class Analysis
     /// Биты -> «звучит как» и топ-10 доступных артистов — тем же AnalyzeAll, что в приложении,
     /// поэтому выдача здесь ровно та, которую увидит пользователь.
     /// </summary>
-    public static void Query(CrawlDb db, string modelPath, string indexPath, IEnumerable<string> beats, string? backgroundPath)
+    public static void Query(CrawlDb db, string modelPath, IEnumerable<string> beats, string? backgroundPath)
     {
-        using var service = new BeatSimilarityService(modelPath, indexPath);
+        using var embedder = new EffNetEmbedder(modelPath, HeadPath);
+        var service = new BeatSimilarityService(embedder);
         var references = TargetIndex.Load(ReferencesPath);
         // Как в экспорте: артист с одним куском — это один случайный трек, в индекс не идёт.
         var full = BuildIndex(db, references.Center);
         var index = new TargetIndex { Center = full.Center, Artists = full.Artists.Where(a => a.Vectors.Length >= 2).ToList() };
-        var hubs = backgroundPath is null ? null : HubCorrection.TryLoad(backgroundPath, references.Center);
+        var hubs = backgroundPath is null ? null : HubCorrection.TryLoad(backgroundPath, embedder.Dimension);
 
         Console.WriteLine($"поправка на хабы: {(hubs is null ? "выключена" : "включена")}; в индексе {index.Artists.Count} артистов");
 

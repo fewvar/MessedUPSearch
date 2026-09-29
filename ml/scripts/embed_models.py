@@ -64,11 +64,14 @@ class Mert:
         return {"layer5": embed(self.model, torch.from_numpy(y))}
 
 
-class EffNet:
-    rate = 16000
-    VARIANTS = ("artist", "multi", "label", "release", "track")
+VARIANTS = ("artist", "multi", "label", "release", "track")
 
-    def __init__(self):
+
+class EffNet:
+    """Для приложения нужен только style: EffNet(variants=()) не грузит остальные пять моделей."""
+    rate = 16000
+
+    def __init__(self, variants=VARIANTS):
         import essentia.standard as es
         import onnxruntime as ort
         self.frontend = es.TensorflowInputMusiCNN()
@@ -76,7 +79,7 @@ class EffNet:
         opts = ort.SessionOptions()
         opts.intra_op_num_threads = 4          # не все ядра: режим ~90%
         self.sessions = {v: ort.InferenceSession(str(ESSENTIA / f"discogs_{v}_embeddings-effnet-bs64-1.onnx"), opts)
-                         for v in self.VARIANTS}
+                         for v in variants}
         self.style = ort.InferenceSession(str(ESSENTIA / "discogs-effnet-bsdynamic-1.onnx"), opts)
 
     def patches(self, y):
@@ -88,10 +91,10 @@ class EffNet:
         return np.stack([mel[s:s + 128] for s in starts]).astype(np.float32)
 
     def __call__(self, y):
-        p = self.patches(y)[:64]
+        p = self.patches(y)
         batch = np.zeros((64, 128, 96), np.float32)
-        batch[:len(p)] = p
-        out = {v: s.run(None, {"melspectrogram": batch})[0][:len(p)].mean(0) for v, s in self.sessions.items()}
+        batch[:min(64, len(p))] = p[:64]
+        out = {v: s.run(None, {"melspectrogram": batch})[0][:min(64, len(p))].mean(0) for v, s in self.sessions.items()}
         out["style"] = self.style.run(["embeddings"], {"melspectrogram": p})[0].mean(0)
         return out
 

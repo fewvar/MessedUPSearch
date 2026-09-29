@@ -33,7 +33,7 @@ PER_ARTIST = 10
 
 
 def names_from_index():
-    with open(BASE.parent / "MessedUpSearchA/Assets/Models/artist_index.bin", "rb") as f:
+    with open(BASE / "crawler/Mert/artist_index.bin", "rb") as f:
         count, dim = struct.unpack("<ii", f.read(8))
         f.seek(4 * dim * (count + 1), 1)
         artists = struct.unpack("<i", f.read(4))[0]

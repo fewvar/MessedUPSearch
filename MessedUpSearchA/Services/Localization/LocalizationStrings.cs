@@ -96,9 +96,7 @@ public static class LocalizationStrings
 
         // Анализ похожести (сообщения из кода)
         ["Analysis.NoFile"] = "Beat file not found — nothing to analyze",
-        ["Analysis.NoIndex"] = "Artist database file is missing (artist_index.bin)",
-        ["Analysis.Downloading"] = "Downloading the model (208 MB, one time)…",
-        ["Analysis.DownloadingProgress"] = "Downloading the model… {0}",
+        ["Analysis.NoIndex"] = "Sound-matching model files are missing (Assets/Models) — reinstall the app",
         ["Analysis.Listening"] = "Listening to the beat…",
         ["Analysis.DownloadingIndex"] = "Downloading the artist index (one time)…",
         ["Analysis.ImportFailed"] = "Couldn't add {0}: {1}",
@@ -179,7 +177,8 @@ public static class LocalizationStrings
         ["Settings.InterfaceLanguageHint"] = "Applies immediately, no restart needed",
         ["Settings.About"] = "ABOUT",
         ["Settings.AboutText"] = "Beat library, a roster of underground artists from five platforms, and artist matching by the sound of a beat.",
-        ["Settings.BuiltWith"] = "Built with Avalonia 12 + .NET 9",
+        ["Settings.BuiltWith"] = "Built with Avalonia 12 + .NET 10",
+        ["Settings.ModelCredit"] = "Sound matching: Discogs-EffNet by MTG / Universitat Pompeu Fabra (Essentia), CC BY-NC-SA 4.0 — non-commercial use only",
         ["Settings.Logs"] = "LOGS & DEBUG",
         ["Settings.EnableParserLogs"] = "Enable parser logs",
         ["Settings.EnableDevTools"] = "Enable Avalonia DevTools (F12)",
@@ -283,9 +282,7 @@ public static class LocalizationStrings
 
         // Анализ похожести
         ["Analysis.NoFile"] = "Файл бита не найден — анализировать нечего",
-        ["Analysis.NoIndex"] = "Нет файла с базой артистов (artist_index.bin)",
-        ["Analysis.Downloading"] = "Качаю модель (208 МБ, один раз)…",
-        ["Analysis.DownloadingProgress"] = "Качаю модель… {0}",
+        ["Analysis.NoIndex"] = "Нет файлов модели подбора (Assets/Models) — переустанови приложение",
         ["Analysis.Listening"] = "Слушаю бит…",
         ["Analysis.DownloadingIndex"] = "Качаю индекс артистов (один раз)…",
         ["Analysis.ImportFailed"] = "Не получилось добавить {0}: {1}",
@@ -384,7 +381,8 @@ public static class LocalizationStrings
         ["Settings.InterfaceLanguageHint"] = "Применяется сразу, перезапуск не нужен",
         ["Settings.About"] = "О ПРОГРАММЕ",
         ["Settings.AboutText"] = "Библиотека битов, база андеграунд-артистов с пяти площадок и подбор артистов под звучание бита.",
-        ["Settings.BuiltWith"] = "Собрано на Avalonia 12 + .NET 9",
+        ["Settings.BuiltWith"] = "Собрано на Avalonia 12 + .NET 10",
+        ["Settings.ModelCredit"] = "Подбор по звуку: Discogs-EffNet, MTG / Universitat Pompeu Fabra (Essentia), CC BY-NC-SA 4.0 — только некоммерческое использование",
         ["Settings.Logs"] = "ЛОГИ И ОТЛАДКА",
         ["Settings.EnableParserLogs"] = "Писать логи парсера",
         ["Settings.EnableDevTools"] = "Включить Avalonia DevTools (F12)",

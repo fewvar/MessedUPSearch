@@ -1,6 +1,6 @@
 """
 Фон для поправки на хабы: сырые векторы (слой 5) type beat'ов из линейки ->
-MessedUpSearchA/Assets/Models/background_beats.bin.
+ml/crawler/Mert/background_beats.bin.
 
 Зачем: в поиске «бит -> артист» есть артисты, похожие на всё подряд (у Yeat 153 трека —
 среди них всегда найдутся три похожих), и они стоят в топе почти любого бита. Поправка:
@@ -23,7 +23,7 @@ def main():
     data = np.load(BASE / "data/embeddings_typebeats.npz", allow_pickle=True)
     vectors = data["embeddings"][:, LAYER, :].astype(np.float32)
 
-    out = BASE.parent / "MessedUpSearchA/Assets/Models/background_beats.bin"
+    out = BASE / "crawler/Mert/background_beats.bin"
     with open(out, "wb") as f:
         f.write(struct.pack("<ii", *vectors.shape))
         f.write(vectors.tobytes(order="C"))

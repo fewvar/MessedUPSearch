@@ -1,7 +1,7 @@
 """
 «Звучит как» по инструменталам: превью Deezer 30 артистов, вокал отделён Demucs
 (prepare_vocal_test.py -> embed_mert.py -> data/embeddings_vocal_inst.npz, слой 5)
--> MessedUpSearchA/Assets/Models/references_v2.bin в формате TargetIndex (см. TargetIndex.cs).
+-> ml/crawler/Mert/references_v2.bin в формате TargetIndex (см. TargetIndex.cs).
 
 Центр — среднее этих инструментальных векторов. Он же общий для индекса целей
 (artists_index_v2.bin) и для фона хабов: инструменталы смещены относительно треков
@@ -14,7 +14,7 @@ import numpy as np
 
 LAYER = 5
 BASE = Path(__file__).resolve().parent.parent
-OUT = BASE.parent / "MessedUpSearchA/Assets/Models/references_v2.bin"
+OUT = BASE / "crawler/Mert/references_v2.bin"
 
 
 def write_string(f, text):

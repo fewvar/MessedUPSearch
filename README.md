@@ -60,16 +60,17 @@
 - Last.fm, Jamendo и Genius требуют бесплатных ключей — вписываются в настройках.
 
 ### Похожие артисты (по звучанию)
-- Кнопка ANALYZE на карточке бита показывает, на кого из базы он похож **по звучанию**, а не по тегам: `Osamason 87% · Summrs 81% · Autumn! 74%`.
-- Под капотом MERT — нейросеть, обученная на музыке. Она превращает бит в вектор из 768 чисел, который сравнивается с 1685 треками 32 артистов из готового индекса **и с треками артистов из твоей базы**.
-- Выдача из двух частей: «звучит как» (крупные артисты — ориентир стиля) и до 10 доступных андеграунд-артистов из индекса, собранного краулером. У каждого — ▶ послушать его трек, ➕ добавить в свою базу, ↗ открыть профиль.
-- Сравнивается бит с ИНСТРУМЕНТАЛАМИ артистов (вокал отделяется при сборке индекса): на проверке type beat'ами это дало +8.8 п.п. к попаданию в топ-5.
-- Проверено честной метрикой (прячем весь альбом, а не один трек): нужный артист попадает в первую пятёрку в 75% случаев при случайном угадывании 3%. База из 30-секундных превью Deezer вместо архива даёт почти то же — 73.5% (подробности в `ml/README.md`).
-- Результат сохраняется в базу и не пересчитывается при каждом открытии карточки. Один анализ занимает 5–7 секунд.
-- Обратная сторона: в карточке артиста видно, какие из твоих битов ему подходят. Работает для артистов из индекса и для тех, чьи треки уже послушаны.
-- Модель (208 МБ) не входит в репозиторий и скачивается один раз при первом анализе.
+- Кнопка ANALYZE на карточке бита показывает, на кого он похож **по звучанию**, а не по тегам: `Osamason 87% · Summrs 81% · Autumn! 74%`.
+- Под капотом — Discogs-EffNet (Essentia, MTG / Universitat Pompeu Fabra): нейросеть, обученная различать 400 музыкальных стилей Discogs. Она превращает бит в вектор из 1280 чисел; сверху — наша «голова», дообученная на 652 андеграунд-артистах так, чтобы треки одного артиста лежали рядом.
+- Выдача из двух частей: «звучит как» (30 крупных артистов — ориентир стиля) и до 10 доступных андеграунд-артистов из индекса, собранного краулером. У каждого — ▶ послушать его трек, ➕ добавить в свою базу, ↗ открыть профиль.
+- Бит сравнивается с ИНСТРУМЕНТАЛАМИ артистов (вокал отделяется при сборке индекса).
+- Честная цифра на задаче продукта (type beat'ы, артист в обучении не участвовал): нужный артист в первой пятёрке среди 30 ориентиров в 53% случаев (случайно 17%); среди всех 682 артистов — в первой десятке в 13.5%. Модель выбрана замером из пяти (MERT, MuQ, CLAP, варианты EffNet) — подробности в `ml/README.md`.
+- Модель (18 МБ) едет вместе с приложением — анализ работает сразу, без скачивания, около секунды на бит. Отдельно качается только индекс артистов (~6 МБ).
+- Результат сохраняется в базу и не пересчитывается при каждом открытии карточки.
+- Обратная сторона: в карточке артиста видно, какие из твоих битов ему подходят.
+- Лицензия модели — CC BY-NC-SA 4.0: только некоммерческое использование.
 
-Все данные, кроме скачивания модели, лежат в локальном файле SQLite на твоём компьютере — ничего никуда не загружается. Свежая установка стартует пустой, с приглушённым превью того, как выглядит заполненная таблица.
+Все данные, кроме скачивания индекса артистов, лежат в локальном файле SQLite на твоём компьютере — ничего никуда не загружается. Свежая установка стартует пустой, с приглушённым превью того, как выглядит заполненная таблица.
 
 ## Технологии
 
@@ -101,12 +102,12 @@ Services/Parsing              пять площадок за общим инте
    +-- ArtistImportService    upsert в базу, аватарки, треки
    |
 Services/Ml                   похожесть бита на артистов
-   +-- AudioDecoder           WAV/MP3 -> моно 24 кГц (свой windowed-sinc ресемплер)
-   +-- MertEmbedder           звук -> сырой вектор MERT; одна ONNX-сессия на приложение
-   +-- BeatSimilarityService  вектор бита -> косинусы с индексом и базой -> топ-5
-   +-- TargetIndex/IndexStore индексы v2: «звучит как» (с приложением) и доступные артисты (качается)
+   +-- AudioDecoder           WAV/MP3 -> моно 16 кГц (свой windowed-sinc ресемплер, центральная минута)
+   +-- EffNetEmbedder         звук -> мел Essentia -> EffNet (ONNX) -> голова; одна сессия на приложение
+   +-- BeatSimilarityService  вектор бита -> «звучит как» + топ-10 доступных артистов
+   +-- TargetIndex/IndexStore индексы v3: ориентиры (с приложением) и доступные артисты (качается)
    +-- HubCorrection          поправка на артистов, похожих на всё подряд
-   +-- ModelStore             докачка модели при первом анализе
+   +-- MlAssets               где лежат модель, голова и индексы
    |
 Слой данных (EF Core)
    +-- AppDbContext --> SQLite app.db
@@ -210,16 +211,17 @@ A local-first tool that turns a folder of beats and a list of artists into a wor
 - Last.fm, Jamendo and Genius need free API keys, entered in Settings.
 
 ### Similar artists (by sound)
-- The ANALYZE button on a beat card shows which artists from the database it resembles **by sound**, not by tags: `Osamason 87% · Summrs 81% · Autumn! 74%`.
-- Powered by MERT, a neural network trained on music. It turns a beat into a 768-number vector compared against 1685 tracks by 32 artists from a bundled index **and against tracks of the artists in your database**.
-- Results come in two parts: "sounds like" (big artists as a style reference) and up to 10 reachable underground artists from a crawled index, each with ▶ play their track, ➕ add to your artists, ↗ open profile.
-- Beats are matched against artists' INSTRUMENTALS (vocals are removed when the index is built): +8.8 pp top-5 on a type-beat benchmark.
-- Validated with a strict metric (the whole album is hidden, not just one track): the right artist lands in the top five 75% of the time, against 3% for random guessing.
-- Results are stored in the database and not recomputed every time you open the card. One analysis takes 5-7 seconds.
-- The reverse view: an artist card shows which of your beats fit them. It works for artists in the index and for those whose tracks have already been listened to.
-- The model (208 MB) is not part of the repository and is downloaded once on first analysis.
+- The ANALYZE button on a beat card shows who it resembles **by sound**, not by tags: `Osamason 87% · Summrs 81% · Autumn! 74%`.
+- Powered by Discogs-EffNet (Essentia, MTG / Universitat Pompeu Fabra), a network trained to tell apart 400 Discogs music styles. It turns a beat into a 1280-number vector; on top sits our own "head", fine-tuned on 652 underground artists so that tracks by one artist land close together.
+- Results come in two parts: "sounds like" (30 big artists as a style reference) and up to 10 reachable underground artists from a crawled index, each with ▶ play their track, ➕ add to your artists, ↗ open profile.
+- Beats are matched against artists' INSTRUMENTALS (vocals are removed when the index is built).
+- Honest number on the actual task (type beats, the artist never seen in training): the right artist is in the top five of 30 references 53% of the time (random 17%); among all 682 artists — in the top ten 13.5% of the time. The model was picked by measurement out of five (MERT, MuQ, CLAP, EffNet variants) — see `ml/README.md`.
+- The model (18 MB) ships with the app: analysis works right away, about a second per beat. Only the artist index (~6 MB) is downloaded.
+- Results are stored in the database and not recomputed every time you open the card.
+- The reverse view: an artist card shows which of your beats fit them.
+- Model license: CC BY-NC-SA 4.0 — non-commercial use only.
 
-Apart from the one-off model download, all data lives in a local SQLite file on your machine — nothing is uploaded anywhere. A fresh install starts empty, with a dimmed preview of how a filled table looks.
+Apart from downloading the artist index, all data lives in a local SQLite file on your machine — nothing is uploaded anywhere. A fresh install starts empty, with a dimmed preview of how a filled table looks.
 
 ## Tech stack
 
@@ -251,12 +253,12 @@ Services/Parsing              five platforms behind one IArtistSource interface
    +-- ArtistImportService    upsert into the database, avatars, tracks
    |
 Services/Ml                   beat-to-artist similarity
-   +-- AudioDecoder           WAV/MP3 -> mono 24 kHz (own windowed-sinc resampler)
-   +-- MertEmbedder           audio -> raw MERT vector; one ONNX session per app
-   +-- BeatSimilarityService  beat vector -> cosines vs index and database -> top 5
-   +-- TargetIndex/IndexStore v2 indexes: "sounds like" (bundled) and reachable artists (downloaded)
+   +-- AudioDecoder           WAV/MP3 -> mono 16 kHz (own windowed-sinc resampler, central minute)
+   +-- EffNetEmbedder         audio -> Essentia mel -> EffNet (ONNX) -> head; one session per app
+   +-- BeatSimilarityService  beat vector -> "sounds like" + top 10 reachable artists
+   +-- TargetIndex/IndexStore v3 indexes: references (bundled) and reachable artists (downloaded)
    +-- HubCorrection          correction for artists that resemble everything
-   +-- ModelStore             downloads the model on first analysis
+   +-- MlAssets               where the model, head and indexes live
    |
 Data layer (EF Core)
    +-- AppDbContext --> SQLite app.db

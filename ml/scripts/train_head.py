@@ -31,7 +31,7 @@ def unit(m):
 
 
 def load_center():
-    with open(BASE.parent / "MessedUpSearchA/Assets/Models/references_v2.bin", "rb") as f:
+    with open(BASE / "crawler/Mert/references_v2.bin", "rb") as f:
         assert f.read(4) == b"MUSX"
         _, dim, _ = struct.unpack("<iii", f.read(12))
         return np.frombuffer(f.read(4 * dim), "<f4").copy()

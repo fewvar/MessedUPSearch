@@ -193,6 +193,10 @@
                                            Margin="0,8,0,2"/>
                                 <TextBlock Classes="settingsAbout"
                                            TextWrapping="Wrap"
+                                           Text="{loc:Tr Settings.ModelCredit}"
+                                           Margin="0,0,0,2"/>
+                                <TextBlock Classes="settingsAbout"
+                                           TextWrapping="Wrap"
                                            Text="by @fewvar"/>
                                 <TextBlock Classes="settingsAbout"
                                            TextWrapping="Wrap"

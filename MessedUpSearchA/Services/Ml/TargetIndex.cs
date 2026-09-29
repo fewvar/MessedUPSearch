@@ -26,21 +26,22 @@ public sealed class TargetArtist
 }
 
 /// <summary>
-/// Большой индекс доступных артистов (artists_index_v2.bin), собранный краулером
-/// из ml/crawler. Отдельно от artist_index.bin: там 32 крупных артиста — ориентиры
-/// стиля, здесь — те, кому реально можно написать.
+/// Индекс артистов: и большой (artists_index_v3.bin, собирает ml/crawler — кому можно написать),
+/// и ориентиры «звучит как» (references_v3.bin, ml/scripts/export_effnet.py).
 ///
 /// Формат (little-endian):
-///   "MUSX", int версия = 2, int размерность, int артистов, float[размерность] центр,
+///   "MUSX", int версия = 3, int размерность, int артистов, float[размерность] центр,
 ///   на артиста: 9 строк (int длина + UTF-8: ник, площадка, id, ссылка, аватар, жанр,
 ///   id лучшего трека, ссылка на него, его название),
 ///   int прослушивания, int треков, затем треки × размерность × Half.
 /// Half вместо float: индекс вдвое меньше, а на косинусе разницы не видно.
+/// v3: векторы EffNet + голова, уже финальные (центр c2 из головы — для справки и сверки
+/// «индекс и ориентиры из одной сборки»). v2 (MERT) приложение больше не читает.
 /// </summary>
 public sealed class TargetIndex
 {
     private const string Magic = "MUSX";
-    private const int Version = 2;
+    private const int Version = 3;
 
     public float[] Center { get; init; } = [];
     public IReadOnlyList<TargetArtist> Artists { get; init; } = [];
@@ -52,7 +53,7 @@ public sealed class TargetIndex
         using var reader = new BinaryReader(File.OpenRead(path), Encoding.UTF8);
 
         if (Encoding.ASCII.GetString(reader.ReadBytes(4)) != Magic)
-            throw new InvalidDataException("это не индекс артистов v2");
+            throw new InvalidDataException("это не индекс артистов");
 
         var version = reader.ReadInt32();
         if (version != Version)
@@ -61,7 +62,7 @@ public sealed class TargetIndex
         var dimension = reader.ReadInt32();
         var count = reader.ReadInt32();
         if (dimension <= 0 || dimension > 8192 || count < 0)
-            throw new InvalidDataException("битый индекс v2");
+            throw new InvalidDataException("битый индекс");
 
         var center = new float[dimension];
         for (var i = 0; i < dimension; i++)
@@ -137,7 +138,7 @@ public sealed class TargetIndex
     {
         var length = reader.ReadInt32();
         if (length < 0 || length > 4096)
-            throw new InvalidDataException("битая строка в индексе v2");
+            throw new InvalidDataException("битая строка в индексе");
         return Encoding.UTF8.GetString(reader.ReadBytes(length));
     }
 

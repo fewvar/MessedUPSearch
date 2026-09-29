@@ -27,7 +27,8 @@ public static class Cli
 
         // --no-vocal выключает фильтр голоса (например, чтобы сравнить выдачу с ним и без).
         Analysis.VocalPath = args.Contains("--no-vocal") ? string.Empty : Path.Combine(DataDir, "vocal_lr.json");
-        Analysis.ReferencesPath = Path.Combine(Root, "MessedUpSearchA", "Assets", "Models", "references_v2.bin");
+        Analysis.ReferencesPath = Path.Combine(AppModels, "references_v3.bin");
+        Analysis.HeadPath = Path.Combine(AppModels, "effnet_head.bin");
         Analysis.FriendIndexPath = DefaultIndex;
 
         try
@@ -80,16 +81,16 @@ public static class Cli
                 case "query":
                 {
                     using var store = db();
-                    Analysis.Query(store, Option(args, "--model") ?? DefaultModel, Option(args, "--index") ?? DefaultIndex,
+                    Analysis.Query(store, Path.Combine(AppModels, "effnet_style.onnx"),
                         args.Skip(1).Where(a => !a.StartsWith("--") && File.Exists(a)),
-                        args.Contains("--no-hubs") ? null : Path.Combine(Root, "MessedUpSearchA", "Assets", "Models", "background_beats.bin"));
+                        args.Contains("--no-hubs") ? null : Path.Combine(AppModels, "background_v3.bin"));
                     return 0;
                 }
                 case "export":
                 {
                     using var store = db();
                     Analysis.Export(store,
-                        Option(args, "--out") ?? Path.Combine(DataDir, "artists_index_v2.bin"),
+                        Option(args, "--out") ?? Path.Combine(DataDir, "artists_index_v3.bin"),
                         int.Parse(Option(args, "--min-vectors") ?? "2"));
                     return 0;
                 }
@@ -143,7 +144,7 @@ public static class Cli
           producers                                             кого отсёк фильтр и почему
           refilter                                              пересчитать фильтр по найденным
           typebeats  [--per-artist 8]                           линейка: «<артист> type beat» по индексу друга
-          export     [--out путь] [--min-vectors 2]             собрать artists_index_v2.bin
+          export     [--out путь] [--min-vectors 2]             собрать artists_index_v3.bin (EffNet + голова)
           reslice    [--out ml/data/audio]                      сохранить куски уже посчитанных треков (для других моделей)
           seed-refs  [--tracks 10] --db другая.db               ориентиры как артисты SoundCloud (опыт с источником)
           общее:     [--db ml/data/crawl.db]
@@ -152,9 +153,13 @@ public static class Cli
     private static string Root => Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "../../../../.."));
     private static string DataDir => Path.Combine(Root, "ml", "data");
     private static string DefaultDb => Path.Combine(DataDir, "crawl.db");
-    private static string DefaultIndex => Path.Combine(Root, "MessedUpSearchA", "Assets", "Models", "artist_index.bin");
+    private static string AppModels => Path.Combine(Root, "MessedUpSearchA", "Assets", "Models");
 
-    private static string DefaultModel => MessedUpSearchA.Services.Ml.ModelStore.ModelPath;
+    /// <summary>Архив друга (MERT): центр для фильтра голоса и имена для typebeats. Живёт в краулере.</summary>
+    private static string DefaultIndex => Path.Combine(Root, "ml", "crawler", "Mert", "artist_index.bin");
+
+    /// <summary>MERT нужен краулеру только для старого listen и фильтра голоса.</summary>
+    private static string DefaultModel => MertEmbedder.DefaultModelPath;
 
     private static string? Option(string[] args, string name)
     {

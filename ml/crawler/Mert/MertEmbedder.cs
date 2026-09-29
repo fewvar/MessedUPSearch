@@ -20,7 +20,14 @@ public sealed class MertEmbedder : IDisposable
     /// <summary>Пишется рядом с каждым вектором в базе. Сменится модель или слой — менять и это.</summary>
     public const string ModelVersion = "mert95m-l5";
 
-    private const int WindowSamples = 10 * AudioDecoder.TargetSampleRate;
+    /// <summary>MERT ждёт 24 кГц. Из приложения убран (29.09.2026): тут он нужен только для фильтра голоса.</summary>
+    public const int SampleRate = 24000;
+
+    /// <summary>Модель, которую раньше качало приложение, — лежит там же.</summary>
+    public static string DefaultModelPath =>
+        System.IO.Path.Combine(MessedUpSearchA.Data.AppPaths.DataDir, "models", "mert_layer5.onnx");
+
+    private const int WindowSamples = 10 * SampleRate;
     private const int MaxWindows = 6;      // 6 окон = минута звука, хватает и не тормозит
 
     private static readonly object SharedGate = new();
@@ -142,7 +149,7 @@ public sealed class MertEmbedder : IDisposable
     {
         var windows = new List<float[]>();
 
-        if (samples.Length < 3 * AudioDecoder.TargetSampleRate)
+        if (samples.Length < 3 * SampleRate)
             return windows;
 
         if (samples.Length <= WindowSamples)

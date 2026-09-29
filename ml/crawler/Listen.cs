@@ -216,8 +216,8 @@ public static class Listen
         {
             try
             {
-                var samples = AudioDecoder.Decode(item.Path);
-                var seconds = samples.Length / (double)AudioDecoder.TargetSampleRate;
+                var samples = AudioDecoder.Decode(item.Path, MertEmbedder.SampleRate);
+                var seconds = samples.Length / (double)MertEmbedder.SampleRate;
 
                 if (seconds < MinSeconds)
                 {

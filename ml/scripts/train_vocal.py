@@ -30,7 +30,7 @@ FEAT = re.compile(r"\b(feat|ft)\.?\s", re.IGNORECASE)
 
 
 def load_center():
-    with open(BASE.parent / "MessedUpSearchA/Assets/Models/artist_index.bin", "rb") as f:
+    with open(BASE / "crawler/Mert/artist_index.bin", "rb") as f:
         _, dim = struct.unpack("<ii", f.read(8))
         return np.frombuffer(f.read(4 * dim), dtype=np.float32)
 

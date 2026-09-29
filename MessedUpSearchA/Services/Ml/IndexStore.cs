@@ -7,15 +7,15 @@ using System.Threading.Tasks;
 namespace MessedUpSearchA.Services.Ml;
 
 /// <summary>
-/// Большой индекс доступных артистов (artists_index_v2.bin, ~12 МБ): где лежит,
+/// Большой индекс доступных артистов (artists_index_v3.bin, ~7 МБ): где лежит,
 /// откуда качается, как не перечитывать его при каждом анализе.
 ///
-/// Собирается краулером из ml/crawler у разработчика и едет ассетом релиза, как модель.
-/// Индекса нет и скачать не вышло — не беда: выдача строится по базе пользователя.
+/// Собирается краулером из ml/crawler у разработчика и едет ассетом релиза: обновляется
+/// чаще приложения. Индекса нет и скачать не вышло — не беда: остаётся «звучит как».
 /// </summary>
 public static class IndexStore
 {
-    public const string FileName = "artists_index_v2.bin";
+    public const string FileName = "artists_index_v3.bin";
 
     private static readonly string DownloadUrl =
         $"https://github.com/fewvar/MessedUPSearch/releases/download/v0.7/{FileName}";
@@ -24,7 +24,7 @@ public static class IndexStore
     private static TargetIndex? _cached;
     private static DateTime _cachedStamp;
 
-    public static string IndexPath => Path.Combine(ModelStore.ModelDirectory, FileName);
+    public static string IndexPath => Path.Combine(MlAssets.DownloadDirectory, FileName);
 
     public static bool IsReady() => File.Exists(IndexPath);
 

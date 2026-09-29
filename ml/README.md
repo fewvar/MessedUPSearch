@@ -244,6 +244,20 @@ style+MuQ8 + голова 1280   53.9%     14.3%         +1.6 к своей ба
 даёт ещё ~+1 п.п. ценой 1.3 ГБ — не стоит. Итог: **EffNet style + голова** — 52.7% top-5 среди 30
 (было 41.9% у MERT), top-10 среди 682 — 13.5% (было 3.6%), модель 18 МБ + матрица ~3 МБ (Half).
 
+## Приложение на EffNet style + голова (29.09.2026)
+
+План `tmp/plans/effnet-app-v0.7.md`. MERT из приложения убран (живёт в `crawler/Mert` ради фильтра голоса).
+
+- `scripts/export_effnet.py` -> `Assets/Models/effnet_head.bin` (окно и мел-матрица прямо из Essentia, c0, W в Half, c2),
+  `references_v3.bin` (30 ориентиров, Deezer + SoundCloud, 493 трека), `background_v3.bin` (877 type beat'ов),
+  сырые векторы `effnet` в crawl.db. Затем `crawler export` -> `data/artists_index_v3.bin` (652 артиста, 6.2 МБ)
+  тем же C#-кодом головы; совпадение с Python 0.99993 (Half).
+- Сверка C# ⇄ Python (`scripts/check_effnet.py`): на одинаковых сэмплах мел + ONNX + голова — косинус 1.000000.
+  На mp3 декодеры расходятся (NLayer против librosa: сдвиг ~800 сэмплов) — 0.990–0.999; та же модель на
+  сдвинутом на 100–400 сэмплов звуке даёт 0.996–0.999. Итог по точности — `check_effnet.py --bench`.
+- Шкала процентов — две (ориентиры и андеграунд), см. HubCorrection.cs.
+- `separate_embed.py` теперь считает `effnet` и хранит звук: `data/audio` (кусок) и `data/inst/underground`.
+
 ## Данные
 
 `data/` целиком в `.gitignore`: там рипы коммерческих релизов. Ни аудио, ни что-либо, из чего его
