@@ -88,6 +88,11 @@ public static class UiScenes
                 main.IsSettingsOpen = true;
                 break;
 
+            // Футер во время поиска (без сети: только состояние).
+            case "parser-running":
+                main.ParserVm.IsSearching = true;
+                break;
+
             case "sort-bpm":
                 main.BeatsVm.SortBy("Bpm");
                 break;

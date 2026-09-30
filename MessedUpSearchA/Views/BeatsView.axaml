@@ -5,6 +5,7 @@
              xmlns:models="using:MessedUpSearchA.Models"
              xmlns:loc="using:MessedUpSearchA.Services.Localization"
              xmlns:conv="using:MessedUpSearchA.Converters"
+             xmlns:controls="using:MessedUpSearchA.Controls"
              x:Class="MessedUpSearchA.Views.BeatsView"
              x:DataType="vm:BeatsViewModel">
 
@@ -13,6 +14,14 @@
         <!-- Строка бита, который сейчас в плеере. -->
         <Style Selector="Grid.beatRow.playing">
             <Setter Property="Background" Value="#1F000000"/>
+        </Style>
+        <!-- Выдача анализа: у лидера полоска яркая и чуть светится, у остальных — приглушённая. -->
+        <Style Selector="Border.similarTrack > Border">
+            <Setter Property="Opacity" Value="0.6"/>
+        </Style>
+        <Style Selector="Border.similarTrack.leader > Border">
+            <Setter Property="Opacity" Value="1"/>
+            <Setter Property="BoxShadow" Value="0 0 6 0 #66FFFFFF"/>
         </Style>
         <Style Selector="Grid.beatRow Border.playMarker">
             <Setter Property="IsVisible" Value="False"/>
@@ -377,10 +386,18 @@
                         </StackPanel>
                     </Grid>
 
-                    <TextBlock Text="{Binding AnalysisStatus}"
-                               IsVisible="{Binding AnalysisStatus, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
-                               FontSize="11" TextWrapping="Wrap"
-                               Foreground="{StaticResource OnBackgroundDim}"/>
+                    <!-- Пока модель слушает — пиксельный эквалайзер в стиле волны плеера рядом со статусом. -->
+                    <StackPanel Orientation="Horizontal" Spacing="8"
+                                IsVisible="{Binding AnalysisStatus, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
+                        <controls:PixelEqualizer IsActive="{Binding IsAnalyzing}"
+                                                 IsVisible="{Binding IsAnalyzing}"
+                                                 Brush="{StaticResource OnBackgroundDim}"
+                                                 VerticalAlignment="Center"/>
+                        <TextBlock Text="{Binding AnalysisStatus}"
+                                   FontSize="11" TextWrapping="Wrap"
+                                   VerticalAlignment="Center"
+                                   Foreground="{StaticResource OnBackgroundDim}"/>
+                    </StackPanel>
 
                     <TextBlock Text="{loc:Tr BeatEditor.SimilarHint}"
                                IsVisible="{Binding ShowSimilarHint}"
@@ -404,6 +421,8 @@
                                                VerticalAlignment="Center"
                                                Foreground="{StaticResource OnBackground}"/>
                                     <Border Grid.Column="1" Height="6" CornerRadius="3"
+                                            Classes.leader="{Binding IsLeader}"
+                                            Classes="similarTrack"
                                             Background="#22FFFFFF"
                                             HorizontalAlignment="Stretch"
                                             VerticalAlignment="Center">

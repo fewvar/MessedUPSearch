@@ -440,8 +440,13 @@ public partial class BeatsViewModel : ViewModelBase
     private void ShowSimilarity(IEnumerable<SimilarArtistItem> items, IEnumerable<string> references)
     {
         SimilarArtists.Clear();
+        var first = true;
         foreach (var item in items)
+        {
+            item.IsLeader = first;
+            first = false;
             SimilarArtists.Add(item);
+        }
 
         var names = references.ToList();
         StyleReferences = names.Count > 0

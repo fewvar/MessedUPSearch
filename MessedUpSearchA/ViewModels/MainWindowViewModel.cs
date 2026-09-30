@@ -52,12 +52,11 @@ public partial class MainWindowViewModel : ViewModelBase
 
     public string AppVersion => "v1.0";
 
-    /// <summary>
-    /// Подпись в футере. Парсер работает только по кнопке, фонового прогона нет,
-    /// поэтому состояние всегда одно — «ожидание».
-    /// </summary>
+    /// <summary>Подпись в футере: «ожидание» или «идёт поиск» (окно парсера можно закрыть — поиск идёт дальше).</summary>
     public string ParserStatus =>
-        Localizer.Instance.Format("Status.Parser", Localizer.Instance["Parser.Idle"]);
+        Localizer.Instance.Format("Status.Parser", Localizer.Instance[_parserVm.IsSearching ? "Parser.Running" : "Parser.Idle"]);
+
+    public bool IsParserRunning => _parserVm.IsSearching;
 
     /// <summary>"3 дн." — число и слово вместе, поэтому строка собирается в коде.</summary>
     public string ReminderDaysLabel => Localizer.Instance.Format("Settings.DaysShort", ReminderDays);
@@ -106,6 +105,13 @@ public partial class MainWindowViewModel : ViewModelBase
             _artistsVm.LoadArtists();
         };
 
+        _parserVm.PropertyChanged += (_, e) =>
+        {
+            if (e.PropertyName != nameof(ParserViewModel.IsSearching))
+                return;
+            OnPropertyChanged(nameof(ParserStatus));
+            OnPropertyChanged(nameof(IsParserRunning));
+        };
         _parserVm.ImportDone += () =>
         {
             // Парсер мог перекачать аватарки — старые картинки в кэше уже неверны.

@@ -16,6 +16,15 @@
         Background="{StaticResource AppBackground}">
 
     <Window.Styles>
+        <!-- Точка парсера «дышит»; при «Уменьшить движение» просто горит. -->
+        <Style Selector="Window:not(.reduceMotion) Ellipse.pulse">
+            <Style.Animations>
+                <Animation Duration="0:0:1.4" IterationCount="Infinite" PlaybackDirection="Alternate" Easing="SineEaseInOut">
+                    <KeyFrame Cue="0%"><Setter Property="Opacity" Value="1"/></KeyFrame>
+                    <KeyFrame Cue="100%"><Setter Property="Opacity" Value="0.25"/></KeyFrame>
+                </Animation>
+            </Style.Animations>
+        </Style>
         <StyleInclude Source="/Assets/Styles/MainWindowStyles.axaml"/>
     </Window.Styles>
 
@@ -142,6 +151,11 @@
 
                 <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="10"
                             HorizontalAlignment="Center">
+                    <!-- Дышащая точка, пока парсер ищет. -->
+                    <Ellipse Classes="pulse" Width="6" Height="6"
+                             Fill="{StaticResource OnBackground}"
+                             VerticalAlignment="Center"
+                             IsVisible="{Binding IsParserRunning}"/>
                     <TextBlock Text="{Binding ParserStatus}"
                                VerticalAlignment="Center"
                                FontFamily="{StaticResource HeadingFont}"

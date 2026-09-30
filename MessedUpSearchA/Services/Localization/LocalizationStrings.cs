@@ -28,6 +28,7 @@ public static class LocalizationStrings
         ["ArtistEditor.NoAssignedBeats"] = "No beats assigned yet — tick this artist in a beat card.",
         ["ArtistEditor.NoTracks"] = "No tracks yet — they appear after the parser imports the artist.",
         ["Parser.Idle"] = "Idle",
+        ["Parser.Running"] = "searching",
 
         // Кнопки на панелях
         ["Buttons.AddBeat"] = "+ ADD BEAT",
@@ -219,6 +220,7 @@ public static class LocalizationStrings
         ["ArtistEditor.NoAssignedBeats"] = "Пока ни одного бита — отметь артиста в карточке бита.",
         ["ArtistEditor.NoTracks"] = "Треков пока нет — они появятся после импорта артиста парсером.",
         ["Parser.Idle"] = "Ожидание",
+        ["Parser.Running"] = "идёт поиск",
 
         // Кнопки на панелях
         ["Buttons.AddBeat"] = "+ ДОБАВИТЬ БИТ",

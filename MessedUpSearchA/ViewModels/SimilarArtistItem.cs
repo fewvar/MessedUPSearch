@@ -11,6 +11,9 @@ public partial class SimilarArtistItem : ObservableObject
 
     public string PercentLabel => $"{Percent}%";
 
+    /// <summary>Первое место выдачи — его полоска ярче остальных.</summary>
+    public bool IsLeader { get; set; }
+
     /// <summary>Ширина полоски в списке — рисуем её вместо диаграммы.</summary>
     public double BarWidth => Percent * 1.2;
 
