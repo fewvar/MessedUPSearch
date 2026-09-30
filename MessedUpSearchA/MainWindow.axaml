@@ -55,7 +55,7 @@
         <ContentControl Grid.Row="1" Content="{Binding CurrentViewModel}"/>
 
         <Border Grid.Row="2"
-                IsVisible="{Binding Player.HasTrack}"
+                IsVisible="False" motion:Motion.IsShown="{Binding Player.HasTrack}"
                 Background="#0DFFFFFF"
                 CornerRadius="8"
                 Padding="10,8">

@@ -133,32 +133,28 @@ public static class Motion
         if (HideTimers.TryGetValue(root, out var pending))
             pending.Stop();
 
-        var card = FindCard(root);
+        // Окно с карточкой: фон гаснет/проявляется, карточка двигается. Без карточки (панель плеера) —
+        // двигается сам элемент.
+        var card = FindCard(root) ?? root;
         root.IsHitTestVisible = true;
 
         if (!root.IsVisible)
         {
             // Стартовая точка — без переходов, иначе элемент «влетит» из прошлого состояния.
             root.Transitions = null;
+            card.Transitions = null;
             root.Opacity = 0;
-            if (card is not null)
-            {
-                card.Transitions = null;
-                card.RenderTransform = Reduced ? CardOpen : CardClosed;
-            }
+            card.RenderTransform = Reduced ? CardOpen : CardClosed;
             root.IsVisible = true;
         }
 
-        var fade = Reduced ? ReducedSeconds : 0.22;
-        root.Transitions = [new DoubleTransition { Property = Visual.OpacityProperty, Duration = TimeSpan.FromSeconds(fade), Easing = new CubicEaseOut() }];
+        var fade = TimeSpan.FromSeconds(Reduced ? ReducedSeconds : 0.22);
+        var (duration, easing) = Spring(OpenSeconds);
+        Animate(root, card,
+            new DoubleTransition { Property = Visual.OpacityProperty, Duration = fade, Easing = new CubicEaseOut() },
+            new TransformOperationsTransition { Property = Visual.RenderTransformProperty, Duration = duration, Easing = easing });
         root.Opacity = 1;
-
-        if (card is not null)
-        {
-            var (duration, easing) = Spring(OpenSeconds);
-            card.Transitions = [new TransformOperationsTransition { Property = Visual.RenderTransformProperty, Duration = duration, Easing = easing }];
-            card.RenderTransform = CardOpen;
-        }
+        card.RenderTransform = CardOpen;
     }
 
     private static void Hide(Control root)
@@ -166,20 +162,17 @@ public static class Motion
         if (!root.IsVisible)
             return;
 
-        var card = FindCard(root);
-        var seconds = Reduced ? ReducedSeconds : CloseSeconds;
-        var duration = TimeSpan.FromSeconds(seconds);
+        var card = FindCard(root) ?? root;
+        var duration = TimeSpan.FromSeconds(Reduced ? ReducedSeconds : CloseSeconds);
 
         // Закрывающееся окно не должно ловить клики: под ним уже главный экран.
         root.IsHitTestVisible = false;
-        root.Transitions = [new DoubleTransition { Property = Visual.OpacityProperty, Duration = duration, Easing = new CubicEaseIn() }];
+        Animate(root, card,
+            new DoubleTransition { Property = Visual.OpacityProperty, Duration = duration, Easing = new CubicEaseIn() },
+            new TransformOperationsTransition { Property = Visual.RenderTransformProperty, Duration = duration, Easing = new CubicEaseIn() });
         root.Opacity = 0;
-
-        if (card is not null && !Reduced)
-        {
-            card.Transitions = [new TransformOperationsTransition { Property = Visual.RenderTransformProperty, Duration = duration, Easing = new CubicEaseIn() }];
+        if (!Reduced)
             card.RenderTransform = CardLeaving;
-        }
 
         var timer = HideTimers.GetValue(root, _ => new DispatcherTimer());
         timer.Stop();
@@ -188,6 +181,18 @@ public static class Motion
         timer.Tick += OnHideTick;
         timer.Tag = root;
         timer.Start();
+    }
+
+    /// <summary>Прозрачность — на корне, движение — на карточке; если это один элемент, оба перехода вместе.</summary>
+    private static void Animate(Control root, Control card, DoubleTransition fade, TransformOperationsTransition move)
+    {
+        if (ReferenceEquals(root, card))
+        {
+            root.Transitions = [fade, move];
+            return;
+        }
+        root.Transitions = [fade];
+        card.Transitions = [move];
     }
 
     private static void OnHideTick(object? sender, EventArgs e)
