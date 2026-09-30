@@ -69,8 +69,11 @@ public partial class BeatsViewModel : ViewModelBase
     public ObservableCollection<SimilarArtistItem> SimilarArtists { get; } = new();
 
     [ObservableProperty] private bool _isAnalyzing;
-    [ObservableProperty] private string _analysisStatus = string.Empty;
-    [ObservableProperty] private bool _hasSimilarity;
+    [ObservableProperty, NotifyPropertyChangedFor(nameof(ShowSimilarHint))] private string _analysisStatus = string.Empty;
+    [ObservableProperty, NotifyPropertyChangedFor(nameof(ShowSimilarHint))] private bool _hasSimilarity;
+
+    /// <summary>«Нажми АНАЛИЗ» — только пока нет ни результата, ни статуса («Слушаю бит…», ошибка).</summary>
+    public bool ShowSimilarHint => !HasSimilarity && string.IsNullOrEmpty(AnalysisStatus);
 
     /// <summary>«звучит как: Osamason · Summrs» — крупные артисты-ориентиры, им бит не продашь.</summary>
     [ObservableProperty] private string _styleReferences = string.Empty;

@@ -69,6 +69,33 @@ public partial class ArtistsViewModel : ViewModelBase
 
     [ObservableProperty] private string _editNickname = string.Empty;
     [ObservableProperty] private string _editScLink = string.Empty;
+
+    /// <summary>
+    /// Подпись поля ссылки — по площадке из самой ссылки: парсер кладёт сюда профиль с любой
+    /// из пяти площадок, и «Ссылка SoundCloud» у артиста с Audius путала.
+    /// </summary>
+    public string ProfileLinkLabel => PlatformOf(EditScLink) is { } platform
+        ? Localizer.Instance.Format("ArtistEditor.PlatformLink", platform.ToUpperInvariant())
+        : Localizer.Instance["ArtistEditor.ProfileLink"];
+
+    partial void OnEditScLinkChanged(string value) => OnPropertyChanged(nameof(ProfileLinkLabel));
+
+    private static string? PlatformOf(string link)
+    {
+        if (!Uri.TryCreate(link.Trim(), UriKind.Absolute, out var uri))
+            return null;
+
+        var host = uri.Host.ToLowerInvariant();
+        return host switch
+        {
+            _ when host.EndsWith("soundcloud.com") => "SoundCloud",
+            _ when host.EndsWith("audius.co") => "Audius",
+            _ when host.EndsWith("bandcamp.com") => "Bandcamp",
+            _ when host.EndsWith("last.fm") => "Last.fm",
+            _ when host.EndsWith("jamendo.com") => "Jamendo",
+            _ => null
+        };
+    }
     [ObservableProperty] private string _editGenreTags = string.Empty;
     [ObservableProperty] private string _editTotalPlays = string.Empty;
     [ObservableProperty] private string _editIgLink = string.Empty;

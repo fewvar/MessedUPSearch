@@ -81,7 +81,8 @@ public static class LocalizationStrings
         // Карточка артиста
         ["ArtistEditor.Add"] = "ADD ARTIST",
         ["ArtistEditor.Edit"] = "EDIT ARTIST",
-        ["ArtistEditor.ScLink"] = "SOUNDCLOUD LINK",
+        ["ArtistEditor.ProfileLink"] = "PROFILE LINK",
+        ["ArtistEditor.PlatformLink"] = "{0} LINK",
         ["ArtistEditor.Instagram"] = "INSTAGRAM",
         ["ArtistEditor.Spotify"] = "SPOTIFY",
         ["ArtistEditor.CrmStatus"] = "CRM STATUS",
@@ -267,7 +268,8 @@ public static class LocalizationStrings
         // Карточка артиста
         ["ArtistEditor.Add"] = "ДОБАВИТЬ АРТИСТА",
         ["ArtistEditor.Edit"] = "РЕДАКТИРОВАТЬ АРТИСТА",
-        ["ArtistEditor.ScLink"] = "ССЫЛКА SOUNDCLOUD",
+        ["ArtistEditor.ProfileLink"] = "ССЫЛКА НА ПРОФИЛЬ",
+        ["ArtistEditor.PlatformLink"] = "ССЫЛКА {0}",
         ["ArtistEditor.Instagram"] = "INSTAGRAM",
         ["ArtistEditor.Spotify"] = "SPOTIFY",
         ["ArtistEditor.CrmStatus"] = "СТАТУС CRM",

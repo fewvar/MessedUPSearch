@@ -315,7 +315,7 @@
                         <TextBox Text="{Binding EditNickname}"/>
                     </StackPanel>
                     <StackPanel Grid.Column="2" Spacing="4">
-                        <TextBlock Classes="filterLabel" Text="{loc:Tr ArtistEditor.ScLink}"/>
+                        <TextBlock Classes="filterLabel" Text="{Binding ProfileLinkLabel}"/>
                         <TextBox Text="{Binding EditScLink}" PlaceholderText="{loc:Tr ArtistEditor.NoneHint}"/>
                     </StackPanel>
                 </Grid>

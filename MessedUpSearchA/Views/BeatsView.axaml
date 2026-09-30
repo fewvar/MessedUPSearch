@@ -356,7 +356,7 @@
                                Foreground="{StaticResource OnBackgroundDim}"/>
 
                     <TextBlock Text="{loc:Tr BeatEditor.SimilarHint}"
-                               IsVisible="{Binding !HasSimilarity}"
+                               IsVisible="{Binding ShowSimilarHint}"
                                FontSize="11" TextWrapping="Wrap"
                                Foreground="{StaticResource OnBackgroundDim}"/>
 
