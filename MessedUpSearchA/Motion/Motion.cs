@@ -366,6 +366,32 @@ public static class Motion
     }
 
     /// <summary>
+    /// Затухающий маятник вокруг верхней точки (колокольчик): ±18° с периодом 0.3 с, гаснет за ~0.9 с.
+    /// </summary>
+    public static void Swing(Control? control)
+    {
+        if (control is null || Reduced)
+            return;
+
+        var rotate = new RotateTransform(0);
+        control.RenderTransformOrigin = new RelativePoint(0.5, 0, RelativeUnit.Relative);
+        control.RenderTransform = rotate;
+        var clock = Stopwatch.StartNew();
+        var timer = new DispatcherTimer(TimeSpan.FromMilliseconds(16), DispatcherPriority.Render, (s, _) =>
+        {
+            var t = clock.Elapsed.TotalSeconds - 0.15;       // сначала окно проявится
+            if (t < 0)
+                return;
+            rotate.Angle = 18 * Math.Exp(-t / 0.25) * Math.Sin(2 * Math.PI * t / 0.3);
+            if (t < 0.9)
+                return;
+            rotate.Angle = 0;
+            ((DispatcherTimer)s!).Stop();
+        });
+        timer.Start();
+    }
+
+    /// <summary>
     /// Короткий «щелчок» значка (★, 🚩): сжался и отпружинил назад с лёгким отскоком — единственное
     /// место с bounce, как договорились. При «Уменьшить движение» ничего не делает.
     /// </summary>

@@ -19,6 +19,8 @@ public partial class MainWindow : Window
         // «Уменьшить движение»: стили с Window.reduceMotion отключают переходы (вкладки, кнопки, строки).
         Classes.Set("reduceMotion", Motion.Motion.Reduced);
         Motion.Motion.ReducedChanged += () => Classes.Set("reduceMotion", Motion.Motion.Reduced);
+
+        InitializeEffects();
     }
 
     private void OnPlayerKeys(object? sender, KeyEventArgs e)

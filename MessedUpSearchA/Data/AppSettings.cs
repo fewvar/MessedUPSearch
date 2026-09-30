@@ -26,6 +26,9 @@ public class AppSettings
     /// <summary>Анимации интерфейса. Если в системе включено «Уменьшить движение», они упрощаются всё равно.</summary>
     public bool Animations { get; set; } = true;
 
+    /// <summary>Плёночное зерно фона и световое пятно за курсором.</summary>
+    public bool BackgroundEffects { get; set; } = true;
+
     /// <summary>Тихие звуки на 4 события: анализ готов, отправлен, ★, парсер закончил.</summary>
     public bool Sounds { get; set; } = true;
 

@@ -103,6 +103,16 @@ public static class UiScenes
                 }
                 break;
 
+            case "reminders":
+                main.IsReminderOpen = true;
+                break;
+
+            // Звезда: вращается 2 с (как во время поиска), потом доворачивается до четверти оборота.
+            case "spin":
+                main.ParserVm.IsSearching = true;
+                DispatcherTimer.RunOnce(() => main.ParserVm.IsSearching = false, TimeSpan.FromSeconds(2));
+                break;
+
             case "toast":
                 Toasts.Show("Отправлено ✓");
                 break;

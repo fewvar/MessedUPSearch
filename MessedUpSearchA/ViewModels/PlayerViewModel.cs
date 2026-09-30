@@ -73,6 +73,9 @@ public partial class PlayerViewModel : ViewModelBase, IDisposable
     [ObservableProperty, NotifyPropertyChangedFor(nameof(Caption))] private string _subtitle = string.Empty;
     [ObservableProperty, NotifyPropertyChangedFor(nameof(Caption))] private string _status = string.Empty;
     [ObservableProperty] private string _timeLabel = "0:00 / 0:00";
+
+    /// <summary>Длительность в секундах — волне для подписи «куда перемотаешь» при наведении.</summary>
+    [ObservableProperty] private double _duration;
     [ObservableProperty] private double _progress;
     [ObservableProperty] private float[]? _peaks;
     [ObservableProperty] private double _volume;
@@ -294,6 +297,7 @@ public partial class PlayerViewModel : ViewModelBase, IDisposable
         IsPlaying = _audio.IsPlaying;
         Progress = duration > 0 ? Math.Clamp(position / duration, 0, 1) : 0;
         TimeLabel = $"{Format(position)} / {Format(duration)}";
+        Duration = duration;
     }
 
     private static string Format(double seconds)

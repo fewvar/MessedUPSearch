@@ -48,6 +48,10 @@ public partial class MainWindowViewModel : ViewModelBase
     [ObservableProperty] private bool _enableParserLogs = true;
     [ObservableProperty] private bool _animations = true;
     [ObservableProperty] private bool _sounds = true;
+    [ObservableProperty] private bool _backgroundEffects = true;
+
+    /// <summary>Идёт анализ бита или поиск парсера — звезда в шапке вращается.</summary>
+    public bool IsBusy => _beatsVm.IsAnalyzing || _parserVm.IsSearching;
 
     /// <summary>Сообщение в футере (Toasts.Show); пустое — показываем статус парсера.</summary>
     [ObservableProperty, NotifyPropertyChangedFor(nameof(HasToast))] private string _toast = string.Empty;
@@ -96,6 +100,7 @@ public partial class MainWindowViewModel : ViewModelBase
         _enableParserLogs = _settings.EnableParserLogs;
         _animations = _settings.Animations;
         _sounds = _settings.Sounds;
+        _backgroundEffects = _settings.BackgroundEffects;
         Services.Audio.UiSounds.Enabled = _sounds;
         Motion.Motion.Initialize(_animations);
         AppLog.Enabled = _enableParserLogs;
@@ -128,6 +133,12 @@ public partial class MainWindowViewModel : ViewModelBase
                 return;
             OnPropertyChanged(nameof(ParserStatus));
             OnPropertyChanged(nameof(IsParserRunning));
+            OnPropertyChanged(nameof(IsBusy));
+        };
+        _beatsVm.PropertyChanged += (_, e) =>
+        {
+            if (e.PropertyName == nameof(BeatsViewModel.IsAnalyzing))
+                OnPropertyChanged(nameof(IsBusy));
         };
         _parserVm.ImportDone += () =>
         {
@@ -174,6 +185,12 @@ public partial class MainWindowViewModel : ViewModelBase
     {
         AppLog.Enabled = value;
         _settings.EnableParserLogs = value;
+        _settings.Save();
+    }
+
+    partial void OnBackgroundEffectsChanged(bool value)
+    {
+        _settings.BackgroundEffects = value;
         _settings.Save();
     }
 

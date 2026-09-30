@@ -36,6 +36,10 @@ public class PixelWaveform : Control
     public static readonly StyledProperty<IBrush?> RestBrushProperty =
         AvaloniaProperty.Register<PixelWaveform, IBrush?>(nameof(RestBrush), Brushes.Gray);
 
+    /// <summary>Длительность трека в секундах: при наведении показываем время под курсором.</summary>
+    public static readonly StyledProperty<double> DurationProperty =
+        AvaloniaProperty.Register<PixelWaveform, double>(nameof(Duration));
+
     /// <summary>Выполняется с долей 0..1, куда кликнули.</summary>
     public static readonly StyledProperty<ICommand?> SeekCommandProperty =
         AvaloniaProperty.Register<PixelWaveform, ICommand?>(nameof(SeekCommand));
@@ -73,6 +77,15 @@ public class PixelWaveform : Control
         get => GetValue(RestBrushProperty);
         set => SetValue(RestBrushProperty, value);
     }
+
+    public double Duration
+    {
+        get => GetValue(DurationProperty);
+        set => SetValue(DurationProperty, value);
+    }
+
+    /// <summary>X курсора над волной или null — не наведено.</summary>
+    private double? _hoverX;
 
     public ICommand? SeekCommand
     {
@@ -160,6 +173,49 @@ public class PixelWaveform : Control
             context.FillRectangle(new ImmutableSolidColorBrush(Colors.White, 0.35),
                 new Rect(x, floor + Cell, barWidth, Cell));
         }
+
+        RenderHover(context, floor);
+    }
+
+    /// <summary>
+    /// Наведение: пунктирная пиксельная линия там, куда перемотаешь, и время рядом — в пустом месте над
+    /// столбиками, с тёмной подложкой, чтобы читалось поверх волны.
+    /// </summary>
+    private void RenderHover(DrawingContext context, double floor)
+    {
+        if (_hoverX is not { } hx || _contentWidth <= 0)
+            return;
+
+        var x = Math.Floor(Math.Clamp(hx, 0, _contentWidth - 1) / Cell) * Cell;
+        var line = new ImmutableSolidColorBrush(Colors.White, 0.55);
+        for (var y = 0.0; y < floor; y += Cell * 2)
+            context.FillRectangle(line, new Rect(x, y, Cell / 2, Cell));
+
+        if (Duration <= 0)
+            return;
+
+        var seconds = Duration * Math.Clamp(hx / _contentWidth, 0, 1);
+        var label = TimeSpan.FromSeconds(seconds).ToString(seconds >= 3600 ? @"h\:mm\:ss" : @"m\:ss");
+        var text = new FormattedText(label, System.Globalization.CultureInfo.InvariantCulture, FlowDirection.LeftToRight,
+            new Typeface("JetBrains Mono"), 10, Brushes.White);
+        var boxX = x + 6 + text.Width + 8 > Bounds.Width ? x - text.Width - 12 : x + 6;
+        var box = new Rect(boxX, 0, text.Width + 6, text.Height + 2);
+        context.FillRectangle(new ImmutableSolidColorBrush(Color.FromArgb(220, 16, 16, 16)), box);
+        context.DrawText(text, new Point(box.X + 3, box.Y + 1));
+    }
+
+    protected override void OnPointerEntered(PointerEventArgs e)
+    {
+        base.OnPointerEntered(e);
+        _hoverX = e.GetPosition(this).X;
+        InvalidateVisual();
+    }
+
+    protected override void OnPointerExited(PointerEventArgs e)
+    {
+        base.OnPointerExited(e);
+        _hoverX = null;
+        InvalidateVisual();
     }
 
     private static Color ColorOf(IBrush? brush, Color fallback) =>
@@ -176,6 +232,8 @@ public class PixelWaveform : Control
     protected override void OnPointerMoved(PointerEventArgs e)
     {
         base.OnPointerMoved(e);
+        _hoverX = e.GetPosition(this).X;
+        InvalidateVisual();
         if (e.Pointer.Captured == this)
             Seek(e.GetPosition(this).X);
     }

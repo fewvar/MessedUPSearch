@@ -10,6 +10,13 @@ public partial class ReminderOverlay : UserControl
     public ReminderOverlay()
     {
         InitializeComponent();
+
+        // Окно показалось — колокольчик качнулся.
+        PropertyChanged += (_, e) =>
+        {
+            if (e.Property == IsVisibleProperty && e.NewValue is true)
+                Motion.Motion.Swing(Bell);
+        };
     }
 
     private MainWindowViewModel? Vm => (TopLevel.GetTopLevel(this) as Window)?.DataContext as MainWindowViewModel;
