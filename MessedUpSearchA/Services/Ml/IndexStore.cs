@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 namespace MessedUpSearchA.Services.Ml;
 
 /// <summary>
-/// Большой индекс доступных артистов (artists_index_v3.bin, ~7 МБ): где лежит,
+/// Большой индекс доступных артистов (artists_index_v4.bin, ~7 МБ): где лежит,
 /// откуда качается, как не перечитывать его при каждом анализе.
 ///
 /// Собирается краулером из ml/crawler у разработчика и едет ассетом релиза: обновляется
@@ -15,10 +15,10 @@ namespace MessedUpSearchA.Services.Ml;
 /// </summary>
 public static class IndexStore
 {
-    public const string FileName = "artists_index_v3.bin";
+    public const string FileName = "artists_index_v4.bin";
 
     private static readonly string DownloadUrl =
-        $"https://github.com/fewvar/MessedUPSearch/releases/download/v1.0/{FileName}";
+        $"https://github.com/fewvar/MessedUPSearch/releases/download/v1.0.1/{FileName}";
 
     private static readonly object Gate = new();
     private static TargetIndex? _cached;

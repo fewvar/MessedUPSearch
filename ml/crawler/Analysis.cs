@@ -3,7 +3,7 @@ using MessedUpSearchA.Services.Ml;
 
 namespace Crawler;
 
-/// <summary>Оценка индекса, пробный запрос битом и экспорт индекса v3 (EffNet + голова).</summary>
+/// <summary>Оценка индекса, пробный запрос битом и экспорт индекса v4 (EffNet + голова + трек каждого вектора).</summary>
 public static class Analysis
 {
     private const int TopTracks = 3;
@@ -11,7 +11,7 @@ public static class Analysis
     /// <param name="Vectors">инструменталы: сырой EffNet (kind='effnet') через голову — по ним поиск</param>
     /// <param name="FullVectors">куски с голосом (kind='full'), центр — artist_index.bin: по ним фильтр голоса</param>
     private sealed record Artist(long Id, string Nickname, string Platform, string SourceId, string Url,
-        string Avatar, string Genre, int Plays, List<float[]> Vectors, List<float[]> FullVectors)
+        string Avatar, string Genre, int Plays, List<float[]> Vectors, List<float[]> FullVectors, List<TargetTrack> Tracks)
     {
         /// <summary>Лучший из послушанных треков: его играет ▶ в выдаче приложения.</summary>
         public (string Id, string Url, string Title, int Plays) TopTrack { get; set; } = ("", "", "", -1);
@@ -22,6 +22,12 @@ public static class Analysis
 
     /// <summary>Ориентиры приложения (references_v3.bin): их центр c2 пишется в индекс для сверки сборок.</summary>
     public static string ReferencesPath { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Только треки первого прохода (у них есть MERT 'inst'; докачанные 29.09 его не получали) — тот же набор,
+    /// что в индексе 1.0: докачка на линейке точности не прибавила (ml/README.md).
+    /// </summary>
+    public static bool FirstPassOnly { get; set; }
 
     /// <summary>Голова EffNet (effnet_head.bin) — та же, что в приложении.</summary>
     public static string HeadPath { get; set; } = string.Empty;
@@ -59,7 +65,8 @@ public static class Analysis
             JOIN tracks t ON t.id = i.track_id
             JOIN artists a ON a.id = t.artist_id
             WHERE i.kind = 'effnet' AND a.producer_reason = ''
-            """);
+              AND ($first = 0 OR EXISTS (SELECT 1 FROM embeddings x WHERE x.track_id = i.track_id AND x.kind = 'inst'))
+            """, ("$first", FirstPassOnly ? 1 : 0));
 
         using var reader = command.ExecuteReader();
         while (reader.Read())
@@ -69,10 +76,11 @@ public static class Analysis
             {
                 artists[id] = artist = new Artist(id, reader.GetString(1), reader.GetString(2), reader.GetString(3),
                     reader.GetString(4), reader.GetString(5), reader.GetString(6), reader.GetInt32(7),
-                    new List<float[]>(), new List<float[]>());
+                    new List<float[]>(), new List<float[]>(), new List<TargetTrack>());
             }
 
             artist.Vectors.Add(head.Project(MertEmbedder.FromBytes((byte[])reader[8])));
+            artist.Tracks.Add(new TargetTrack(reader.GetString(10), reader.GetString(11), reader.GetString(12)));
             artist.FullVectors.Add(MertEmbedder.Centered(MertEmbedder.FromBytes((byte[])reader[9]), fullCenter));
 
             var trackPlays = reader.GetInt32(13);
@@ -159,8 +167,8 @@ public static class Analysis
             foreach (var match in result.Targets)
             {
                 Console.WriteLine(string.Format(CultureInfo.InvariantCulture,
-                    "   {0,-24} {1,6:F3} {2,4}%  {3,9:N0} прослуш.  {4}",
-                    Cut(match.Artist, 24), match.Similarity, match.Percent, match.Plays, match.SourceUrl));
+                    "   {0,-24} {1,6:F3} {2,4}%  {3,9:N0} прослуш.  ▶ {4}",
+                    Cut(match.Artist, 24), match.Similarity, match.Percent, match.Plays, Cut(match.TopTrackTitle, 50)));
             }
         }
     }
@@ -174,7 +182,7 @@ public static class Analysis
             Artists = artists.Select(a => new TargetArtist
             {
                 Nickname = a.Nickname, Platform = a.Platform, SourceId = a.SourceId, SourceUrl = a.Url,
-                AvatarUrl = a.Avatar, Genre = a.Genre, Plays = a.Plays, Vectors = a.Vectors.ToArray(),
+                AvatarUrl = a.Avatar, Genre = a.Genre, Plays = a.Plays, Vectors = a.Vectors.ToArray(), Tracks = a.Tracks.ToArray(),
                 TopTrackId = a.TopTrack.Id, TopTrackUrl = a.TopTrack.Url, TopTrackTitle = a.TopTrack.Title
             }).ToList()
         };

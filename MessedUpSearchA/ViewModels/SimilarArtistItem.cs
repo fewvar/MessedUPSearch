@@ -11,6 +11,11 @@ public partial class SimilarArtistItem : ObservableObject
 
     public string PercentLabel => $"{Percent}%";
 
+    /// <summary>Подсказка на ▶: какой трек сыграет — ближайший к биту по звуку.</summary>
+    public string PlayTip => TopTrackTitle.Length > 0
+        ? MessedUpSearchA.Services.Localization.Localizer.Instance.Format("BeatEditor.PlayNearest", TopTrackTitle)
+        : MessedUpSearchA.Services.Localization.Localizer.Instance["BeatEditor.PlayTrack"];
+
     /// <summary>Первое место выдачи — его полоска ярче остальных.</summary>
     public bool IsLeader { get; set; }
 

@@ -449,7 +449,7 @@
                                     <!-- ▶ послушать · ➕ в базу (если его там нет) · ↗ профиль -->
                                     <StackPanel Grid.Column="3" Orientation="Horizontal" Margin="6,0,0,0">
                                         <Button Classes="playerButton" Click="OnPlaySimilarClick"
-                                                ToolTip.Tip="{loc:Tr BeatEditor.PlayTrack}">
+                                                ToolTip.Tip="{Binding PlayTip}">
                                             <Path Data="M0,0 L8,4.5 L0,9 Z"/>
                                         </Button>
                                         <Panel Width="30">
