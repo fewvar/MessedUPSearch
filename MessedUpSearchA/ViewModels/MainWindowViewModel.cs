@@ -49,6 +49,11 @@ public partial class MainWindowViewModel : ViewModelBase
     [ObservableProperty] private bool _animations = true;
     [ObservableProperty] private bool _sounds = true;
 
+    /// <summary>Сообщение в футере (Toasts.Show); пустое — показываем статус парсера.</summary>
+    [ObservableProperty, NotifyPropertyChangedFor(nameof(HasToast))] private string _toast = string.Empty;
+    public bool HasToast => Toast.Length > 0;
+    private Avalonia.Threading.DispatcherTimer? _toastTimer;
+
     public IReadOnlyList<string> LanguageOptions { get; } = new[] { "English", "Русский" };
 
     public string AppVersion => "v1.0";
@@ -106,6 +111,15 @@ public partial class MainWindowViewModel : ViewModelBase
         {
             AvatarBrushConverter.Invalidate();
             _artistsVm.LoadArtists();
+        };
+
+        Toasts.Shown += text =>
+        {
+            Toast = text;
+            _toastTimer ??= new Avalonia.Threading.DispatcherTimer(TimeSpan.FromSeconds(2.4), Avalonia.Threading.DispatcherPriority.Normal,
+                (_, _) => { _toastTimer!.Stop(); Toast = string.Empty; });
+            _toastTimer.Stop();
+            _toastTimer.Start();
         };
 
         _parserVm.PropertyChanged += (_, e) =>
@@ -266,6 +280,7 @@ public partial class MainWindowViewModel : ViewModelBase
                 log.SentAt = DateTime.Now.ToString("yyyy-MM-dd HH:mm");
                 db.SaveChanges();
                 Services.Audio.UiSounds.Play(Services.Audio.UiSound.Sent);
+                Toasts.Show(Localizer.Instance["Toast.Sent"]);
             }
         }
 

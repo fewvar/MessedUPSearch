@@ -9,6 +9,7 @@ using Avalonia.Animation.Easings;
 using Avalonia.Controls;
 using Avalonia.Controls.Presenters;
 using Avalonia.LogicalTree;
+using Avalonia.Media;
 using Avalonia.VisualTree;
 using Avalonia.Media.Transformation;
 using Avalonia.Threading;
@@ -71,6 +72,27 @@ public static class Motion
     public static bool GetGrowX(Control control) => control.GetValue(GrowXProperty);
     public static void SetGrowX(Control control, bool value) => control.SetValue(GrowXProperty, value);
 
+    /// <summary>Число «досчитывает» от 0 до значения вместе с полоской строки (TextBlock, формат «N%»).</summary>
+    public static readonly AttachedProperty<int> CountToProperty =
+        AvaloniaProperty.RegisterAttached<TextBlock, int>("CountTo", typeof(Motion), -1);
+
+    public static int GetCountTo(TextBlock control) => control.GetValue(CountToProperty);
+    public static void SetCountTo(TextBlock control, int value) => control.SetValue(CountToProperty, value);
+
+    /// <summary>Появился (IsVisible стал true) — щелчок <see cref="Pop"/>. Для ✓ после добавления в базу.</summary>
+    public static readonly AttachedProperty<bool> PopWhenShownProperty =
+        AvaloniaProperty.RegisterAttached<Control, bool>("PopWhenShown", typeof(Motion));
+
+    public static bool GetPopWhenShown(Control control) => control.GetValue(PopWhenShownProperty);
+    public static void SetPopWhenShown(Control control, bool value) => control.SetValue(PopWhenShownProperty, value);
+
+    /// <summary>true — один раз вспыхнуть зелёным (точка статуса, только что ставшая SOLD).</summary>
+    public static readonly AttachedProperty<bool> FlashProperty =
+        AvaloniaProperty.RegisterAttached<Control, bool>("Flash", typeof(Motion));
+
+    public static bool GetFlash(Control control) => control.GetValue(FlashProperty);
+    public static void SetFlash(Control control, bool value) => control.SetValue(FlashProperty, value);
+
     private const double RowStepSeconds = 0.025;
     private const double RowSeconds = 0.3;
     private const double BarSeconds = 0.5;
@@ -82,6 +104,30 @@ public static class Motion
 
     static Motion()
     {
+        CountToProperty.Changed.AddClassHandler<TextBlock>((text, _) =>
+        {
+            text.AttachedToVisualTree -= OnCountAttached;
+            text.AttachedToVisualTree += OnCountAttached;
+            if (text.IsLoaded)
+                StartCount(text);
+        });
+        PopWhenShownProperty.Changed.AddClassHandler<Control>((control, e) =>
+        {
+            if (e.NewValue is true)
+                control.PropertyChanged += OnPopVisibility;
+            else
+                control.PropertyChanged -= OnPopVisibility;
+        });
+        FlashProperty.Changed.AddClassHandler<Control>((control, e) =>
+        {
+            control.AttachedToVisualTree -= OnFlashAttached;
+            if (e.NewValue is not true)
+                return;
+            if (control.IsLoaded)
+                Flash(control);
+            else
+                control.AttachedToVisualTree += OnFlashAttached;
+        });
         AppearProperty.Changed.AddClassHandler<Control>((control, e) =>
         {
             control.AttachedToVisualTree -= OnAppearAttached;
@@ -241,6 +287,82 @@ public static class Motion
             bar.Transitions = [new TransformOperationsTransition { Property = Visual.RenderTransformProperty, Duration = duration, Easing = easing }];
             bar.RenderTransform = BarFull;
         });
+    }
+
+    private static void OnCountAttached(object? sender, VisualTreeAttachmentEventArgs e)
+    {
+        if (sender is TextBlock text)
+            StartCount(text);
+    }
+
+    private static void StartCount(TextBlock text)
+    {
+        var target = GetCountTo(text);
+        if (target < 0)
+            return;
+        if (Reduced)
+        {
+            text.Text = $"{target}%";
+            return;
+        }
+
+        text.Text = "0%";
+        var delay = RowIndex(text) * RowStepSeconds + 0.06;          // в такт с полоской строки
+        var duration = SpringEasing.DurationFor(BarSeconds).TotalSeconds;
+        var easing = new SpringEasing();
+        var clock = Stopwatch.StartNew();
+        var timer = new DispatcherTimer(TimeSpan.FromMilliseconds(16), DispatcherPriority.Render, (s, _) =>
+        {
+            var t = clock.Elapsed.TotalSeconds - delay;
+            var progress = Math.Clamp(t / duration, 0, 1);
+            text.Text = $"{(int)Math.Round(target * easing.Ease(progress))}%";
+            if (progress >= 1)
+                ((DispatcherTimer)s!).Stop();
+        });
+        timer.Start();
+    }
+
+    private static void OnPopVisibility(object? sender, AvaloniaPropertyChangedEventArgs e)
+    {
+        if (e.Property == Visual.IsVisibleProperty && e.NewValue is true && sender is Control control)
+            Pop(control);
+    }
+
+    private static void OnFlashAttached(object? sender, VisualTreeAttachmentEventArgs e)
+    {
+        if (sender is Control control)
+            Flash(control);
+    }
+
+    /// <summary>
+    /// Вспышка: элемент подпрыгивает (1.7 -> 1 с отскоком) и светится зелёным, свечение гаснет за 0.9 с.
+    /// При «Уменьшить движение» — только свечение, без масштаба.
+    /// </summary>
+    public static void Flash(Control control)
+    {
+        var glow = new DropShadowEffect { Color = Color.Parse("#2ECC71"), BlurRadius = 16, OffsetX = 0, OffsetY = 0, Opacity = 1 };
+        control.Effect = glow;
+        if (!Reduced)
+        {
+            control.RenderTransformOrigin = RelativePoint.Center;
+            control.Transitions = null;
+            control.RenderTransform = TransformOperations.Parse("scale(1.7)");
+            var (duration, easing) = Spring(0.4, bounce: 0.3);
+            control.Transitions = [new TransformOperationsTransition { Property = Visual.RenderTransformProperty, Duration = duration, Easing = easing }];
+            control.RenderTransform = TransformOperations.Parse("scale(1)");
+        }
+
+        var clock = Stopwatch.StartNew();
+        var fade = new DispatcherTimer(TimeSpan.FromMilliseconds(30), DispatcherPriority.Render, (s, _) =>
+        {
+            var t = clock.Elapsed.TotalSeconds / 0.9;
+            glow.Opacity = Math.Max(0, 1 - t);
+            if (t < 1)
+                return;
+            ((DispatcherTimer)s!).Stop();
+            control.Effect = null;
+        });
+        fade.Start();
     }
 
     /// <summary>

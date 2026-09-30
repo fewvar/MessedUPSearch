@@ -103,6 +103,31 @@ public static class UiScenes
                 }
                 break;
 
+            case "toast":
+                Toasts.Show("Отправлено ✓");
+                break;
+
+            case "sold-flash":
+                if (main.BeatsVm.Beats.FirstOrDefault() is { } sold)
+                    main.BeatsVm.JustSoldBeatId = sold.Id;
+                break;
+
+            // Редактор с сохранённой выдачей; через секунду первому артисту — «добавлен» (✓ со щелчком).
+            case "import-check":
+                if (main.BeatsVm.Beats.FirstOrDefault() is { } withResults)
+                {
+                    main.BeatsVm.BeginEditBeat(withResults);
+                    DispatcherTimer.RunOnce(() =>
+                    {
+                        if (main.BeatsVm.SimilarArtists.FirstOrDefault(a => a.CanImport) is { } item)
+                        {
+                            item.ArtistId = -1;
+                            item.JustImported = true;
+                        }
+                    }, TimeSpan.FromSeconds(1.2));
+                }
+                break;
+
             case "sort-bpm":
                 main.BeatsVm.SortBy("Bpm");
                 break;

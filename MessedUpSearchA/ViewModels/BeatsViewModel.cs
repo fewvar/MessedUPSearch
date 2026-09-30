@@ -52,6 +52,9 @@ public partial class BeatsViewModel : ViewModelBase
     /// <summary>Сортировка по заголовку: «Bpm:desc» / «Bpm:asc» / пусто (исходный порядок — новые сверху).</summary>
     [ObservableProperty] private string _sortState = string.Empty;
 
+    /// <summary>Бит, который только что стал SOLD, — его точка статуса вспыхнет в таблице.</summary>
+    [ObservableProperty] private int _justSoldBeatId;
+
     public void SortBy(string column)
     {
         SortState = TableSort.Next(SortState, column);
@@ -471,6 +474,8 @@ public partial class BeatsViewModel : ViewModelBase
                 item.Platform, item.SourceId, item.SourceUrl, item.Artist, item.AvatarUrl);
 
             item.ArtistId = id;
+            item.JustImported = true;
+            Toasts.Show(Localizer.Instance.Format("Toast.Added", item.Artist));
 
             // Все выдачи, где он встречался, теперь ведут на карточку в базе.
             using (var db = new AppDbContext())
@@ -526,6 +531,8 @@ public partial class BeatsViewModel : ViewModelBase
             beat = db.Beats.First(b => b.Id == _editingId);
         }
 
+        var becomesSold = EditStatus == "SOLD" && !beat.IsSold;
+
         beat.BeatName = EditName.Trim();
         beat.AiTags = EditTags.Trim();
         beat.Bpm = bpm;
@@ -549,6 +556,13 @@ public partial class BeatsViewModel : ViewModelBase
 
         IsEditorOpen = false;
         LoadBeats();
+
+        if (becomesSold)
+        {
+            JustSoldBeatId = beat.Id;
+            // Сбросить, чтобы вспышка не повторялась при следующей перерисовке таблицы (фильтр, сортировка).
+            Avalonia.Threading.DispatcherTimer.RunOnce(() => JustSoldBeatId = 0, TimeSpan.FromSeconds(1.5));
+        }
     }
 
     private void SyncArtistLinks(AppDbContext db, int beatId)

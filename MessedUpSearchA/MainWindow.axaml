@@ -156,7 +156,14 @@
                              Fill="{StaticResource OnBackground}"
                              VerticalAlignment="Center"
                              IsVisible="{Binding IsParserRunning}"/>
-                    <TextBlock Text="{Binding ParserStatus}"
+                    <!-- Тост (Toasts.Show) на пару секунд подменяет статус парсера. -->
+                    <TextBlock Text="{Binding Toast}"
+                               IsVisible="False" motion:Motion.IsShown="{Binding HasToast}"
+                               VerticalAlignment="Center"
+                               FontFamily="{StaticResource HeadingFont}"
+                               FontSize="11" LetterSpacing="2"
+                               Foreground="{StaticResource OnBackground}"/>
+                    <TextBlock Text="{Binding ParserStatus}" IsVisible="{Binding !HasToast}"
                                VerticalAlignment="Center"
                                FontFamily="{StaticResource HeadingFont}"
                                FontSize="11" LetterSpacing="2"

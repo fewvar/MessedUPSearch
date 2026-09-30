@@ -22,6 +22,9 @@ public partial class SimilarArtistItem : ObservableObject
 
     [ObservableProperty, NotifyPropertyChangedFor(nameof(CanImport))] private bool _isImporting;
 
+    /// <summary>Только что добавлен кнопкой ＋ — на её месте ✓ со щелчком.</summary>
+    [ObservableProperty] private bool _justImported;
+
     public string Platform { get; init; } = string.Empty;
     public string SourceId { get; init; } = string.Empty;
     public string SourceUrl { get; init; } = string.Empty;
