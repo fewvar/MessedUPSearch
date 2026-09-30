@@ -243,6 +243,23 @@ public static class Motion
         });
     }
 
+    /// <summary>
+    /// Короткий «щелчок» значка (★, 🚩): сжался и отпружинил назад с лёгким отскоком — единственное
+    /// место с bounce, как договорились. При «Уменьшить движение» ничего не делает.
+    /// </summary>
+    public static void Pop(Control? icon)
+    {
+        if (icon is null || Reduced)
+            return;
+
+        icon.RenderTransformOrigin = RelativePoint.Center;
+        icon.Transitions = null;
+        icon.RenderTransform = TransformOperations.Parse("scale(0.8)");
+        var (duration, easing) = Spring(0.3, bounce: 0.35);
+        icon.Transitions = [new TransformOperationsTransition { Property = Visual.RenderTransformProperty, Duration = duration, Easing = easing }];
+        icon.RenderTransform = TransformOperations.Parse("scale(1)");
+    }
+
     /// <summary>Номер элемента в ItemsControl — по контейнеру, в котором лежит шаблон.</summary>
     private static int RowIndex(Control control)
     {

@@ -61,7 +61,7 @@
                 <ScrollViewer Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="6"
                               HorizontalScrollBarVisibility="Disabled"
                               VerticalScrollBarVisibility="Auto">
-                    <ItemsControl ItemsSource="{Binding Artists}">
+                    <ItemsControl x:Name="ArtistsList" ItemsSource="{Binding Artists}">
                         <ItemsControl.ItemTemplate>
                             <DataTemplate DataType="models:Artist">
                                 <Grid Height="56"
@@ -143,7 +143,8 @@
                                                Background="Transparent" Cursor="Hand"
                                                Width="28" Height="28" Margin="4,0"
                                                VerticalAlignment="Center"
-                                               PointerPressed="OnToggleFavorite">
+                                               PointerPressed="OnToggleFavorite"
+                                               Name="FavoriteToggle">
                                             <Border Classes="icon icon-star-filled"
                                                     Background="#F1C40F"
                                                     Width="20" Height="20"
@@ -159,7 +160,8 @@
                                                Background="Transparent" Cursor="Hand"
                                                Width="28" Height="28" Margin="4,0,0,0"
                                                VerticalAlignment="Center"
-                                               PointerPressed="OnToggleRedFlag">
+                                               PointerPressed="OnToggleRedFlag"
+                                               Name="FlagToggle">
                                             <TextBlock Text="⚑" FontSize="18"
                                                        HorizontalAlignment="Center" VerticalAlignment="Center"
                                                        Foreground="#E74C3C"

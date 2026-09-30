@@ -17,6 +17,7 @@
             <Transitions>
                 <BrushTransition Property="BorderBrush" Duration="0:0:0.15"/>
                 <BrushTransition Property="Foreground"  Duration="0:0:0.15"/>
+                <TransformOperationsTransition Property="RenderTransform" Duration="0:0:0.1" Easing="CubicEaseOut"/>
             </Transitions>
         </Setter>
         <Setter Property="Template">
@@ -62,6 +63,7 @@
         <Setter Property="Transitions">
             <Transitions>
                 <BrushTransition Property="Foreground" Duration="0:0:0.15"/>
+                <TransformOperationsTransition Property="RenderTransform" Duration="0:0:0.1" Easing="CubicEaseOut"/>
             </Transitions>
         </Setter>
         <Setter Property="Template">
@@ -83,6 +85,11 @@
     <!-- Кнопки плеера: только значок, без рамки. Значки — Path, красятся через Fill. -->
     <Style Selector="Button.playerButton">
         <Setter Property="Cursor" Value="Hand"/>
+        <Setter Property="Transitions">
+            <Transitions>
+                <TransformOperationsTransition Property="RenderTransform" Duration="0:0:0.1" Easing="CubicEaseOut"/>
+            </Transitions>
+        </Setter>
         <Setter Property="Template">
             <ControlTemplate TargetType="Button">
                 <Border Background="Transparent" Width="30" Height="30" CornerRadius="4">
@@ -94,6 +101,11 @@
     </Style>
     <Style Selector="Button.playerButton Path">
         <Setter Property="Fill" Value="{StaticResource OnBackgroundDim}"/>
+        <Setter Property="Transitions">
+            <Transitions>
+                <BrushTransition Property="Fill" Duration="0:0:0.12"/>
+            </Transitions>
+        </Setter>
     </Style>
     <Style Selector="Button.playerButton:pointerover Path">
         <Setter Property="Fill" Value="{StaticResource OnBackground}"/>
@@ -102,9 +114,19 @@
     <!-- ▶ в строке таблицы: тёмный квадрат на светлой карточке. -->
     <Style Selector="Button.rowPlay">
         <Setter Property="Cursor" Value="Hand"/>
+        <Setter Property="Transitions">
+            <Transitions>
+                <TransformOperationsTransition Property="RenderTransform" Duration="0:0:0.1" Easing="CubicEaseOut"/>
+            </Transitions>
+        </Setter>
         <Setter Property="Template">
             <ControlTemplate TargetType="Button">
                 <Border Name="box" Background="{StaticResource OnSurface}" Width="24" Height="24" CornerRadius="4">
+                    <Border.Transitions>
+                        <Transitions>
+                            <BrushTransition Property="Background" Duration="0:0:0.12"/>
+                        </Transitions>
+                    </Border.Transitions>
                     <ContentPresenter Content="{TemplateBinding Content}"
                                       HorizontalAlignment="Center" VerticalAlignment="Center"/>
                 </Border>
@@ -121,6 +143,12 @@
     <!-- Мелкая текстовая кнопка для строки состояния. -->
     <Style Selector="Button.statusButton">
         <Setter Property="Cursor" Value="Hand"/>
+        <Setter Property="Transitions">
+            <Transitions>
+                <BrushTransition Property="Foreground" Duration="0:0:0.12"/>
+                <TransformOperationsTransition Property="RenderTransform" Duration="0:0:0.1" Easing="CubicEaseOut"/>
+            </Transitions>
+        </Setter>
         <Setter Property="Foreground" Value="{StaticResource OnBackgroundDim}"/>
         <Setter Property="Template">
             <ControlTemplate TargetType="Button">
@@ -138,4 +166,16 @@
         <Setter Property="Foreground" Value="{StaticResource OnBackground}"/>
     </Style>
 
+    <!-- Нажатие: лёгкое «вдавливание» (Fluent делает scale(0.98) мгновенно — здесь плавно, 100 мс). -->
+    <Style Selector="Button.action, Button.modalClose, Button.playerButton, Button.rowPlay, Button.statusButton">
+        <Setter Property="RenderTransform" Value="scale(1)"/>
+    </Style>
+    <Style Selector="Button.action:pressed, Button.modalClose:pressed, Button.playerButton:pressed, Button.rowPlay:pressed, Button.statusButton:pressed">
+        <Setter Property="RenderTransform" Value="scale(0.96)"/>
+    </Style>
+
+    <!-- «Уменьшить движение»: без масштаба при нажатии, смена цвета остаётся (Apple это допускает). -->
+    <Style Selector="Window.reduceMotion Button:pressed">
+        <Setter Property="RenderTransform" Value="scale(1)"/>
+    </Style>
 </Styles>
