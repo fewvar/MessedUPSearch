@@ -69,10 +69,18 @@
         <Setter Property="Template">
             <ControlTemplate TargetType="Button">
                 <Border Background="{TemplateBinding Background}" CornerRadius="4">
-                    <ContentPresenter Content="{TemplateBinding Content}"
+                    <ContentPresenter Name="glyph"
+                                      Content="{TemplateBinding Content}"
                                       Foreground="{TemplateBinding Foreground}"
                                       HorizontalAlignment="Center"
-                                      VerticalAlignment="Center"/>
+                                      VerticalAlignment="Center"
+                                      RenderTransform="rotate(0deg)">
+                        <ContentPresenter.Transitions>
+                            <Transitions>
+                                <TransformOperationsTransition Property="RenderTransform" Duration="0:0:0.3" Easing="CubicEaseOut"/>
+                            </Transitions>
+                        </ContentPresenter.Transitions>
+                    </ContentPresenter>
                 </Border>
             </ControlTemplate>
         </Setter>
@@ -80,6 +88,13 @@
 
     <Style Selector="Button.modalClose:pointerover">
         <Setter Property="Foreground" Value="{StaticResource OnBackground}"/>
+    </Style>
+    <!-- ✕ поворачивается на четверть оборота при наведении (крест симметричен — выглядит как «оживление»). -->
+    <Style Selector="Button.modalClose:pointerover /template/ ContentPresenter#glyph">
+        <Setter Property="RenderTransform" Value="rotate(90deg)"/>
+    </Style>
+    <Style Selector="Window.reduceMotion Button.modalClose:pointerover /template/ ContentPresenter#glyph">
+        <Setter Property="RenderTransform" Value="rotate(0deg)"/>
     </Style>
 
     <!-- Кнопки плеера: только значок, без рамки. Значки — Path, красятся через Fill. -->

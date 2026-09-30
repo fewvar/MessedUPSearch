@@ -3,13 +3,20 @@
 
     <Style Selector="Border.modal">
         <Setter Property="Background" Value="{StaticResource AppBackground}"/>
-        <Setter Property="BorderBrush" Value="#33FFFFFF"/>
+        <!-- Стеклянная грань: сверху рамка светлее, к низу тает — как свет, падающий на край карточки. -->
+        <Setter Property="BorderBrush">
+            <LinearGradientBrush StartPoint="0%,0%" EndPoint="0%,100%">
+                <GradientStop Color="#66FFFFFF" Offset="0"/>
+                <GradientStop Color="#26FFFFFF" Offset="0.08"/>
+                <GradientStop Color="#1AFFFFFF" Offset="1"/>
+            </LinearGradientBrush>
+        </Setter>
         <Setter Property="BorderThickness" Value="1"/>
         <Setter Property="CornerRadius" Value="6"/>
         <Setter Property="ClipToBounds" Value="True"/>
         <Setter Property="HorizontalAlignment" Value="Center"/>
         <Setter Property="VerticalAlignment" Value="Center"/>
-        <Setter Property="BoxShadow" Value="0 16 48 0 #B0000000"/>
+        <Setter Property="BoxShadow" Value="0 16 48 0 #B0000000, inset 0 1 0 0 #14FFFFFF"/>
     </Style>
 
     <Style Selector="Border.settingsSection">
