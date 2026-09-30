@@ -51,5 +51,5 @@ PLIST
 codesign --force --deep --sign - "$APP"
 (cd "$DIST" && ditto -c -k --keepParent MessedUpSearch.app MessedUpSearch.app.zip)
 
-cp "$ROOT/ml/data/artists_index_v3.bin" "$DIST/"
+cp "$ROOT/ml/data/artists_index_v4.bin" "$DIST/"
 ls -la "$DIST"

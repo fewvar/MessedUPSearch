@@ -11,6 +11,14 @@ public partial class SimilarArtistItem : ObservableObject
 
     public string PercentLabel => $"{Percent}%";
 
+    /// <summary>Подсказка на ▶: какой трек сыграет — ближайший к биту по звуку.</summary>
+    public string PlayTip => TopTrackTitle.Length > 0
+        ? MessedUpSearchA.Services.Localization.Localizer.Instance.Format("BeatEditor.PlayNearest", TopTrackTitle)
+        : MessedUpSearchA.Services.Localization.Localizer.Instance["BeatEditor.PlayTrack"];
+
+    /// <summary>Первое место выдачи — его полоска ярче остальных.</summary>
+    public bool IsLeader { get; set; }
+
     /// <summary>Ширина полоски в списке — рисуем её вместо диаграммы.</summary>
     public double BarWidth => Percent * 1.2;
 
@@ -18,6 +26,9 @@ public partial class SimilarArtistItem : ObservableObject
     [ObservableProperty, NotifyPropertyChangedFor(nameof(CanImport))] private int? _artistId;
 
     [ObservableProperty, NotifyPropertyChangedFor(nameof(CanImport))] private bool _isImporting;
+
+    /// <summary>Только что добавлен кнопкой ＋ — на её месте ✓ со щелчком.</summary>
+    [ObservableProperty] private bool _justImported;
 
     public string Platform { get; init; } = string.Empty;
     public string SourceId { get; init; } = string.Empty;

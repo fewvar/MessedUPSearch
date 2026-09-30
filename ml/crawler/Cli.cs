@@ -29,6 +29,7 @@ public static class Cli
         Analysis.VocalPath = args.Contains("--no-vocal") ? string.Empty : Path.Combine(DataDir, "vocal_lr.json");
         Analysis.ReferencesPath = Path.Combine(AppModels, "references_v3.bin");
         Analysis.HeadPath = Path.Combine(AppModels, "effnet_head.bin");
+        Analysis.FirstPassOnly = args.Contains("--first-pass");
         Analysis.FriendIndexPath = DefaultIndex;
 
         try
@@ -90,7 +91,7 @@ public static class Cli
                 {
                     using var store = db();
                     Analysis.Export(store,
-                        Option(args, "--out") ?? Path.Combine(DataDir, "artists_index_v3.bin"),
+                        Option(args, "--out") ?? Path.Combine(DataDir, "artists_index_v4.bin"),
                         int.Parse(Option(args, "--min-vectors") ?? "2"));
                     return 0;
                 }
@@ -144,7 +145,7 @@ public static class Cli
           producers                                             кого отсёк фильтр и почему
           refilter                                              пересчитать фильтр по найденным
           typebeats  [--per-artist 8]                           линейка: «<артист> type beat» по индексу друга
-          export     [--out путь] [--min-vectors 2]             собрать artists_index_v3.bin (EffNet + голова)
+          export     [--out путь] [--min-vectors 2]             собрать artists_index_v4.bin (--first-pass: треки как в 1.0)
           reslice    [--out ml/data/audio]                      сохранить куски уже посчитанных треков (для других моделей)
           seed-refs  [--tracks 10] --db другая.db               ориентиры как артисты SoundCloud (опыт с источником)
           общее:     [--db ml/data/crawl.db]

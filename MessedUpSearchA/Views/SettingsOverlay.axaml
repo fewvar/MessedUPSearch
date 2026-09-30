@@ -150,6 +150,29 @@
 
                         <Border Classes="settingsSection">
                             <StackPanel>
+                                <TextBlock Classes="settingsHeader" Text="{loc:Tr Settings.Interface}"/>
+                                <CheckBox Classes="settings"
+                                          Content="{loc:Tr Settings.Animations}"
+                                          IsChecked="{Binding Animations}"/>
+                                <TextBlock Classes="settingsHint"
+                                           Text="{loc:Tr Settings.AnimationsHint}"
+                                           TextWrapping="Wrap" Margin="0,4,0,0"/>
+                                <TextBlock Classes="settingsHint"
+                                           Text="{loc:Tr Settings.AnimationsSystem}"
+                                           IsVisible="{Binding IsSystemReducedMotion}"
+                                           TextWrapping="Wrap" Margin="0,4,0,0"/>
+                                <CheckBox Classes="settings"
+                                          Content="{loc:Tr Settings.Sounds}"
+                                          IsChecked="{Binding Sounds}"
+                                          Margin="0,12,0,0"/>
+                                <TextBlock Classes="settingsHint"
+                                           Text="{loc:Tr Settings.SoundsHint}"
+                                           TextWrapping="Wrap" Margin="0,4,0,0"/>
+                            </StackPanel>
+                        </Border>
+
+                        <Border Classes="settingsSection">
+                            <StackPanel>
                                 <TextBlock Classes="settingsHeader" Text="{loc:Tr Settings.Logs}"/>
 
                                 <CheckBox Classes="settings"
@@ -184,24 +207,8 @@
                                            Foreground="{StaticResource OnBackground}"
                                            Margin="0,0,0,8"/>
 
-                                <TextBlock Classes="settingsAbout"
-                                           TextWrapping="Wrap"
-                                           Text="{loc:Tr Settings.AboutText}"/>
-                                <TextBlock Classes="settingsAbout"
-                                           TextWrapping="Wrap"
-                                           Text="{loc:Tr Settings.BuiltWith}"
-                                           Margin="0,8,0,2"/>
-                                <TextBlock Classes="settingsAbout"
-                                           TextWrapping="Wrap"
-                                           Text="{loc:Tr Settings.ModelCredit}"
-                                           Margin="0,0,0,2"/>
-                                <TextBlock Classes="settingsAbout"
-                                           TextWrapping="Wrap"
-                                           Text="by @fewvar"/>
-                                <TextBlock Classes="settingsAbout"
-                                           TextWrapping="Wrap"
-                                           Text="github.com/fewvar/MessedUPSearch"
-                                           Margin="0,2,0,0"/>
+                                <TextBlock Classes="settingsAbout" Text="@fewvar"/>
+                                <TextBlock Classes="settingsAbout" Text="@MessedUpK1d" Margin="0,2,0,0"/>
                             </StackPanel>
                         </Border>
 

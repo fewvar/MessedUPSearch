@@ -56,6 +56,24 @@ public partial class ArtistsViewModel : ViewModelBase
 
     private readonly List<Artist> _allArtists = new();
 
+    /// <summary>Сортировка по заголовку: «Plays:desc» / «Plays:asc» / пусто (исходный порядок).</summary>
+    [ObservableProperty] private string _sortState = string.Empty;
+
+    public void SortBy(string column)
+    {
+        SortState = TableSort.Next(SortState, column);
+        ApplyFilter();
+    }
+
+    private static Func<Artist, object?>? SortKey(string column) => column switch
+    {
+        "Nickname" => a => a.Nickname,
+        "Genre" => a => a.AiGenreTags,
+        "Plays" => a => a.TotalPlays,
+        "Language" => a => a.Language,
+        _ => null
+    };
+
     partial void OnFilterTypeChanged(string value) => ApplyFilter();
     partial void OnFilterLanguageChanged(string value) => ApplyFilter();
     partial void OnFilterPeriodChanged(string value) => ApplyFilter();
@@ -69,6 +87,33 @@ public partial class ArtistsViewModel : ViewModelBase
 
     [ObservableProperty] private string _editNickname = string.Empty;
     [ObservableProperty] private string _editScLink = string.Empty;
+
+    /// <summary>
+    /// Подпись поля ссылки — по площадке из самой ссылки: парсер кладёт сюда профиль с любой
+    /// из пяти площадок, и «Ссылка SoundCloud» у артиста с Audius путала.
+    /// </summary>
+    public string ProfileLinkLabel => PlatformOf(EditScLink) is { } platform
+        ? Localizer.Instance.Format("ArtistEditor.PlatformLink", platform.ToUpperInvariant())
+        : Localizer.Instance["ArtistEditor.ProfileLink"];
+
+    partial void OnEditScLinkChanged(string value) => OnPropertyChanged(nameof(ProfileLinkLabel));
+
+    private static string? PlatformOf(string link)
+    {
+        if (!Uri.TryCreate(link.Trim(), UriKind.Absolute, out var uri))
+            return null;
+
+        var host = uri.Host.ToLowerInvariant();
+        return host switch
+        {
+            _ when host.EndsWith("soundcloud.com") => "SoundCloud",
+            _ when host.EndsWith("audius.co") => "Audius",
+            _ when host.EndsWith("bandcamp.com") => "Bandcamp",
+            _ when host.EndsWith("last.fm") => "Last.fm",
+            _ when host.EndsWith("jamendo.com") => "Jamendo",
+            _ => null
+        };
+    }
     [ObservableProperty] private string _editGenreTags = string.Empty;
     [ObservableProperty] private string _editTotalPlays = string.Empty;
     [ObservableProperty] private string _editIgLink = string.Empty;
@@ -137,6 +182,8 @@ public partial class ArtistsViewModel : ViewModelBase
             var s = SearchText.Trim();
             q = q.Where(a => (a.Nickname ?? "").Contains(s, oic) || (a.AiGenreTags ?? "").Contains(s, oic));
         }
+
+        q = TableSort.Apply(q, SortState, SortKey);
 
         Artists.Clear();
         foreach (var a in q)

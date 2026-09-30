@@ -15,6 +15,12 @@ public partial class MainWindow : Window
         // Tunnel, а не обычный KeyDown: иначе пробел раньше нас съест кнопка в фокусе
         // и нажмёт себя — например, «Добавить бит».
         AddHandler(KeyDownEvent, OnPlayerKeys, RoutingStrategies.Tunnel);
+
+        // «Уменьшить движение»: стили с Window.reduceMotion отключают переходы (вкладки, кнопки, строки).
+        Classes.Set("reduceMotion", Motion.Motion.Reduced);
+        Motion.Motion.ReducedChanged += () => Classes.Set("reduceMotion", Motion.Motion.Reduced);
+
+        InitializeEffects();
     }
 
     private void OnPlayerKeys(object? sender, KeyEventArgs e)

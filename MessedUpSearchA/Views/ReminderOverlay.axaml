@@ -14,10 +14,15 @@
 
                 <Grid Grid.Row="0" Margin="28,18,18,8">
                     <StackPanel>
-                        <TextBlock Text="{loc:Tr Reminder.Title}"
-                                   FontFamily="{StaticResource HeadingFont}"
-                                   FontSize="22" FontWeight="Bold" LetterSpacing="3"
-                                   Foreground="{StaticResource OnBackground}"/>
+                        <StackPanel Orientation="Horizontal" Spacing="12">
+                            <!-- Пиксельный колокольчик: качнётся один раз при появлении окна. -->
+                            <Path x:Name="Bell" Fill="{StaticResource OnBackground}" VerticalAlignment="Center"
+                                  Data="M6,0 H8 V2 H10 V4 H12 V10 H14 V12 H0 V10 H2 V4 H4 V2 H6 Z M5,14 H9 V16 H5 Z"/>
+                            <TextBlock Text="{loc:Tr Reminder.Title}"
+                                       FontFamily="{StaticResource HeadingFont}"
+                                       FontSize="22" FontWeight="Bold" LetterSpacing="3"
+                                       Foreground="{StaticResource OnBackground}"/>
+                        </StackPanel>
                         <TextBlock Text="{loc:Tr Reminder.Subtitle}"
                                    FontSize="13" Margin="0,4,0,0"
                                    Foreground="{StaticResource OnBackgroundDim}"/>

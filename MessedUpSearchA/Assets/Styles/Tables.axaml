@@ -20,6 +20,38 @@
         <Setter Property="Margin" Value="14,0,0,0"/>
     </Style>
 
+    <!-- Ссылки в таблице: текст как весь остальной (чёрный), а кликабельность видна по подчёркиванию
+         акцентным зелёным (родня SOLD, приглушённый). Янтарный текст выглядел плохо, синий выбивался. -->
+    <Style Selector="TextBlock.tableLink">
+        <Setter Property="TextDecorations">
+            <TextDecorationCollection>
+                <TextDecoration Location="Underline" Stroke="#1E9E57" StrokeThickness="1.5" StrokeOffset="2"
+                                StrokeOffsetUnit="Pixel" StrokeThicknessUnit="Pixel"/>
+            </TextDecorationCollection>
+        </Setter>
+    </Style>
+    <Style Selector="TextBlock.tableLink:pointerover">
+        <Setter Property="TextDecorations">
+            <TextDecorationCollection>
+                <TextDecoration Location="Underline" Stroke="#1E9E57" StrokeThickness="2.5" StrokeOffset="2"
+                                StrokeOffsetUnit="Pixel" StrokeThicknessUnit="Pixel"/>
+            </TextDecorationCollection>
+        </Setter>
+    </Style>
+
+    <!-- Кликабельная область заголовка для сортировки (поверх текста, прозрачная). -->
+    <Style Selector="Border.sortHit">
+        <Setter Property="Background" Value="Transparent"/>
+        <Setter Property="Cursor" Value="Hand"/>
+    </Style>
+    <Style Selector="TextBlock.sortArrow">
+        <Setter Property="Foreground" Value="{StaticResource OnSurface}"/>
+        <Setter Property="FontSize" Value="10"/>
+        <Setter Property="HorizontalAlignment" Value="Right"/>
+        <Setter Property="VerticalAlignment" Value="Center"/>
+        <Setter Property="Margin" Value="0,0,10,0"/>
+    </Style>
+
     <Style Selector="Border.colDivider">
         <Setter Property="BorderBrush" Value="{StaticResource Divider}"/>
         <Setter Property="BorderThickness" Value="0,0,1,0"/>

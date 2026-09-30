@@ -84,24 +84,24 @@ public partial class BeatsView : UserControl
             return;
         }
 
-        List<ArtistTrack> tracks;
-        if (item.ArtistId is { } id)
-        {
-            using var db = new AppDbContext();
-            tracks = db.ArtistTracks.Where(t => t.ArtistId == id).OrderByDescending(t => t.PlayCount).Take(30).ToList();
-        }
-        else
-        {
-            tracks = new List<ArtistTrack>();
-        }
-
-        if (tracks.Count == 0 && item.CanPlay)
+        // Первым — трек, ближайший к биту по звуку (его выбрал анализ): сразу слышно, почему артист в выдаче.
+        // Если артист уже в базе — дальше его остальные треки, без повтора.
+        var tracks = new List<ArtistTrack>();
+        if (item.CanPlay)
         {
             tracks.Add(new ArtistTrack
             {
                 Title = item.TopTrackTitle, SourcePlatform = item.Platform,
                 SourceTrackId = item.TopTrackId, Url = item.TopTrackUrl
             });
+        }
+
+        if (item.ArtistId is { } id and > 0)
+        {
+            using var db = new AppDbContext();
+            tracks.AddRange(db.ArtistTracks
+                .Where(t => t.ArtistId == id && t.Url != item.TopTrackUrl)
+                .OrderByDescending(t => t.PlayCount).Take(30).ToList());
         }
 
         if (tracks.Count > 0)
@@ -128,5 +128,12 @@ public partial class BeatsView : UserControl
     {
         if (sender is Control { DataContext: Beat beat } && DataContext is BeatsViewModel vm)
             vm.BeginEditBeat(beat);
+    }
+
+    private void OnSortHeaderClick(object? sender, PointerPressedEventArgs e)
+    {
+        if (sender is Control { Tag: string column } && DataContext is BeatsViewModel vm)
+            vm.SortBy(column);
+        e.Handled = true;
     }
 }

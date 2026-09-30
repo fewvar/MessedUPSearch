@@ -46,17 +46,26 @@ public partial class MainWindowViewModel : ViewModelBase
     [ObservableProperty] private string _geniusAccessToken = string.Empty;
     [ObservableProperty] private string _language = "English";
     [ObservableProperty] private bool _enableParserLogs = true;
+    [ObservableProperty] private bool _animations = true;
+    [ObservableProperty] private bool _sounds = true;
+
+    /// <summary>Идёт анализ бита или поиск парсера — звезда в шапке вращается.</summary>
+    public bool IsBusy => _beatsVm.IsAnalyzing || _parserVm.IsSearching;
+
+    /// <summary>Сообщение в футере (Toasts.Show); пустое — показываем статус парсера.</summary>
+    [ObservableProperty, NotifyPropertyChangedFor(nameof(HasToast))] private string _toast = string.Empty;
+    public bool HasToast => Toast.Length > 0;
+    private Avalonia.Threading.DispatcherTimer? _toastTimer;
 
     public IReadOnlyList<string> LanguageOptions { get; } = new[] { "English", "Русский" };
 
-    public string AppVersion => "v1.0";
+    public string AppVersion => "v1.0.1";
 
-    /// <summary>
-    /// Подпись в футере. Парсер работает только по кнопке, фонового прогона нет,
-    /// поэтому состояние всегда одно — «ожидание».
-    /// </summary>
+    /// <summary>Подпись в футере: «ожидание» или «идёт поиск» (окно парсера можно закрыть — поиск идёт дальше).</summary>
     public string ParserStatus =>
-        Localizer.Instance.Format("Status.Parser", Localizer.Instance["Parser.Idle"]);
+        Localizer.Instance.Format("Status.Parser", Localizer.Instance[_parserVm.IsSearching ? "Parser.Running" : "Parser.Idle"]);
+
+    public bool IsParserRunning => _parserVm.IsSearching;
 
     /// <summary>"3 дн." — число и слово вместе, поэтому строка собирается в коде.</summary>
     public string ReminderDaysLabel => Localizer.Instance.Format("Settings.DaysShort", ReminderDays);
@@ -88,6 +97,10 @@ public partial class MainWindowViewModel : ViewModelBase
         ApplyLanguage(_language);
 
         _enableParserLogs = _settings.EnableParserLogs;
+        _animations = _settings.Animations;
+        _sounds = _settings.Sounds;
+        Services.Audio.UiSounds.Enabled = _sounds;
+        Motion.Motion.Initialize(_animations);
         AppLog.Enabled = _enableParserLogs;
 
         // Строки, собранные в коде, привязки сами не перечитают — обновляем руками.
@@ -103,6 +116,28 @@ public partial class MainWindowViewModel : ViewModelBase
             _artistsVm.LoadArtists();
         };
 
+        Toasts.Shown += text =>
+        {
+            Toast = text;
+            _toastTimer ??= new Avalonia.Threading.DispatcherTimer(TimeSpan.FromSeconds(2.4), Avalonia.Threading.DispatcherPriority.Normal,
+                (_, _) => { _toastTimer!.Stop(); Toast = string.Empty; });
+            _toastTimer.Stop();
+            _toastTimer.Start();
+        };
+
+        _parserVm.PropertyChanged += (_, e) =>
+        {
+            if (e.PropertyName != nameof(ParserViewModel.IsSearching))
+                return;
+            OnPropertyChanged(nameof(ParserStatus));
+            OnPropertyChanged(nameof(IsParserRunning));
+            OnPropertyChanged(nameof(IsBusy));
+        };
+        _beatsVm.PropertyChanged += (_, e) =>
+        {
+            if (e.PropertyName == nameof(BeatsViewModel.IsAnalyzing))
+                OnPropertyChanged(nameof(IsBusy));
+        };
         _parserVm.ImportDone += () =>
         {
             // Парсер мог перекачать аватарки — старые картинки в кэше уже неверны.
@@ -150,6 +185,25 @@ public partial class MainWindowViewModel : ViewModelBase
         _settings.EnableParserLogs = value;
         _settings.Save();
     }
+
+    partial void OnSoundsChanged(bool value)
+    {
+        Services.Audio.UiSounds.Enabled = value;
+        _settings.Sounds = value;
+        _settings.Save();
+        if (value)
+            Services.Audio.UiSounds.Play(Services.Audio.UiSound.Sent);   // сразу слышно, как звучит
+    }
+
+    partial void OnAnimationsChanged(bool value)
+    {
+        Motion.Motion.SetEnabled(value);
+        _settings.Animations = value;
+        _settings.Save();
+    }
+
+    /// <summary>В системе включено «Уменьшить движение» — галочка всё равно не вернёт полные анимации.</summary>
+    public bool IsSystemReducedMotion => Motion.Motion.SystemReduced;
 
     /// <summary>Путь к логу показываем в настройках — он же подсказка, где лежат данные.</summary>
     public string LogFilePath => AppLog.FilePath;
@@ -234,6 +288,8 @@ public partial class MainWindowViewModel : ViewModelBase
                 log.IsSent = true;
                 log.SentAt = DateTime.Now.ToString("yyyy-MM-dd HH:mm");
                 db.SaveChanges();
+                Services.Audio.UiSounds.Play(Services.Audio.UiSound.Sent);
+                Toasts.Show(Localizer.Instance["Toast.Sent"]);
             }
         }
 

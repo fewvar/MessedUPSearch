@@ -151,6 +151,7 @@ public partial class ParserViewModel : ViewModelBase
 
             StatusText = run.Summary;
             IsResultsStep = true;
+            Services.Audio.UiSounds.Play(Services.Audio.UiSound.ParserDone);
         }
         catch (OperationCanceledException)
         {
@@ -205,9 +206,12 @@ public partial class ParserViewModel : ViewModelBase
                 ? string.Join("\n", outcome.Problems)
                 : string.Empty;
 
-            foreach (var item in Results.Where(r => r.IsSelected).ToList())
+            var picked = Results.Where(r => r.IsSelected).ToList();
+            foreach (var item in picked)
                 item.MarkImported();
 
+            if (picked.Count > 0)
+                Toasts.Show(Localizer.Instance.Format("Toast.AddedMany", picked.Count));
             ImportDone?.Invoke();
         }
         catch (Exception ex)

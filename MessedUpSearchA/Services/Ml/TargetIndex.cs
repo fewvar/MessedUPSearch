@@ -5,6 +5,9 @@ using System.Text;
 
 namespace MessedUpSearchA.Services.Ml;
 
+/// <summary>Трек артиста в индексе: чтобы ▶ сыграл тот, что ближе всего к биту.</summary>
+public sealed record TargetTrack(string Id, string Url, string Title);
+
 /// <summary>Артист большого индекса: кому можно предложить бит.</summary>
 public sealed class TargetArtist
 {
@@ -16,13 +19,16 @@ public sealed class TargetArtist
     public string Genre { get; init; } = string.Empty;
     public int Plays { get; init; }
 
-    /// <summary>Самый прослушиваемый трек — его играет ▶ в выдаче, чтобы послушать до импорта.</summary>
+    /// <summary>Самый прослушиваемый трек — запасной для ▶, если у векторов нет своих треков (индекс v3).</summary>
     public string TopTrackId { get; init; } = string.Empty;
     public string TopTrackUrl { get; init; } = string.Empty;
     public string TopTrackTitle { get; init; } = string.Empty;
 
     /// <summary>Векторы треков — уже центрированные тем же центром и нормированные.</summary>
     public float[][] Vectors { get; init; } = [];
+
+    /// <summary>Трек каждого вектора (тот же порядок). В v3 пусто.</summary>
+    public TargetTrack[] Tracks { get; init; } = [];
 }
 
 /// <summary>
@@ -35,13 +41,16 @@ public sealed class TargetArtist
 ///   id лучшего трека, ссылка на него, его название),
 ///   int прослушивания, int треков, затем треки × размерность × Half.
 /// Half вместо float: индекс вдвое меньше, а на косинусе разницы не видно.
+/// v4 (1.0.1): после векторов артиста — по три строки на трек (id, ссылка, название): ▶ в выдаче
+/// играет трек, ближайший к биту, а не самый популярный. v3 читается как раньше (без треков).
 /// v3: векторы EffNet + голова, уже финальные (центр c2 из головы — для справки и сверки
 /// «индекс и ориентиры из одной сборки»). v2 (MERT) приложение больше не читает.
 /// </summary>
 public sealed class TargetIndex
 {
     private const string Magic = "MUSX";
-    private const int Version = 3;
+    private const int Version = 4;
+    private const int OldestReadable = 3;
 
     public float[] Center { get; init; } = [];
     public IReadOnlyList<TargetArtist> Artists { get; init; } = [];
@@ -56,7 +65,7 @@ public sealed class TargetIndex
             throw new InvalidDataException("это не индекс артистов");
 
         var version = reader.ReadInt32();
-        if (version != Version)
+        if (version < OldestReadable || version > Version)
             throw new InvalidDataException($"индекс версии {version}, приложение понимает {Version} — обнови приложение");
 
         var dimension = reader.ReadInt32();
@@ -92,10 +101,14 @@ public sealed class TargetIndex
                 vectors[t] = vector;
             }
 
+            var trackInfo = new TargetTrack[version >= 4 ? tracks : 0];
+            for (var t = 0; t < trackInfo.Length; t++)
+                trackInfo[t] = new TargetTrack(ReadString(reader), ReadString(reader), ReadString(reader));
+
             artists.Add(new TargetArtist
             {
                 Nickname = nickname, Platform = platform, SourceId = sourceId, SourceUrl = sourceUrl,
-                AvatarUrl = avatarUrl, Genre = genre, Plays = plays, Vectors = vectors,
+                AvatarUrl = avatarUrl, Genre = genre, Plays = plays, Vectors = vectors, Tracks = trackInfo,
                 TopTrackId = topTrackId, TopTrackUrl = topTrackUrl, TopTrackTitle = topTrackTitle
             });
         }
@@ -130,6 +143,15 @@ public sealed class TargetIndex
 
                 foreach (var value in vector)
                     writer.Write(BitConverter.HalfToUInt16Bits((Half)value));
+            }
+
+            // v4: трек каждого вектора. Нет данных — пустые строки (▶ тогда возьмёт самый популярный).
+            for (var t = 0; t < artist.Vectors.Length; t++)
+            {
+                var track = t < artist.Tracks.Length ? artist.Tracks[t] : new TargetTrack("", "", "");
+                WriteString(writer, track.Id);
+                WriteString(writer, track.Url);
+                WriteString(writer, track.Title);
             }
         }
     }

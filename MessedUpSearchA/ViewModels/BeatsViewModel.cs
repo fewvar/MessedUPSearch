@@ -1,3 +1,4 @@
+using MessedUpSearchA.Services.Audio;
 using System;
 using System.Collections.ObjectModel;
 using System.Collections.Generic;
@@ -48,6 +49,29 @@ public partial class BeatsViewModel : ViewModelBase
 
     private readonly List<Beat> _allBeats = new();
 
+    /// <summary>Сортировка по заголовку: «Bpm:desc» / «Bpm:asc» / пусто (исходный порядок — новые сверху).</summary>
+    [ObservableProperty] private string _sortState = string.Empty;
+
+    /// <summary>Бит, который только что стал SOLD, — его точка статуса вспыхнет в таблице.</summary>
+    [ObservableProperty] private int _justSoldBeatId;
+
+    public void SortBy(string column)
+    {
+        SortState = TableSort.Next(SortState, column);
+        ApplyFilter();
+    }
+
+    private static Func<Beat, object?>? SortKey(string column) => column switch
+    {
+        "Name" => b => b.BeatName,
+        "Genre" => b => b.AiTags,
+        "Bpm" => b => b.Bpm,
+        "Key" => b => b.Key,
+        "Added" => b => b.Added,
+        "Status" => b => b.Status,
+        _ => null
+    };
+
     partial void OnFilterTypeChanged(string value) => ApplyFilter();
     partial void OnFilterKeyChanged(string value) => ApplyFilter();
     partial void OnFilterPeriodChanged(string value) => ApplyFilter();
@@ -69,8 +93,11 @@ public partial class BeatsViewModel : ViewModelBase
     public ObservableCollection<SimilarArtistItem> SimilarArtists { get; } = new();
 
     [ObservableProperty] private bool _isAnalyzing;
-    [ObservableProperty] private string _analysisStatus = string.Empty;
-    [ObservableProperty] private bool _hasSimilarity;
+    [ObservableProperty, NotifyPropertyChangedFor(nameof(ShowSimilarHint))] private string _analysisStatus = string.Empty;
+    [ObservableProperty, NotifyPropertyChangedFor(nameof(ShowSimilarHint))] private bool _hasSimilarity;
+
+    /// <summary>«Нажми АНАЛИЗ» — только пока нет ни результата, ни статуса («Слушаю бит…», ошибка).</summary>
+    public bool ShowSimilarHint => !HasSimilarity && string.IsNullOrEmpty(AnalysisStatus);
 
     /// <summary>«звучит как: Osamason · Summrs» — крупные артисты-ориентиры, им бит не продашь.</summary>
     [ObservableProperty] private string _styleReferences = string.Empty;
@@ -139,6 +166,8 @@ public partial class BeatsViewModel : ViewModelBase
             var s = SearchText.Trim();
             q = q.Where(b => (b.BeatName ?? "").Contains(s, oic) || (b.AiTags ?? "").Contains(s, oic));
         }
+
+        q = TableSort.Apply(q, SortState, SortKey);
 
         Beats.Clear();
         foreach (var b in q)
@@ -302,6 +331,7 @@ public partial class BeatsViewModel : ViewModelBase
             else
                 SaveSimilarity(_editingId, result);
             ShowSimilarity(result);
+            UiSounds.Play(UiSound.AnalysisDone);
 
             AnalysisStatus = string.Empty;
         }
@@ -415,8 +445,13 @@ public partial class BeatsViewModel : ViewModelBase
     private void ShowSimilarity(IEnumerable<SimilarArtistItem> items, IEnumerable<string> references)
     {
         SimilarArtists.Clear();
+        var first = true;
         foreach (var item in items)
+        {
+            item.IsLeader = first;
+            first = false;
             SimilarArtists.Add(item);
+        }
 
         var names = references.ToList();
         StyleReferences = names.Count > 0
@@ -439,6 +474,8 @@ public partial class BeatsViewModel : ViewModelBase
                 item.Platform, item.SourceId, item.SourceUrl, item.Artist, item.AvatarUrl);
 
             item.ArtistId = id;
+            item.JustImported = true;
+            Toasts.Show(Localizer.Instance.Format("Toast.Added", item.Artist));
 
             // Все выдачи, где он встречался, теперь ведут на карточку в базе.
             using (var db = new AppDbContext())
@@ -494,6 +531,8 @@ public partial class BeatsViewModel : ViewModelBase
             beat = db.Beats.First(b => b.Id == _editingId);
         }
 
+        var becomesSold = EditStatus == "SOLD" && !beat.IsSold;
+
         beat.BeatName = EditName.Trim();
         beat.AiTags = EditTags.Trim();
         beat.Bpm = bpm;
@@ -517,6 +556,13 @@ public partial class BeatsViewModel : ViewModelBase
 
         IsEditorOpen = false;
         LoadBeats();
+
+        if (becomesSold)
+        {
+            JustSoldBeatId = beat.Id;
+            // Сбросить, чтобы вспышка не повторялась при следующей перерисовке таблицы (фильтр, сортировка).
+            Avalonia.Threading.DispatcherTimer.RunOnce(() => JustSoldBeatId = 0, TimeSpan.FromSeconds(1.5));
+        }
     }
 
     private void SyncArtistLinks(AppDbContext db, int beatId)

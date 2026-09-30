@@ -23,6 +23,12 @@ public class AppSettings
     /// <summary>Писать ли прогоны парсера в app.log рядом с базой.</summary>
     public bool EnableParserLogs { get; set; } = true;
 
+    /// <summary>Анимации интерфейса. Если в системе включено «Уменьшить движение», они упрощаются всё равно.</summary>
+    public bool Animations { get; set; } = true;
+
+    /// <summary>Тихие звуки на 4 события: анализ готов, отправлен, ★, парсер закончил.</summary>
+    public bool Sounds { get; set; } = true;
+
     /// <summary>Громкость плеера, 0..1.</summary>
     public double PlayerVolume { get; set; } = 0.8;
 

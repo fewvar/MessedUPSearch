@@ -102,7 +102,7 @@ public class BeatSimilarityService
         float[] embedding, TargetIndex index, string keyPrefix, HubCorrection? hubs, int top,
         IReadOnlyDictionary<string, int> userArtistIdsByUrl)
     {
-        var scored = new List<(TargetArtist Artist, float Score)>(index.Artists.Count);
+        var scored = new List<(TargetArtist Artist, float Score, TargetTrack? Nearest)>(index.Artists.Count);
 
         foreach (var artist in index.Artists)
         {
@@ -110,10 +110,11 @@ public class BeatSimilarityService
                 continue;
 
             var score = TopTracksScore(embedding, artist.Vectors);
+            var nearest = NearestTrack(embedding, artist);
             if (hubs is not null)
                 score -= hubs.Bias($"{keyPrefix}:{artist.SourceUrl}:{artist.Nickname}", artist.Vectors, TopTracksScore);
 
-            scored.Add((artist, score));
+            scored.Add((artist, score, nearest));
         }
 
         return scored
@@ -137,12 +138,35 @@ public class BeatSimilarityService
                     SourceUrl = s.Artist.SourceUrl,
                     AvatarUrl = s.Artist.AvatarUrl,
                     Plays = s.Artist.Plays,
-                    TopTrackId = s.Artist.TopTrackId,
-                    TopTrackUrl = s.Artist.TopTrackUrl,
-                    TopTrackTitle = s.Artist.TopTrackTitle
+                    // Трек для ▶ — ближайший к биту; в индексе без треков (v3) — самый популярный.
+                    TopTrackId = s.Nearest?.Id ?? s.Artist.TopTrackId,
+                    TopTrackUrl = s.Nearest?.Url ?? s.Artist.TopTrackUrl,
+                    TopTrackTitle = s.Nearest?.Title ?? s.Artist.TopTrackTitle
                 };
             })
             .ToArray();
+    }
+
+    /// <summary>Трек артиста, ближайший к биту по звуку (для ▶). Нет данных о треках — null.</summary>
+    private static TargetTrack? NearestTrack(float[] beat, TargetArtist artist)
+    {
+        if (artist.Tracks.Length != artist.Vectors.Length || artist.Tracks.Length == 0)
+            return null;
+
+        var best = 0;
+        var bestScore = float.NegativeInfinity;
+        for (var t = 0; t < artist.Vectors.Length; t++)
+        {
+            if (artist.Tracks[t].Url.Length == 0 && artist.Tracks[t].Id.Length == 0)
+                continue;
+            var similarity = Dot(beat, artist.Vectors[t]);
+            if (similarity > bestScore)
+            {
+                bestScore = similarity;
+                best = t;
+            }
+        }
+        return float.IsNegativeInfinity(bestScore) ? null : artist.Tracks[best];
     }
 
     /// <summary>Оценка артиста — среднее по трём его ближайшим к биту трекам (как Candidate.Score).</summary>

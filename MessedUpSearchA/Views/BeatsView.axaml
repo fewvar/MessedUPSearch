@@ -1,9 +1,11 @@
 <UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:motion="using:MessedUpSearchA.Motion"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:MessedUpSearchA.ViewModels"
              xmlns:models="using:MessedUpSearchA.Models"
              xmlns:loc="using:MessedUpSearchA.Services.Localization"
              xmlns:conv="using:MessedUpSearchA.Converters"
+             xmlns:controls="using:MessedUpSearchA.Controls"
              x:Class="MessedUpSearchA.Views.BeatsView"
              x:DataType="vm:BeatsViewModel">
 
@@ -12,6 +14,14 @@
         <!-- Строка бита, который сейчас в плеере. -->
         <Style Selector="Grid.beatRow.playing">
             <Setter Property="Background" Value="#1F000000"/>
+        </Style>
+        <!-- Выдача анализа: у лидера полоска яркая и чуть светится, у остальных — приглушённая. -->
+        <Style Selector="Border.similarTrack > Border">
+            <Setter Property="Opacity" Value="0.6"/>
+        </Style>
+        <Style Selector="Border.similarTrack.leader > Border">
+            <Setter Property="Opacity" Value="1"/>
+            <Setter Property="BoxShadow" Value="0 0 6 0 #66FFFFFF"/>
         </Style>
         <Style Selector="Grid.beatRow Border.playMarker">
             <Setter Property="IsVisible" Value="False"/>
@@ -49,6 +59,32 @@
                 <TextBlock Grid.Row="0" Grid.Column="4" Classes="tableHeader" Text="{loc:Tr Beats.Key}"/>
                 <TextBlock Grid.Row="0" Grid.Column="5" Classes="tableHeader" Text="{loc:Tr Beats.Added}"/>
                 <TextBlock Grid.Row="0" Grid.Column="6" Classes="tableHeader" Text="{loc:Tr Beats.Status}"/>
+
+                <!-- Клик по заголовку — сортировка ▼ -> ▲ -> сброс; стрелка у активного столбца. -->
+                <Border Grid.Row="0" Grid.Column="1" Classes="sortHit" Tag="Name" PointerPressed="OnSortHeaderClick">
+                    <TextBlock Classes="sortArrow"
+                               Text="{Binding SortState, Converter={x:Static vm:SortArrowConverter.Instance}, ConverterParameter=Name}"/>
+                </Border>
+                <Border Grid.Row="0" Grid.Column="2" Classes="sortHit" Tag="Genre" PointerPressed="OnSortHeaderClick">
+                    <TextBlock Classes="sortArrow"
+                               Text="{Binding SortState, Converter={x:Static vm:SortArrowConverter.Instance}, ConverterParameter=Genre}"/>
+                </Border>
+                <Border Grid.Row="0" Grid.Column="3" Classes="sortHit" Tag="Bpm" PointerPressed="OnSortHeaderClick">
+                    <TextBlock Classes="sortArrow"
+                               Text="{Binding SortState, Converter={x:Static vm:SortArrowConverter.Instance}, ConverterParameter=Bpm}"/>
+                </Border>
+                <Border Grid.Row="0" Grid.Column="4" Classes="sortHit" Tag="Key" PointerPressed="OnSortHeaderClick">
+                    <TextBlock Classes="sortArrow"
+                               Text="{Binding SortState, Converter={x:Static vm:SortArrowConverter.Instance}, ConverterParameter=Key}"/>
+                </Border>
+                <Border Grid.Row="0" Grid.Column="5" Classes="sortHit" Tag="Added" PointerPressed="OnSortHeaderClick">
+                    <TextBlock Classes="sortArrow"
+                               Text="{Binding SortState, Converter={x:Static vm:SortArrowConverter.Instance}, ConverterParameter=Added}"/>
+                </Border>
+                <Border Grid.Row="0" Grid.Column="6" Classes="sortHit" Tag="Status" PointerPressed="OnSortHeaderClick">
+                    <TextBlock Classes="sortArrow"
+                               Text="{Binding SortState, Converter={x:Static vm:SortArrowConverter.Instance}, ConverterParameter=Status}"/>
+                </Border>
 
                 <Border Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="7" Classes="headerDivider"/>
 
@@ -105,7 +141,14 @@
                                             </Panel>
                                         </Button>
                                         <Ellipse Width="10" Height="10"
-                                                 Fill="{Binding StatusColor, Converter={StaticResource StringToBrush}}"/>
+                                                 Fill="{Binding StatusColor, Converter={StaticResource StringToBrush}}">
+                                            <motion:Motion.Flash>
+                                                <MultiBinding Converter="{x:Static conv:EqualsMultiConverter.Instance}">
+                                                    <Binding Path="Id"/>
+                                                    <Binding Path="$parent[ItemsControl].DataContext.JustSoldBeatId"/>
+                                                </MultiBinding>
+                                            </motion:Motion.Flash>
+                                        </Ellipse>
                                     </StackPanel>
 
                                     <TextBlock Grid.Column="1"
@@ -256,7 +299,7 @@
         </Grid>
     </Grid>
 
-    <Grid IsVisible="{Binding IsEditorOpen}">
+    <Grid IsVisible="False" motion:Motion.IsShown="{Binding IsEditorOpen}">
         <Border Background="#B0000000"/>
         <!-- Две колонки: в одну колонку «Похожие артисты» уезжали за нижний край окна,
              а это главное, ради чего карточку открывают. -->
@@ -350,13 +393,21 @@
                         </StackPanel>
                     </Grid>
 
-                    <TextBlock Text="{Binding AnalysisStatus}"
-                               IsVisible="{Binding AnalysisStatus, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
-                               FontSize="11" TextWrapping="Wrap"
-                               Foreground="{StaticResource OnBackgroundDim}"/>
+                    <!-- Пока модель слушает — пиксельный эквалайзер в стиле волны плеера рядом со статусом. -->
+                    <StackPanel Orientation="Horizontal" Spacing="8"
+                                IsVisible="{Binding AnalysisStatus, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
+                        <controls:PixelEqualizer IsActive="{Binding IsAnalyzing}"
+                                                 IsVisible="{Binding IsAnalyzing}"
+                                                 Brush="{StaticResource OnBackgroundDim}"
+                                                 VerticalAlignment="Center"/>
+                        <TextBlock Text="{Binding AnalysisStatus}"
+                                   FontSize="11" TextWrapping="Wrap"
+                                   VerticalAlignment="Center"
+                                   Foreground="{StaticResource OnBackgroundDim}"/>
+                    </StackPanel>
 
                     <TextBlock Text="{loc:Tr BeatEditor.SimilarHint}"
-                               IsVisible="{Binding !HasSimilarity}"
+                               IsVisible="{Binding ShowSimilarHint}"
                                FontSize="11" TextWrapping="Wrap"
                                Foreground="{StaticResource OnBackgroundDim}"/>
 
@@ -369,7 +420,7 @@
                                   IsVisible="{Binding HasSimilarity}">
                         <ItemsControl.ItemTemplate>
                             <DataTemplate DataType="vm:SimilarArtistItem">
-                                <Grid ColumnDefinitions="150,*,40,Auto" Margin="0,1">
+                                <Grid ColumnDefinitions="150,*,40,Auto" Margin="0,1" motion:Motion.Appear="True">
                                     <TextBlock Grid.Column="0"
                                                Text="{Binding Artist}"
                                                FontSize="13"
@@ -377,16 +428,19 @@
                                                VerticalAlignment="Center"
                                                Foreground="{StaticResource OnBackground}"/>
                                     <Border Grid.Column="1" Height="6" CornerRadius="3"
+                                            Classes.leader="{Binding IsLeader}"
+                                            Classes="similarTrack"
                                             Background="#22FFFFFF"
                                             HorizontalAlignment="Stretch"
                                             VerticalAlignment="Center">
                                         <Border Height="6" CornerRadius="3"
                                                 Background="{StaticResource OnBackground}"
                                                 Width="{Binding BarWidth}"
-                                                HorizontalAlignment="Left"/>
+                                                HorizontalAlignment="Left"
+                                                motion:Motion.GrowX="True"/>
                                     </Border>
                                     <TextBlock Grid.Column="2"
-                                               Text="{Binding PercentLabel}"
+                                               motion:Motion.CountTo="{Binding Percent}"
                                                FontSize="12"
                                                HorizontalAlignment="Right"
                                                VerticalAlignment="Center"
@@ -395,10 +449,15 @@
                                     <!-- ▶ послушать · ➕ в базу (если его там нет) · ↗ профиль -->
                                     <StackPanel Grid.Column="3" Orientation="Horizontal" Margin="6,0,0,0">
                                         <Button Classes="playerButton" Click="OnPlaySimilarClick"
-                                                ToolTip.Tip="{loc:Tr BeatEditor.PlayTrack}">
+                                                ToolTip.Tip="{Binding PlayTip}">
                                             <Path Data="M0,0 L8,4.5 L0,9 Z"/>
                                         </Button>
                                         <Panel Width="30">
+                                            <TextBlock Text="✓" FontSize="14" FontWeight="Bold"
+                                                       Foreground="#2ECC71"
+                                                       HorizontalAlignment="Center" VerticalAlignment="Center"
+                                                       IsVisible="{Binding JustImported}"
+                                                       motion:Motion.PopWhenShown="True"/>
                                             <Button Classes="playerButton" Click="OnImportSimilarClick"
                                                     IsVisible="{Binding CanImport}"
                                                     ToolTip.Tip="{loc:Tr BeatEditor.AddToBase}">

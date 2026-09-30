@@ -1,4 +1,5 @@
 <UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:motion="using:MessedUpSearchA.Motion"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:MessedUpSearchA.ViewModels"
              xmlns:models="using:MessedUpSearchA.Models"
@@ -55,12 +56,30 @@
                            Margin="14,0,14,0"/>
                 <TextBlock Grid.Row="0" Grid.Column="5" Classes="tableHeader" Text="{loc:Tr Artists.Language}"/>
 
+                <!-- Клик по заголовку — сортировка ▼ -> ▲ -> сброс; «Ссылки» не сортируются. -->
+                <Border Grid.Row="0" Grid.Column="1" Classes="sortHit" Tag="Nickname" PointerPressed="OnSortHeaderClick">
+                    <TextBlock Classes="sortArrow"
+                               Text="{Binding SortState, Converter={x:Static vm:SortArrowConverter.Instance}, ConverterParameter=Nickname}"/>
+                </Border>
+                <Border Grid.Row="0" Grid.Column="2" Classes="sortHit" Tag="Genre" PointerPressed="OnSortHeaderClick">
+                    <TextBlock Classes="sortArrow"
+                               Text="{Binding SortState, Converter={x:Static vm:SortArrowConverter.Instance}, ConverterParameter=Genre}"/>
+                </Border>
+                <Border Grid.Row="0" Grid.Column="3" Classes="sortHit" Tag="Plays" PointerPressed="OnSortHeaderClick">
+                    <TextBlock Classes="sortArrow"
+                               Text="{Binding SortState, Converter={x:Static vm:SortArrowConverter.Instance}, ConverterParameter=Plays}"/>
+                </Border>
+                <Border Grid.Row="0" Grid.Column="5" Classes="sortHit" Tag="Language" PointerPressed="OnSortHeaderClick">
+                    <TextBlock Classes="sortArrow"
+                               Text="{Binding SortState, Converter={x:Static vm:SortArrowConverter.Instance}, ConverterParameter=Language}"/>
+                </Border>
+
                 <Border Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="6" Classes="headerDivider"/>
 
                 <ScrollViewer Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="6"
                               HorizontalScrollBarVisibility="Disabled"
                               VerticalScrollBarVisibility="Auto">
-                    <ItemsControl ItemsSource="{Binding Artists}">
+                    <ItemsControl x:Name="ArtistsList" ItemsSource="{Binding Artists}">
                         <ItemsControl.ItemTemplate>
                             <DataTemplate DataType="models:Artist">
                                 <Grid Height="56"
@@ -112,12 +131,12 @@
                                                 VerticalAlignment="Center">
                                         <TextBlock Text="{Binding IgLink, StringFormat='inst: {0}'}"
                                                    IsVisible="{Binding IgLink, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
-                                                   FontSize="13" Cursor="Hand"
+                                                   FontSize="13" Cursor="Hand" Classes="tableLink"
                                                    TextTrimming="CharacterEllipsis"
                                                    PointerPressed="OnIgLinkClick"/>
                                         <TextBlock Text="{Binding SpotifyLink, StringFormat='spotify: {0}'}"
                                                    IsVisible="{Binding SpotifyLink, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
-                                                   FontSize="13" Cursor="Hand"
+                                                   FontSize="13" Cursor="Hand" Classes="tableLink"
                                                    TextTrimming="CharacterEllipsis"
                                                    PointerPressed="OnSpotifyLinkClick"/>
                                         <TextBlock Text="—" FontSize="13">
@@ -142,7 +161,8 @@
                                                Background="Transparent" Cursor="Hand"
                                                Width="28" Height="28" Margin="4,0"
                                                VerticalAlignment="Center"
-                                               PointerPressed="OnToggleFavorite">
+                                               PointerPressed="OnToggleFavorite"
+                                               Name="FavoriteToggle">
                                             <Border Classes="icon icon-star-filled"
                                                     Background="#F1C40F"
                                                     Width="20" Height="20"
@@ -158,7 +178,8 @@
                                                Background="Transparent" Cursor="Hand"
                                                Width="28" Height="28" Margin="4,0,0,0"
                                                VerticalAlignment="Center"
-                                               PointerPressed="OnToggleRedFlag">
+                                               PointerPressed="OnToggleRedFlag"
+                                               Name="FlagToggle">
                                             <TextBlock Text="⚑" FontSize="18"
                                                        HorizontalAlignment="Center" VerticalAlignment="Center"
                                                        Foreground="#E74C3C"
@@ -277,7 +298,7 @@
         </Grid>
     </Grid>
 
-    <Grid IsVisible="{Binding IsEditorOpen}">
+    <Grid IsVisible="False" motion:Motion.IsShown="{Binding IsEditorOpen}">
         <Border Background="#B0000000"/>
         <!-- Две колонки: слева поля, справа биты и треки. В одну колонку треки и подходящие
              биты уходили за нижний край окна. -->
@@ -315,7 +336,7 @@
                         <TextBox Text="{Binding EditNickname}"/>
                     </StackPanel>
                     <StackPanel Grid.Column="2" Spacing="4">
-                        <TextBlock Classes="filterLabel" Text="{loc:Tr ArtistEditor.ScLink}"/>
+                        <TextBlock Classes="filterLabel" Text="{Binding ProfileLinkLabel}"/>
                         <TextBox Text="{Binding EditScLink}" PlaceholderText="{loc:Tr ArtistEditor.NoneHint}"/>
                     </StackPanel>
                 </Grid>

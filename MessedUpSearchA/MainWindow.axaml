@@ -3,6 +3,7 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:vm="using:MessedUpSearchA.ViewModels"
+        xmlns:motion="using:MessedUpSearchA.Motion"
         xmlns:views="using:MessedUpSearchA.Views"
         xmlns:loc="using:MessedUpSearchA.Services.Localization"
         xmlns:controls="using:MessedUpSearchA.Controls"
@@ -15,6 +16,15 @@
         Background="{StaticResource AppBackground}">
 
     <Window.Styles>
+        <!-- Точка парсера «дышит»; при «Уменьшить движение» просто горит. -->
+        <Style Selector="Window:not(.reduceMotion) Ellipse.pulse">
+            <Style.Animations>
+                <Animation Duration="0:0:1.4" IterationCount="Infinite" PlaybackDirection="Alternate" Easing="SineEaseInOut">
+                    <KeyFrame Cue="0%"><Setter Property="Opacity" Value="1"/></KeyFrame>
+                    <KeyFrame Cue="100%"><Setter Property="Opacity" Value="0.25"/></KeyFrame>
+                </Animation>
+            </Style.Animations>
+        </Style>
         <StyleInclude Source="/Assets/Styles/MainWindowStyles.axaml"/>
     </Window.Styles>
 
@@ -22,7 +32,7 @@
 
         <Rectangle Fill="{StaticResource BackgroundTexture}"/>
 
-        <Grid Margin="72,40,72,16" RowDefinitions="180,*,Auto,Auto" RowSpacing="20">
+        <Grid x:Name="Body" Margin="72,40,72,16" RowDefinitions="180,*,Auto,Auto" RowSpacing="20">
 
         <Grid Grid.Row="0" x:CompileBindings="False">
 
@@ -31,7 +41,7 @@
                         VerticalAlignment="Top"
                         Spacing="14"
                         Margin="4,14,0,0">
-                <Image Source="/Assets/Icons/logo.png"
+                <Image x:Name="Logo" Source="/Assets/Icons/logo.png"
                        Width="56" Height="56"
                        VerticalAlignment="Center"/>
                 <TextBlock Text="MessedUpSearch"
@@ -54,7 +64,7 @@
         <ContentControl Grid.Row="1" Content="{Binding CurrentViewModel}"/>
 
         <Border Grid.Row="2"
-                IsVisible="{Binding Player.HasTrack}"
+                IsVisible="False" motion:Motion.IsShown="{Binding Player.HasTrack}"
                 Background="#0DFFFFFF"
                 CornerRadius="8"
                 Padding="10,8">
@@ -87,9 +97,10 @@
                                Foreground="{StaticResource OnBackgroundDim}"/>
                 </StackPanel>
 
-                <controls:PixelWaveform Grid.Column="2" Height="36"
+                <controls:PixelWaveform Grid.Column="2" Height="42"
                                         Peaks="{Binding Player.Peaks}"
                                         Progress="{Binding Player.Progress}"
+                                        Duration="{Binding Player.Duration}"
                                         SeekCommand="{Binding Player.SeekToCommand}"
                                         PlayedBrush="{StaticResource OnBackground}"
                                         RestBrush="#33FFFFFF"/>
@@ -141,7 +152,19 @@
 
                 <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="10"
                             HorizontalAlignment="Center">
-                    <TextBlock Text="{Binding ParserStatus}"
+                    <!-- Дышащая точка, пока парсер ищет. -->
+                    <Ellipse Classes="pulse" Width="6" Height="6"
+                             Fill="{StaticResource OnBackground}"
+                             VerticalAlignment="Center"
+                             IsVisible="{Binding IsParserRunning}"/>
+                    <!-- Тост (Toasts.Show) на пару секунд подменяет статус парсера. -->
+                    <TextBlock Text="{Binding Toast}"
+                               IsVisible="False" motion:Motion.IsShown="{Binding HasToast}"
+                               VerticalAlignment="Center"
+                               FontFamily="{StaticResource HeadingFont}"
+                               FontSize="11" LetterSpacing="2"
+                               Foreground="{StaticResource OnBackground}"/>
+                    <TextBlock Text="{Binding ParserStatus}" IsVisible="{Binding !HasToast}"
                                VerticalAlignment="Center"
                                FontFamily="{StaticResource HeadingFont}"
                                FontSize="11" LetterSpacing="2"
@@ -160,10 +183,10 @@
         </Grid>
 
         <Grid x:CompileBindings="False">
-            <views:CrmOverlay IsVisible="{Binding IsCrmOpen}"/>
-            <views:SettingsOverlay IsVisible="{Binding IsSettingsOpen}"/>
-            <views:ReminderOverlay IsVisible="{Binding IsReminderOpen}"/>
-            <views:ParserOverlay IsVisible="{Binding IsParserOpen}"/>
+            <views:CrmOverlay IsVisible="False" motion:Motion.IsShown="{Binding IsCrmOpen}"/>
+            <views:SettingsOverlay IsVisible="False" motion:Motion.IsShown="{Binding IsSettingsOpen}"/>
+            <views:ReminderOverlay IsVisible="False" motion:Motion.IsShown="{Binding IsReminderOpen}"/>
+            <views:ParserOverlay IsVisible="False" motion:Motion.IsShown="{Binding IsParserOpen}"/>
         </Grid>
     </Grid>
 </Window>

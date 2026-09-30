@@ -15,12 +15,29 @@ public static class UiScenes
 {
     public const string Variable = "MESSEDUP_UI_SCENE";
 
+    /// <summary>
+    /// MESSEDUP_UI_DELAY=мс — применить сцену не сразу: окно успевает показаться, и серия снимков
+    /// ловит саму анимацию появления (иначе она проигрывается раньше, чем скрипт найдёт окно).
+    /// </summary>
+    public const string DelayVariable = "MESSEDUP_UI_DELAY";
+
     public static void Apply(MainWindowViewModel main)
     {
         var scene = Environment.GetEnvironmentVariable(Variable);
         if (string.IsNullOrWhiteSpace(scene))
             return;
 
+        if (int.TryParse(Environment.GetEnvironmentVariable(DelayVariable), out var delay) && delay > 0)
+        {
+            DispatcherTimer.RunOnce(() => ApplyScene(main, scene), TimeSpan.FromMilliseconds(delay));
+            return;
+        }
+
+        ApplyScene(main, scene);
+    }
+
+    private static void ApplyScene(MainWindowViewModel main, string scene)
+    {
         switch (scene.Trim().ToLowerInvariant())
         {
             case "beats":
@@ -69,6 +86,73 @@ public static class UiScenes
 
             case "settings":
                 main.IsSettingsOpen = true;
+                break;
+
+            // Футер во время поиска (без сети: только состояние).
+            case "parser-running":
+                main.ParserVm.IsSearching = true;
+                break;
+
+            // Все звуки интерфейса по очереди — проверка, что движок их отдаёт (ошибки — в app.log).
+            case "sounds":
+                var delay = 0.0;
+                foreach (var sound in Enum.GetValues<MessedUpSearchA.Services.Audio.UiSound>())
+                {
+                    var s = sound;
+                    DispatcherTimer.RunOnce(() => MessedUpSearchA.Services.Audio.UiSounds.Play(s), TimeSpan.FromSeconds(delay += 0.8));
+                }
+                break;
+
+            case "reminders":
+                main.IsReminderOpen = true;
+                break;
+
+            // Звезда: вращается 2 с (как во время поиска), потом доворачивается до четверти оборота.
+            case "spin":
+                main.ParserVm.IsSearching = true;
+                DispatcherTimer.RunOnce(() => main.ParserVm.IsSearching = false, TimeSpan.FromSeconds(2));
+                break;
+
+            case "toast":
+                Toasts.Show("Отправлено ✓");
+                break;
+
+            case "sold-flash":
+                if (main.BeatsVm.Beats.FirstOrDefault() is { } sold)
+                    main.BeatsVm.JustSoldBeatId = sold.Id;
+                break;
+
+            // Редактор с сохранённой выдачей; через секунду первому артисту — «добавлен» (✓ со щелчком).
+            case "import-check":
+                if (main.BeatsVm.Beats.FirstOrDefault() is { } withResults)
+                {
+                    main.BeatsVm.BeginEditBeat(withResults);
+                    DispatcherTimer.RunOnce(() =>
+                    {
+                        if (main.BeatsVm.SimilarArtists.FirstOrDefault(a => a.CanImport) is { } item)
+                        {
+                            item.ArtistId = -1;
+                            item.JustImported = true;
+                        }
+                    }, TimeSpan.FromSeconds(1.2));
+                }
+                break;
+
+            case "sort-bpm":
+                main.BeatsVm.SortBy("Bpm");
+                break;
+
+            case "sort-plays":
+                main.IsBeatsSelected = false;
+                main.ArtistsVm.SortBy("Plays");
+                main.ArtistsVm.SortBy("Plays");   // второй клик — по возрастанию
+                break;
+
+            // Прерывание анимации: открыть, через 120 мс закрыть, ещё через 90 мс снова открыть.
+            case "settings-bounce":
+                main.IsSettingsOpen = true;
+                DispatcherTimer.RunOnce(() => main.IsSettingsOpen = false, TimeSpan.FromMilliseconds(120));
+                DispatcherTimer.RunOnce(() => main.IsSettingsOpen = true, TimeSpan.FromMilliseconds(210));
                 break;
 
             case "crm":

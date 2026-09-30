@@ -75,6 +75,25 @@ public sealed class AudioPlayerService : IDisposable
         }
     }
 
+    /// <summary>
+    /// Короткий звук интерфейса поверх того, что играет (<see cref="UiSounds"/>): свой компонент в микшере,
+    /// после окончания убирается. samples — стерео float 48 кГц, как у устройства.
+    /// </summary>
+    public void PlayEffect(float[] samples, float volume)
+    {
+        EnsureDevice();
+        var provider = new RawDataProvider(samples, 48000);
+        var effect = new SoundPlayer(_engine!, Format, provider) { Volume = volume };
+        effect.PlaybackEnded += (_, _) => Avalonia.Threading.Dispatcher.UIThread.Post(() =>
+        {
+            _device?.MasterMixer.RemoveComponent(effect);
+            effect.Dispose();
+            provider.Dispose();
+        });
+        _device!.MasterMixer.AddComponent(effect);
+        effect.Play();
+    }
+
     public void Play() => _player?.Play();
 
     public void Pause() => _player?.Pause();
