@@ -3,11 +3,8 @@ using System.ComponentModel;
 using System.Diagnostics;
 using Avalonia;
 using Avalonia.Controls;
-using Avalonia.Input;
 using Avalonia.Media;
-using Avalonia.Media.Imaging;
 using Avalonia.Media.Transformation;
-using Avalonia.Platform;
 using Avalonia.Threading;
 using MessedUpSearchA.Motion;
 using MessedUpSearchA.ViewModels;
@@ -19,23 +16,16 @@ namespace MessedUpSearchA;
 ///  - вход при запуске: контент проявляется и чуть поднимается за 0.5 с, звезда делает четверть оборота;
 ///  - звезда-логотип вращается, пока идёт анализ или парсер, и останавливается на ближайшей четверти
 ///    оборота (звезда четырёхлучевая — рывка не видно);
-///  - «Эффекты фона» (галочка в настройках): плёночное зерно и световое пятно за курсором.
 /// Всё движущееся выключается при «Уменьшить движение».
 /// </summary>
 public partial class MainWindow
 {
     private const double SpinDegreesPerSecond = 45;     // оборот за 8 с — спокойно, не «загрузка»
-    private const int GrainSize = 256;
 
     private readonly Stopwatch _spinClock = new();
     private DispatcherTimer? _spinTimer;
     private double _angle;
     private bool _spinning;
-
-    private DispatcherTimer? _grainTimer;
-    private readonly Random _random = new();
-    private ImageBrush? _grain;
-    private RadialGradientBrush? _spot;
 
     private MainWindowViewModel? Vm => DataContext as MainWindowViewModel;
 
@@ -48,25 +38,14 @@ public partial class MainWindow
         DataContextChanged += (_, _) =>
         {
             if (Vm is { } vm)
-            {
                 vm.PropertyChanged += OnVmPropertyChanged;
-                ApplyBackgroundEffects();
-            }
         };
-        Activated += (_, _) => ApplyBackgroundEffects();
-        Deactivated += (_, _) => _grainTimer?.Stop();
-        Motion.Motion.ReducedChanged += ApplyBackgroundEffects;
-
-        AddHandler(PointerMovedEvent, OnWindowPointerMoved, Avalonia.Interactivity.RoutingStrategies.Tunnel, handledEventsToo: true);
-        PointerExited += (_, _) => Spotlight.IsVisible = false;
     }
 
     private void OnVmPropertyChanged(object? sender, PropertyChangedEventArgs e)
     {
         if (e.PropertyName == nameof(MainWindowViewModel.IsBusy))
             SetSpinning(Vm!.IsBusy);
-        else if (e.PropertyName == nameof(MainWindowViewModel.BackgroundEffects))
-            ApplyBackgroundEffects();
     }
 
     // ---------- вход ----------
@@ -153,91 +132,5 @@ public partial class MainWindow
         _angle = angle;
         if (Logo.RenderTransform is RotateTransform rotate)
             rotate.Angle = angle;
-    }
-
-    // ---------- фон ----------
-
-    private void ApplyBackgroundEffects()
-    {
-        var enabled = Vm?.BackgroundEffects ?? true;
-
-        Grain.IsVisible = enabled;
-        Spotlight.IsVisible = enabled && !Motion.Motion.Reduced && Spotlight.IsVisible;
-
-        if (!enabled)
-        {
-            _grainTimer?.Stop();
-            return;
-        }
-
-        _grain ??= CreateGrain();
-        Grain.Fill = _grain;
-
-        // Зерно «шевелится» только в активном окне и без «Уменьшить движение».
-        if (Motion.Motion.Reduced || !IsActive)
-        {
-            _grainTimer?.Stop();
-            return;
-        }
-
-        _grainTimer ??= new DispatcherTimer(TimeSpan.FromMilliseconds(120), DispatcherPriority.Background, (_, _) =>
-        {
-            _grain!.DestinationRect = new RelativeRect(_random.Next(GrainSize), _random.Next(GrainSize),
-                GrainSize, GrainSize, RelativeUnit.Absolute);
-            Grain.InvalidateVisual();
-        });
-        _grainTimer.Start();
-    }
-
-    /// <summary>Шумовая плитка 256×256: светлые пиксели с низкой и разной прозрачностью.</summary>
-    private ImageBrush CreateGrain()
-    {
-        var bitmap = new WriteableBitmap(new PixelSize(GrainSize, GrainSize), new Vector(96, 96), PixelFormat.Bgra8888, AlphaFormat.Premul);
-        using (var buffer = bitmap.Lock())
-        {
-            var pixels = new byte[GrainSize * GrainSize * 4];
-            for (var i = 0; i < GrainSize * GrainSize; i++)
-            {
-                var alpha = (byte)(_random.NextDouble() < 0.5 ? 0 : _random.Next(8, 40));
-                var value = (byte)(alpha);          // premultiplied: белый с прозрачностью alpha
-                pixels[i * 4] = value;
-                pixels[i * 4 + 1] = value;
-                pixels[i * 4 + 2] = value;
-                pixels[i * 4 + 3] = alpha;
-            }
-            System.Runtime.InteropServices.Marshal.Copy(pixels, 0, buffer.Address, pixels.Length);
-        }
-
-        return new ImageBrush(bitmap)
-        {
-            TileMode = TileMode.Tile,
-            Stretch = Stretch.None,
-            DestinationRect = new RelativeRect(0, 0, GrainSize, GrainSize, RelativeUnit.Absolute)
-        };
-    }
-
-    private void OnWindowPointerMoved(object? sender, PointerEventArgs e)
-    {
-        if (!(Vm?.BackgroundEffects ?? true) || Motion.Motion.Reduced)
-        {
-            Spotlight.IsVisible = false;
-            return;
-        }
-
-        var p = e.GetPosition(this);
-        _spot ??= new RadialGradientBrush
-        {
-            RadiusX = new RelativeScalar(420, RelativeUnit.Absolute),
-            RadiusY = new RelativeScalar(420, RelativeUnit.Absolute),
-            GradientStops =
-            {
-                new GradientStop(Color.FromArgb(18, 255, 255, 255), 0),
-                new GradientStop(Color.FromArgb(0, 255, 255, 255), 1)
-            }
-        };
-        _spot.Center = new RelativePoint(p.X, p.Y, RelativeUnit.Absolute);
-        _spot.GradientOrigin = _spot.Center;
-        Spotlight.Fill = _spot;
-        Spotlight.IsVisible = true;
     }
 }

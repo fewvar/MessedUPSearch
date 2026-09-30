@@ -31,9 +31,6 @@
     <Grid>
 
         <Rectangle Fill="{StaticResource BackgroundTexture}"/>
-        <!-- «Эффекты фона»: плёночное зерно и световое пятно за курсором (MainWindow.Effects.cs). -->
-        <Rectangle x:Name="Grain" IsHitTestVisible="False" IsVisible="False"/>
-        <Rectangle x:Name="Spotlight" IsHitTestVisible="False" IsVisible="False"/>
 
         <Grid x:Name="Body" Margin="72,40,72,16" RowDefinitions="180,*,Auto,Auto" RowSpacing="20">
 

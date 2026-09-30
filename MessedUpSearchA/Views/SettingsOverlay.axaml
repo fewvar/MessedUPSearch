@@ -162,13 +162,6 @@
                                            IsVisible="{Binding IsSystemReducedMotion}"
                                            TextWrapping="Wrap" Margin="0,4,0,0"/>
                                 <CheckBox Classes="settings"
-                                          Content="{loc:Tr Settings.BackgroundEffects}"
-                                          IsChecked="{Binding BackgroundEffects}"
-                                          Margin="0,12,0,0"/>
-                                <TextBlock Classes="settingsHint"
-                                           Text="{loc:Tr Settings.BackgroundEffectsHint}"
-                                           TextWrapping="Wrap" Margin="0,4,0,0"/>
-                                <CheckBox Classes="settings"
                                           Content="{loc:Tr Settings.Sounds}"
                                           IsChecked="{Binding Sounds}"
                                           Margin="0,12,0,0"/>
