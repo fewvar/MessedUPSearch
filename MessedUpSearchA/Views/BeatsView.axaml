@@ -370,7 +370,7 @@
                                   IsVisible="{Binding HasSimilarity}">
                         <ItemsControl.ItemTemplate>
                             <DataTemplate DataType="vm:SimilarArtistItem">
-                                <Grid ColumnDefinitions="150,*,40,Auto" Margin="0,1">
+                                <Grid ColumnDefinitions="150,*,40,Auto" Margin="0,1" motion:Motion.Appear="True">
                                     <TextBlock Grid.Column="0"
                                                Text="{Binding Artist}"
                                                FontSize="13"
@@ -384,7 +384,8 @@
                                         <Border Height="6" CornerRadius="3"
                                                 Background="{StaticResource OnBackground}"
                                                 Width="{Binding BarWidth}"
-                                                HorizontalAlignment="Left"/>
+                                                HorizontalAlignment="Left"
+                                                motion:Motion.GrowX="True"/>
                                     </Border>
                                     <TextBlock Grid.Column="2"
                                                Text="{Binding PercentLabel}"

@@ -7,7 +7,9 @@ using Avalonia;
 using Avalonia.Animation;
 using Avalonia.Animation.Easings;
 using Avalonia.Controls;
+using Avalonia.Controls.Presenters;
 using Avalonia.LogicalTree;
+using Avalonia.VisualTree;
 using Avalonia.Media.Transformation;
 using Avalonia.Threading;
 
@@ -50,8 +52,52 @@ public static class Motion
     public static bool GetIsShown(Control control) => control.GetValue(IsShownProperty);
     public static void SetIsShown(Control control, bool value) => control.SetValue(IsShownProperty, value);
 
+    /// <summary>
+    /// Строка списка появляется по очереди: прозрачность + сдвиг 6 px снизу, задержка = номер строки × 25 мс.
+    /// Ставится на корень шаблона элемента ItemsControl.
+    /// </summary>
+    public static readonly AttachedProperty<bool> AppearProperty =
+        AvaloniaProperty.RegisterAttached<Control, bool>("Appear", typeof(Motion));
+
+    public static bool GetAppear(Control control) => control.GetValue(AppearProperty);
+    public static void SetAppear(Control control, bool value) => control.SetValue(AppearProperty, value);
+
+    /// <summary>
+    /// Полоска «дорастает» от левого края (масштаб по X, без пересчёта раскладки), с задержкой строки.
+    /// </summary>
+    public static readonly AttachedProperty<bool> GrowXProperty =
+        AvaloniaProperty.RegisterAttached<Control, bool>("GrowX", typeof(Motion));
+
+    public static bool GetGrowX(Control control) => control.GetValue(GrowXProperty);
+    public static void SetGrowX(Control control, bool value) => control.SetValue(GrowXProperty, value);
+
+    private const double RowStepSeconds = 0.025;
+    private const double RowSeconds = 0.3;
+    private const double BarSeconds = 0.5;
+
+    private static readonly TransformOperations RowHidden = TransformOperations.Parse("translateY(6px)");
+    private static readonly TransformOperations RowShown = TransformOperations.Parse("translateY(0px)");
+    private static readonly TransformOperations BarEmpty = TransformOperations.Parse("scaleX(0)");
+    private static readonly TransformOperations BarFull = TransformOperations.Parse("scaleX(1)");
+
     static Motion()
     {
+        AppearProperty.Changed.AddClassHandler<Control>((control, e) =>
+        {
+            control.AttachedToVisualTree -= OnAppearAttached;
+            if (e.NewValue is true)
+                control.AttachedToVisualTree += OnAppearAttached;
+        });
+        GrowXProperty.Changed.AddClassHandler<Control>((control, e) =>
+        {
+            control.AttachedToVisualTree -= OnGrowAttached;
+            if (e.NewValue is true)
+            {
+                control.RenderTransformOrigin = new RelativePoint(0, 0.5, RelativeUnit.Relative);
+                control.AttachedToVisualTree += OnGrowAttached;
+            }
+        });
+
         IsShownProperty.Changed.AddClassHandler<Control>((control, e) =>
         {
             if (e.NewValue is true)
@@ -151,6 +197,61 @@ public static class Motion
         timer.Stop();
         if (!GetIsShown(root))
             root.IsVisible = false;
+    }
+
+    private static void OnAppearAttached(object? sender, VisualTreeAttachmentEventArgs e)
+    {
+        if (sender is not Control row || Reduced)
+            return;
+
+        row.Transitions = null;
+        row.Opacity = 0;
+        row.RenderTransform = RowHidden;
+
+        Delayed(RowIndex(row) * RowStepSeconds, () =>
+        {
+            var (duration, easing) = Spring(RowSeconds);
+            row.Transitions =
+            [
+                new DoubleTransition { Property = Visual.OpacityProperty, Duration = duration, Easing = easing },
+                new TransformOperationsTransition { Property = Visual.RenderTransformProperty, Duration = duration, Easing = easing }
+            ];
+            row.Opacity = 1;
+            row.RenderTransform = RowShown;
+        });
+    }
+
+    private static void OnGrowAttached(object? sender, VisualTreeAttachmentEventArgs e)
+    {
+        if (sender is not Control bar || Reduced)
+            return;
+
+        bar.Transitions = null;
+        bar.RenderTransform = BarEmpty;
+
+        var row = bar.FindAncestorOfType<ContentPresenter>();
+        Delayed((row is null ? 0 : RowIndex(row)) * RowStepSeconds + 0.06, () =>
+        {
+            var (duration, easing) = Spring(BarSeconds);
+            bar.Transitions = [new TransformOperationsTransition { Property = Visual.RenderTransformProperty, Duration = duration, Easing = easing }];
+            bar.RenderTransform = BarFull;
+        });
+    }
+
+    /// <summary>Номер элемента в ItemsControl — по контейнеру, в котором лежит шаблон.</summary>
+    private static int RowIndex(Control control)
+    {
+        var container = control as ContentPresenter ?? control.FindAncestorOfType<ContentPresenter>();
+        var items = container?.FindAncestorOfType<ItemsControl>();
+        return container is null || items is null ? 0 : Math.Max(0, items.IndexFromContainer(container));
+    }
+
+    private static void Delayed(double seconds, Action action)
+    {
+        if (seconds <= 0)
+            action();
+        else
+            DispatcherTimer.RunOnce(action, TimeSpan.FromSeconds(seconds));
     }
 
     private static Control? FindCard(Control root) =>
