@@ -46,6 +46,7 @@ public partial class MainWindowViewModel : ViewModelBase
     [ObservableProperty] private string _geniusAccessToken = string.Empty;
     [ObservableProperty] private string _language = "English";
     [ObservableProperty] private bool _enableParserLogs = true;
+    [ObservableProperty] private bool _animations = true;
 
     public IReadOnlyList<string> LanguageOptions { get; } = new[] { "English", "Русский" };
 
@@ -88,6 +89,8 @@ public partial class MainWindowViewModel : ViewModelBase
         ApplyLanguage(_language);
 
         _enableParserLogs = _settings.EnableParserLogs;
+        _animations = _settings.Animations;
+        Motion.Motion.Initialize(_animations);
         AppLog.Enabled = _enableParserLogs;
 
         // Строки, собранные в коде, привязки сами не перечитают — обновляем руками.
@@ -150,6 +153,16 @@ public partial class MainWindowViewModel : ViewModelBase
         _settings.EnableParserLogs = value;
         _settings.Save();
     }
+
+    partial void OnAnimationsChanged(bool value)
+    {
+        Motion.Motion.SetEnabled(value);
+        _settings.Animations = value;
+        _settings.Save();
+    }
+
+    /// <summary>В системе включено «Уменьшить движение» — галочка всё равно не вернёт полные анимации.</summary>
+    public bool IsSystemReducedMotion => Motion.Motion.SystemReduced;
 
     /// <summary>Путь к логу показываем в настройках — он же подсказка, где лежат данные.</summary>
     public string LogFilePath => AppLog.FilePath;

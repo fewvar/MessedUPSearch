@@ -15,12 +15,29 @@ public static class UiScenes
 {
     public const string Variable = "MESSEDUP_UI_SCENE";
 
+    /// <summary>
+    /// MESSEDUP_UI_DELAY=мс — применить сцену не сразу: окно успевает показаться, и серия снимков
+    /// ловит саму анимацию появления (иначе она проигрывается раньше, чем скрипт найдёт окно).
+    /// </summary>
+    public const string DelayVariable = "MESSEDUP_UI_DELAY";
+
     public static void Apply(MainWindowViewModel main)
     {
         var scene = Environment.GetEnvironmentVariable(Variable);
         if (string.IsNullOrWhiteSpace(scene))
             return;
 
+        if (int.TryParse(Environment.GetEnvironmentVariable(DelayVariable), out var delay) && delay > 0)
+        {
+            DispatcherTimer.RunOnce(() => ApplyScene(main, scene), TimeSpan.FromMilliseconds(delay));
+            return;
+        }
+
+        ApplyScene(main, scene);
+    }
+
+    private static void ApplyScene(MainWindowViewModel main, string scene)
+    {
         switch (scene.Trim().ToLowerInvariant())
         {
             case "beats":
@@ -69,6 +86,13 @@ public static class UiScenes
 
             case "settings":
                 main.IsSettingsOpen = true;
+                break;
+
+            // Прерывание анимации: открыть, через 120 мс закрыть, ещё через 90 мс снова открыть.
+            case "settings-bounce":
+                main.IsSettingsOpen = true;
+                DispatcherTimer.RunOnce(() => main.IsSettingsOpen = false, TimeSpan.FromMilliseconds(120));
+                DispatcherTimer.RunOnce(() => main.IsSettingsOpen = true, TimeSpan.FromMilliseconds(210));
                 break;
 
             case "crm":

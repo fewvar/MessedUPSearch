@@ -3,6 +3,7 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:vm="using:MessedUpSearchA.ViewModels"
+        xmlns:motion="using:MessedUpSearchA.Motion"
         xmlns:views="using:MessedUpSearchA.Views"
         xmlns:loc="using:MessedUpSearchA.Services.Localization"
         xmlns:controls="using:MessedUpSearchA.Controls"
@@ -160,10 +161,10 @@
         </Grid>
 
         <Grid x:CompileBindings="False">
-            <views:CrmOverlay IsVisible="{Binding IsCrmOpen}"/>
-            <views:SettingsOverlay IsVisible="{Binding IsSettingsOpen}"/>
-            <views:ReminderOverlay IsVisible="{Binding IsReminderOpen}"/>
-            <views:ParserOverlay IsVisible="{Binding IsParserOpen}"/>
+            <views:CrmOverlay IsVisible="False" motion:Motion.IsShown="{Binding IsCrmOpen}"/>
+            <views:SettingsOverlay IsVisible="False" motion:Motion.IsShown="{Binding IsSettingsOpen}"/>
+            <views:ReminderOverlay IsVisible="False" motion:Motion.IsShown="{Binding IsReminderOpen}"/>
+            <views:ParserOverlay IsVisible="False" motion:Motion.IsShown="{Binding IsParserOpen}"/>
         </Grid>
     </Grid>
 </Window>

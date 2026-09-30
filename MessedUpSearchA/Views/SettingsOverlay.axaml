@@ -150,6 +150,22 @@
 
                         <Border Classes="settingsSection">
                             <StackPanel>
+                                <TextBlock Classes="settingsHeader" Text="{loc:Tr Settings.Interface}"/>
+                                <CheckBox Classes="settings"
+                                          Content="{loc:Tr Settings.Animations}"
+                                          IsChecked="{Binding Animations}"/>
+                                <TextBlock Classes="settingsHint"
+                                           Text="{loc:Tr Settings.AnimationsHint}"
+                                           TextWrapping="Wrap" Margin="0,4,0,0"/>
+                                <TextBlock Classes="settingsHint"
+                                           Text="{loc:Tr Settings.AnimationsSystem}"
+                                           IsVisible="{Binding IsSystemReducedMotion}"
+                                           TextWrapping="Wrap" Margin="0,4,0,0"/>
+                            </StackPanel>
+                        </Border>
+
+                        <Border Classes="settingsSection">
+                            <StackPanel>
                                 <TextBlock Classes="settingsHeader" Text="{loc:Tr Settings.Logs}"/>
 
                                 <CheckBox Classes="settings"
