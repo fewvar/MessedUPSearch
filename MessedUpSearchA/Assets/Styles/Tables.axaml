@@ -20,6 +20,15 @@
         <Setter Property="Margin" Value="14,0,0,0"/>
     </Style>
 
+    <!-- Ссылки в таблице: тёмный янтарный (родня ★ и POTENTIAL, но читается на светлой строке —
+         4.84:1 на фоне #E8E8E8, WCAG AA). Синий выбивался бы из палитры. -->
+    <Style Selector="TextBlock.tableLink">
+        <Setter Property="Foreground" Value="#8A5A00"/>
+    </Style>
+    <Style Selector="TextBlock.tableLink:pointerover">
+        <Setter Property="TextDecorations" Value="Underline"/>
+    </Style>
+
     <!-- Кликабельная область заголовка для сортировки (поверх текста, прозрачная). -->
     <Style Selector="Border.sortHit">
         <Setter Property="Background" Value="Transparent"/>

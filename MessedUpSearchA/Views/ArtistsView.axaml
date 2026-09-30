@@ -131,12 +131,12 @@
                                                 VerticalAlignment="Center">
                                         <TextBlock Text="{Binding IgLink, StringFormat='inst: {0}'}"
                                                    IsVisible="{Binding IgLink, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
-                                                   FontSize="13" Cursor="Hand"
+                                                   FontSize="13" Cursor="Hand" Classes="tableLink"
                                                    TextTrimming="CharacterEllipsis"
                                                    PointerPressed="OnIgLinkClick"/>
                                         <TextBlock Text="{Binding SpotifyLink, StringFormat='spotify: {0}'}"
                                                    IsVisible="{Binding SpotifyLink, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
-                                                   FontSize="13" Cursor="Hand"
+                                                   FontSize="13" Cursor="Hand" Classes="tableLink"
                                                    TextTrimming="CharacterEllipsis"
                                                    PointerPressed="OnSpotifyLinkClick"/>
                                         <TextBlock Text="—" FontSize="13">
