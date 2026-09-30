@@ -56,6 +56,24 @@ public partial class ArtistsViewModel : ViewModelBase
 
     private readonly List<Artist> _allArtists = new();
 
+    /// <summary>Сортировка по заголовку: «Plays:desc» / «Plays:asc» / пусто (исходный порядок).</summary>
+    [ObservableProperty] private string _sortState = string.Empty;
+
+    public void SortBy(string column)
+    {
+        SortState = TableSort.Next(SortState, column);
+        ApplyFilter();
+    }
+
+    private static Func<Artist, object?>? SortKey(string column) => column switch
+    {
+        "Nickname" => a => a.Nickname,
+        "Genre" => a => a.AiGenreTags,
+        "Plays" => a => a.TotalPlays,
+        "Language" => a => a.Language,
+        _ => null
+    };
+
     partial void OnFilterTypeChanged(string value) => ApplyFilter();
     partial void OnFilterLanguageChanged(string value) => ApplyFilter();
     partial void OnFilterPeriodChanged(string value) => ApplyFilter();
@@ -164,6 +182,8 @@ public partial class ArtistsViewModel : ViewModelBase
             var s = SearchText.Trim();
             q = q.Where(a => (a.Nickname ?? "").Contains(s, oic) || (a.AiGenreTags ?? "").Contains(s, oic));
         }
+
+        q = TableSort.Apply(q, SortState, SortKey);
 
         Artists.Clear();
         foreach (var a in q)

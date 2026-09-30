@@ -116,4 +116,11 @@ public partial class ArtistsView : UserControl
                 return;
             Motion.Motion.Pop(row.GetVisualDescendants().OfType<Control>().FirstOrDefault(c => c.Name == toggleName));
         }, DispatcherPriority.Loaded);
+
+    private void OnSortHeaderClick(object? sender, PointerPressedEventArgs e)
+    {
+        if (sender is Control { Tag: string column } && DataContext is ArtistsViewModel vm)
+            vm.SortBy(column);
+        e.Handled = true;
+    }
 }

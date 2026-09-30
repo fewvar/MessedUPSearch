@@ -56,6 +56,24 @@
                            Margin="14,0,14,0"/>
                 <TextBlock Grid.Row="0" Grid.Column="5" Classes="tableHeader" Text="{loc:Tr Artists.Language}"/>
 
+                <!-- Клик по заголовку — сортировка ▼ -> ▲ -> сброс; «Ссылки» не сортируются. -->
+                <Border Grid.Row="0" Grid.Column="1" Classes="sortHit" Tag="Nickname" PointerPressed="OnSortHeaderClick">
+                    <TextBlock Classes="sortArrow"
+                               Text="{Binding SortState, Converter={x:Static vm:SortArrowConverter.Instance}, ConverterParameter=Nickname}"/>
+                </Border>
+                <Border Grid.Row="0" Grid.Column="2" Classes="sortHit" Tag="Genre" PointerPressed="OnSortHeaderClick">
+                    <TextBlock Classes="sortArrow"
+                               Text="{Binding SortState, Converter={x:Static vm:SortArrowConverter.Instance}, ConverterParameter=Genre}"/>
+                </Border>
+                <Border Grid.Row="0" Grid.Column="3" Classes="sortHit" Tag="Plays" PointerPressed="OnSortHeaderClick">
+                    <TextBlock Classes="sortArrow"
+                               Text="{Binding SortState, Converter={x:Static vm:SortArrowConverter.Instance}, ConverterParameter=Plays}"/>
+                </Border>
+                <Border Grid.Row="0" Grid.Column="5" Classes="sortHit" Tag="Language" PointerPressed="OnSortHeaderClick">
+                    <TextBlock Classes="sortArrow"
+                               Text="{Binding SortState, Converter={x:Static vm:SortArrowConverter.Instance}, ConverterParameter=Language}"/>
+                </Border>
+
                 <Border Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="6" Classes="headerDivider"/>
 
                 <ScrollViewer Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="6"

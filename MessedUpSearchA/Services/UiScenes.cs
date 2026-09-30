@@ -88,6 +88,16 @@ public static class UiScenes
                 main.IsSettingsOpen = true;
                 break;
 
+            case "sort-bpm":
+                main.BeatsVm.SortBy("Bpm");
+                break;
+
+            case "sort-plays":
+                main.IsBeatsSelected = false;
+                main.ArtistsVm.SortBy("Plays");
+                main.ArtistsVm.SortBy("Plays");   // второй клик — по возрастанию
+                break;
+
             // Прерывание анимации: открыть, через 120 мс закрыть, ещё через 90 мс снова открыть.
             case "settings-bounce":
                 main.IsSettingsOpen = true;

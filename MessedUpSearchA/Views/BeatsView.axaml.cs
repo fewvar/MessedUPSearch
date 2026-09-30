@@ -129,4 +129,11 @@ public partial class BeatsView : UserControl
         if (sender is Control { DataContext: Beat beat } && DataContext is BeatsViewModel vm)
             vm.BeginEditBeat(beat);
     }
+
+    private void OnSortHeaderClick(object? sender, PointerPressedEventArgs e)
+    {
+        if (sender is Control { Tag: string column } && DataContext is BeatsViewModel vm)
+            vm.SortBy(column);
+        e.Handled = true;
+    }
 }

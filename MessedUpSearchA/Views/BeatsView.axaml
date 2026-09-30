@@ -51,6 +51,32 @@
                 <TextBlock Grid.Row="0" Grid.Column="5" Classes="tableHeader" Text="{loc:Tr Beats.Added}"/>
                 <TextBlock Grid.Row="0" Grid.Column="6" Classes="tableHeader" Text="{loc:Tr Beats.Status}"/>
 
+                <!-- Клик по заголовку — сортировка ▼ -> ▲ -> сброс; стрелка у активного столбца. -->
+                <Border Grid.Row="0" Grid.Column="1" Classes="sortHit" Tag="Name" PointerPressed="OnSortHeaderClick">
+                    <TextBlock Classes="sortArrow"
+                               Text="{Binding SortState, Converter={x:Static vm:SortArrowConverter.Instance}, ConverterParameter=Name}"/>
+                </Border>
+                <Border Grid.Row="0" Grid.Column="2" Classes="sortHit" Tag="Genre" PointerPressed="OnSortHeaderClick">
+                    <TextBlock Classes="sortArrow"
+                               Text="{Binding SortState, Converter={x:Static vm:SortArrowConverter.Instance}, ConverterParameter=Genre}"/>
+                </Border>
+                <Border Grid.Row="0" Grid.Column="3" Classes="sortHit" Tag="Bpm" PointerPressed="OnSortHeaderClick">
+                    <TextBlock Classes="sortArrow"
+                               Text="{Binding SortState, Converter={x:Static vm:SortArrowConverter.Instance}, ConverterParameter=Bpm}"/>
+                </Border>
+                <Border Grid.Row="0" Grid.Column="4" Classes="sortHit" Tag="Key" PointerPressed="OnSortHeaderClick">
+                    <TextBlock Classes="sortArrow"
+                               Text="{Binding SortState, Converter={x:Static vm:SortArrowConverter.Instance}, ConverterParameter=Key}"/>
+                </Border>
+                <Border Grid.Row="0" Grid.Column="5" Classes="sortHit" Tag="Added" PointerPressed="OnSortHeaderClick">
+                    <TextBlock Classes="sortArrow"
+                               Text="{Binding SortState, Converter={x:Static vm:SortArrowConverter.Instance}, ConverterParameter=Added}"/>
+                </Border>
+                <Border Grid.Row="0" Grid.Column="6" Classes="sortHit" Tag="Status" PointerPressed="OnSortHeaderClick">
+                    <TextBlock Classes="sortArrow"
+                               Text="{Binding SortState, Converter={x:Static vm:SortArrowConverter.Instance}, ConverterParameter=Status}"/>
+                </Border>
+
                 <Border Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="7" Classes="headerDivider"/>
 
                 <ScrollViewer Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="7"

@@ -48,6 +48,26 @@ public partial class BeatsViewModel : ViewModelBase
 
     private readonly List<Beat> _allBeats = new();
 
+    /// <summary>Сортировка по заголовку: «Bpm:desc» / «Bpm:asc» / пусто (исходный порядок — новые сверху).</summary>
+    [ObservableProperty] private string _sortState = string.Empty;
+
+    public void SortBy(string column)
+    {
+        SortState = TableSort.Next(SortState, column);
+        ApplyFilter();
+    }
+
+    private static Func<Beat, object?>? SortKey(string column) => column switch
+    {
+        "Name" => b => b.BeatName,
+        "Genre" => b => b.AiTags,
+        "Bpm" => b => b.Bpm,
+        "Key" => b => b.Key,
+        "Added" => b => b.Added,
+        "Status" => b => b.Status,
+        _ => null
+    };
+
     partial void OnFilterTypeChanged(string value) => ApplyFilter();
     partial void OnFilterKeyChanged(string value) => ApplyFilter();
     partial void OnFilterPeriodChanged(string value) => ApplyFilter();
@@ -142,6 +162,8 @@ public partial class BeatsViewModel : ViewModelBase
             var s = SearchText.Trim();
             q = q.Where(b => (b.BeatName ?? "").Contains(s, oic) || (b.AiTags ?? "").Contains(s, oic));
         }
+
+        q = TableSort.Apply(q, SortState, SortKey);
 
         Beats.Clear();
         foreach (var b in q)
