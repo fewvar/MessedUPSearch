@@ -1,3 +1,4 @@
+using MessedUpSearchA.Services.Audio;
 using System;
 using System.Collections.ObjectModel;
 using System.Collections.Generic;
@@ -327,6 +328,7 @@ public partial class BeatsViewModel : ViewModelBase
             else
                 SaveSimilarity(_editingId, result);
             ShowSimilarity(result);
+            UiSounds.Play(UiSound.AnalysisDone);
 
             AnalysisStatus = string.Empty;
         }

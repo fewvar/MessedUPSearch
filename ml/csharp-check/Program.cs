@@ -7,6 +7,24 @@ using MessedUpSearchA.Services.Ml;
 // Список — по пути на строку. Выход: int файлов, int размерность, затем на файл
 // сырой вектор EffNet и финальный (после головы), float32. Не посчитался — нули.
 
+// Звуки интерфейса в WAV: MlCheck sounds <папка> — послушать и проверить уровни.
+if (args.Length == 2 && args[0] == "sounds")
+{
+    Directory.CreateDirectory(args[1]);
+    foreach (var sound in Enum.GetValues<MessedUpSearchA.Services.Audio.UiSound>())
+    {
+        var samples = MessedUpSearchA.Services.Audio.UiSounds.Samples(sound);
+        using var wav = new BinaryWriter(File.Create(Path.Combine(args[1], $"{sound}.wav")));
+        var bytes = samples.Length * 4;
+        wav.Write("RIFF"u8); wav.Write(36 + bytes); wav.Write("WAVE"u8);
+        wav.Write("fmt "u8); wav.Write(16); wav.Write((short)3); wav.Write((short)2); wav.Write(48000); wav.Write(48000 * 8); wav.Write((short)8); wav.Write((short)32);
+        wav.Write("data"u8); wav.Write(bytes);
+        foreach (var v in samples) wav.Write(v);
+        Console.WriteLine($"{sound}: {samples.Length / 2 / 48000.0:F2} с, пик {samples.Max(Math.Abs):F2}");
+    }
+    return 0;
+}
+
 // Отладка входа: MlCheck decode <файл> <out.f32> — сэмплы 16 кГц, как их видит EffNet.
 if (args.Length == 3 && args[0] == "decode")
 {

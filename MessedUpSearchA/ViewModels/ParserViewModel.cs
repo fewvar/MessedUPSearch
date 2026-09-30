@@ -151,6 +151,7 @@ public partial class ParserViewModel : ViewModelBase
 
             StatusText = run.Summary;
             IsResultsStep = true;
+            Services.Audio.UiSounds.Play(Services.Audio.UiSound.ParserDone);
         }
         catch (OperationCanceledException)
         {

@@ -47,6 +47,7 @@ public partial class MainWindowViewModel : ViewModelBase
     [ObservableProperty] private string _language = "English";
     [ObservableProperty] private bool _enableParserLogs = true;
     [ObservableProperty] private bool _animations = true;
+    [ObservableProperty] private bool _sounds = true;
 
     public IReadOnlyList<string> LanguageOptions { get; } = new[] { "English", "Русский" };
 
@@ -89,6 +90,8 @@ public partial class MainWindowViewModel : ViewModelBase
 
         _enableParserLogs = _settings.EnableParserLogs;
         _animations = _settings.Animations;
+        _sounds = _settings.Sounds;
+        Services.Audio.UiSounds.Enabled = _sounds;
         Motion.Motion.Initialize(_animations);
         AppLog.Enabled = _enableParserLogs;
 
@@ -158,6 +161,15 @@ public partial class MainWindowViewModel : ViewModelBase
         AppLog.Enabled = value;
         _settings.EnableParserLogs = value;
         _settings.Save();
+    }
+
+    partial void OnSoundsChanged(bool value)
+    {
+        Services.Audio.UiSounds.Enabled = value;
+        _settings.Sounds = value;
+        _settings.Save();
+        if (value)
+            Services.Audio.UiSounds.Play(Services.Audio.UiSound.Sent);   // сразу слышно, как звучит
     }
 
     partial void OnAnimationsChanged(bool value)
@@ -253,6 +265,7 @@ public partial class MainWindowViewModel : ViewModelBase
                 log.IsSent = true;
                 log.SentAt = DateTime.Now.ToString("yyyy-MM-dd HH:mm");
                 db.SaveChanges();
+                Services.Audio.UiSounds.Play(Services.Audio.UiSound.Sent);
             }
         }
 

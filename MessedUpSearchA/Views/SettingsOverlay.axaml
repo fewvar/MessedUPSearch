@@ -161,6 +161,13 @@
                                            Text="{loc:Tr Settings.AnimationsSystem}"
                                            IsVisible="{Binding IsSystemReducedMotion}"
                                            TextWrapping="Wrap" Margin="0,4,0,0"/>
+                                <CheckBox Classes="settings"
+                                          Content="{loc:Tr Settings.Sounds}"
+                                          IsChecked="{Binding Sounds}"
+                                          Margin="0,12,0,0"/>
+                                <TextBlock Classes="settingsHint"
+                                           Text="{loc:Tr Settings.SoundsHint}"
+                                           TextWrapping="Wrap" Margin="0,4,0,0"/>
                             </StackPanel>
                         </Border>
 

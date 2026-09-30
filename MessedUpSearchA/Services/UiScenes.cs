@@ -93,6 +93,16 @@ public static class UiScenes
                 main.ParserVm.IsSearching = true;
                 break;
 
+            // Все звуки интерфейса по очереди — проверка, что движок их отдаёт (ошибки — в app.log).
+            case "sounds":
+                var delay = 0.0;
+                foreach (var sound in Enum.GetValues<MessedUpSearchA.Services.Audio.UiSound>())
+                {
+                    var s = sound;
+                    DispatcherTimer.RunOnce(() => MessedUpSearchA.Services.Audio.UiSounds.Play(s), TimeSpan.FromSeconds(delay += 0.8));
+                }
+                break;
+
             case "sort-bpm":
                 main.BeatsVm.SortBy("Bpm");
                 break;

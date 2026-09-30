@@ -85,6 +85,7 @@ public partial class PlayerViewModel : ViewModelBase, IDisposable
 
     public PlayerViewModel(AppSettings settings)
     {
+        UiSounds.Output = _audio;
         _settings = settings;
         _volume = Math.Clamp(settings.PlayerVolume, 0, 1);
         _audio.Volume = (float)_volume;

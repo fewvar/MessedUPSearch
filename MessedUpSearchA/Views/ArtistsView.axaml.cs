@@ -88,8 +88,11 @@ public partial class ArtistsView : UserControl
     {
         if (sender is Control { DataContext: Artist artist } && DataContext is ArtistsViewModel vm)
         {
+            var becomesFavorite = !artist.IsFavorite;
             vm.ToggleFavorite(artist);
             PopAfterReload(vm, artist.Id, "FavoriteToggle");
+            if (becomesFavorite)
+                Services.Audio.UiSounds.Play(Services.Audio.UiSound.Favorite);
         }
         e.Handled = true;
     }
