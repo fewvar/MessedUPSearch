@@ -28,7 +28,7 @@ An app for beatmakers: all your beats in one table, a roster of underground arti
 Open a beat, hit **ANALYZE** — a second later the app shows:
 
 - **"sounds like"** — three big artists whose style the beat resembles;
-- **who to pitch** — ten underground artists (1,000 to 300,000 plays) from a base of 650+ rappers on SoundCloud and Audius. Each one has ▶ play their track right in the app, ＋ add to your roster, ↗ open the profile to reach out.
+- **who to pitch** — ten underground artists (1,000 to 300,000 plays) from a base of 650+ rappers on SoundCloud and Audius. Each one has ▶ play the track of theirs that is **closest to your beat** — you hear right away why they made the list; ＋ add to your roster; ↗ open the profile to reach out.
 
 <p align="center"><img src="docs/en-analyze.jpg" alt="Beat analysis" width="90%"></p>
 
@@ -42,7 +42,7 @@ Everything the analysis finds is saved: an artist's card shows which of your bea
 
 - Add beats one by one (WAV / MP3) or import a whole folder — re-importing never creates duplicates.
 - Name, genre, BPM, key and status: **potential**, **free** or **sold** (with license type).
-- Filter by genre, BPM, key, date and search by name — all instant.
+- Filter by genre, BPM, key, date and search by name — all instant. Click a column header to sort: ▼ → ▲ → back.
 - Built-in player with a waveform: ▶ in the beat row, click the waveform to seek, previous / next beat, volume is remembered. Space pauses, ← / → seek.
 
 <p align="center"><img src="docs/en-player.jpg" alt="Beat library and player" width="90%"></p>
@@ -69,6 +69,7 @@ Everything the analysis finds is saved: an artist's card shows which of your bea
 ## Small things
 
 - Russian and English interface, switches instantly, no restart.
+- Smooth animations following Apple's motion principles and a few quiet sounds (analysis done, beat sent, ★, parser finished) — both can be turned off in Settings; the system Reduce Motion setting is respected.
 - All data stays on your computer. The app only goes online to search for artists, stream their tracks in the player and, once, to fetch the underground artist base.
 
 <p align="center"><img src="docs/en-settings.jpg" alt="Settings" width="70%"></p>

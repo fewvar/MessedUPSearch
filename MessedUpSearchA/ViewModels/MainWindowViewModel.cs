@@ -59,7 +59,7 @@ public partial class MainWindowViewModel : ViewModelBase
 
     public IReadOnlyList<string> LanguageOptions { get; } = new[] { "English", "Русский" };
 
-    public string AppVersion => "v1.0";
+    public string AppVersion => "v1.0.1";
 
     /// <summary>Подпись в футере: «ожидание» или «идёт поиск» (окно парсера можно закрыть — поиск идёт дальше).</summary>
     public string ParserStatus =>
