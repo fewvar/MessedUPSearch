@@ -16,6 +16,41 @@ namespace MessedUpSearchA.Migrations
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "10.0.12");
 
+            modelBuilder.Entity("MessedUpSearchA.Models.ActivityEvent", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int?>("ArtistId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("At")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<int?>("BeatId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Kind")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Value")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ArtistId");
+
+                    b.HasIndex("At");
+
+                    b.HasIndex("BeatId");
+
+                    b.ToTable("ActivityEvents");
+                });
+
             modelBuilder.Entity("MessedUpSearchA.Models.Artist", b =>
                 {
                     b.Property<int>("Id")
@@ -34,6 +69,10 @@ namespace MessedUpSearchA.Migrations
                         .IsRequired()
                         .HasColumnType("TEXT");
 
+                    b.Property<string>("Bio")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
                     b.Property<string>("CreatedAt")
                         .IsRequired()
                         .HasColumnType("TEXT");
@@ -43,6 +82,10 @@ namespace MessedUpSearchA.Migrations
                         .HasColumnType("TEXT");
 
                     b.Property<string>("DeezerCheckedAt")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Email")
                         .IsRequired()
                         .HasColumnType("TEXT");
 
@@ -80,6 +123,10 @@ namespace MessedUpSearchA.Migrations
                         .IsRequired()
                         .HasColumnType("TEXT");
 
+                    b.Property<string>("OtherContact")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
                     b.Property<string>("ScLink")
                         .HasColumnType("TEXT");
 
@@ -91,6 +138,10 @@ namespace MessedUpSearchA.Migrations
                         .HasColumnType("TEXT");
 
                     b.Property<string>("SpotifyLink")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Telegram")
                         .IsRequired()
                         .HasColumnType("TEXT");
 
@@ -210,6 +261,10 @@ namespace MessedUpSearchA.Migrations
                         .IsRequired()
                         .HasColumnType("TEXT");
 
+                    b.Property<string>("ShareUrl")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
                     b.Property<string>("Status")
                         .IsRequired()
                         .HasColumnType("TEXT");
@@ -296,6 +351,165 @@ namespace MessedUpSearchA.Migrations
                     b.ToTable("BeatSimilarities");
                 });
 
+            modelBuilder.Entity("MessedUpSearchA.Models.DawSession", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("App")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("EndedAt")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("StartedAt")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("StartedAt");
+
+                    b.ToTable("DawSessions");
+                });
+
+            modelBuilder.Entity("MessedUpSearchA.Models.IncomingReply", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int?>("ArtistId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("FromAddress")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("MessageId")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<int?>("OutgoingMailId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("ReceivedAt")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Snippet")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Subject")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ArtistId");
+
+                    b.HasIndex("MessageId");
+
+                    b.HasIndex("OutgoingMailId");
+
+                    b.ToTable("IncomingReplies");
+                });
+
+            modelBuilder.Entity("MessedUpSearchA.Models.MailTemplate", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Body")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("CreatedAt")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Kind")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Subject")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("MailTemplates");
+                });
+
+            modelBuilder.Entity("MessedUpSearchA.Models.OutgoingMail", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int?>("ArtistId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int?>("BeatId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Body")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Error")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Kind")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("MessageId")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("SentAt")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Subject")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<int?>("TemplateId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("ToAddress")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ArtistId");
+
+                    b.HasIndex("BeatId");
+
+                    b.HasIndex("MessageId");
+
+                    b.HasIndex("TemplateId");
+
+                    b.ToTable("OutgoingMails");
+                });
+
             modelBuilder.Entity("MessedUpSearchA.Models.SentBeatsLog", b =>
                 {
                     b.Property<int>("Id")
@@ -364,6 +578,19 @@ namespace MessedUpSearchA.Migrations
                     b.ToTable("TrackEmbeddings");
                 });
 
+            modelBuilder.Entity("MessedUpSearchA.Models.ActivityEvent", b =>
+                {
+                    b.HasOne("MessedUpSearchA.Models.Artist", null)
+                        .WithMany()
+                        .HasForeignKey("ArtistId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.HasOne("MessedUpSearchA.Models.Beat", null)
+                        .WithMany()
+                        .HasForeignKey("BeatId")
+                        .OnDelete(DeleteBehavior.SetNull);
+                });
+
             modelBuilder.Entity("MessedUpSearchA.Models.ArtistTrack", b =>
                 {
                     b.HasOne("MessedUpSearchA.Models.Artist", "Artist")
@@ -389,6 +616,37 @@ namespace MessedUpSearchA.Migrations
                         .IsRequired();
 
                     b.Navigation("Beat");
+                });
+
+            modelBuilder.Entity("MessedUpSearchA.Models.IncomingReply", b =>
+                {
+                    b.HasOne("MessedUpSearchA.Models.Artist", null)
+                        .WithMany()
+                        .HasForeignKey("ArtistId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.HasOne("MessedUpSearchA.Models.OutgoingMail", null)
+                        .WithMany()
+                        .HasForeignKey("OutgoingMailId")
+                        .OnDelete(DeleteBehavior.SetNull);
+                });
+
+            modelBuilder.Entity("MessedUpSearchA.Models.OutgoingMail", b =>
+                {
+                    b.HasOne("MessedUpSearchA.Models.Artist", null)
+                        .WithMany()
+                        .HasForeignKey("ArtistId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.HasOne("MessedUpSearchA.Models.Beat", null)
+                        .WithMany()
+                        .HasForeignKey("BeatId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.HasOne("MessedUpSearchA.Models.MailTemplate", null)
+                        .WithMany()
+                        .HasForeignKey("TemplateId")
+                        .OnDelete(DeleteBehavior.SetNull);
                 });
 
             modelBuilder.Entity("MessedUpSearchA.Models.SentBeatsLog", b =>

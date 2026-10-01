@@ -1,0 +1,138 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:MessedUpSearchA.ViewModels"
+             xmlns:stats="using:MessedUpSearchA.Services.Stats"
+             xmlns:controls="using:MessedUpSearchA.Controls"
+             xmlns:loc="using:MessedUpSearchA.Services.Localization"
+             x:Class="MessedUpSearchA.Views.StatsOverlay"
+             x:DataType="vm:StatsViewModel">
+
+    <UserControl.Styles>
+        <Style Selector="TextBlock.statNumber">
+            <Setter Property="FontFamily" Value="{StaticResource HeadingFont}"/>
+            <Setter Property="FontSize" Value="26"/>
+            <Setter Property="FontWeight" Value="Bold"/>
+            <Setter Property="Foreground" Value="{StaticResource OnBackground}"/>
+        </Style>
+        <Style Selector="TextBlock.statCaption">
+            <Setter Property="FontSize" Value="11"/>
+            <Setter Property="TextWrapping" Value="Wrap"/>
+            <Setter Property="Foreground" Value="{StaticResource OnBackgroundDim}"/>
+        </Style>
+        <Style Selector="TextBlock.sectionTitle">
+            <Setter Property="FontFamily" Value="{StaticResource HeadingFont}"/>
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="LetterSpacing" Value="2"/>
+            <Setter Property="Foreground" Value="{StaticResource OnBackground}"/>
+        </Style>
+        <!-- Выбранный период — залитый, остальные — контуром. -->
+        <Style Selector="Button.statusButton.selected">
+            <Setter Property="Foreground" Value="{StaticResource OnBackground}"/>
+        </Style>
+    </UserControl.Styles>
+
+    <Grid>
+        <Border Background="#B0000000"/>
+
+        <Border Classes="modal" Width="1040" Height="800">
+            <Grid RowDefinitions="Auto,Auto,*" Margin="28,18,18,20">
+                <Grid Grid.Row="0" Margin="0,0,10,12">
+                    <StackPanel Orientation="Horizontal" Spacing="18">
+                        <TextBlock Text="{loc:Tr Stats.Title}"
+                                   FontFamily="{StaticResource HeadingFont}"
+                                   FontSize="22" FontWeight="Bold" LetterSpacing="3"
+                                   Foreground="{StaticResource OnBackground}"
+                                   VerticalAlignment="Center"/>
+                        <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                            <Button Classes="statusButton" Classes.selected="{Binding Is7}" Content="{loc:Tr Stats.Days7}"
+                                    Command="{Binding SetPeriodCommand}" CommandParameter="0"/>
+                            <Button Classes="statusButton" Classes.selected="{Binding Is30}" Content="{loc:Tr Stats.Days30}"
+                                    Command="{Binding SetPeriodCommand}" CommandParameter="1"/>
+                            <Button Classes="statusButton" Classes.selected="{Binding Is90}" Content="{loc:Tr Stats.Days90}"
+                                    Command="{Binding SetPeriodCommand}" CommandParameter="2"/>
+                            <Button Classes="statusButton" Classes.selected="{Binding IsAll}" Content="{loc:Tr Stats.All}"
+                                    Command="{Binding SetPeriodCommand}" CommandParameter="3"/>
+                        </StackPanel>
+                    </StackPanel>
+                    <Button Classes="modalClose" Content="✕" HorizontalAlignment="Right"
+                            Command="{Binding CloseCommand}"/>
+                </Grid>
+
+                <!-- Сводка: большие цифры + отправки по неделям столбиками. -->
+                <Grid Grid.Row="1" ColumnDefinitions="*,*,*,*,*,250" Margin="0,0,10,18" ColumnSpacing="12">
+                    <StackPanel Grid.Column="0">
+                        <TextBlock Classes="statNumber" Text="{Binding Pitches}"/>
+                        <TextBlock Classes="statCaption" Text="{loc:Tr Stats.Pitches}"/>
+                    </StackPanel>
+                    <StackPanel Grid.Column="1">
+                        <TextBlock Classes="statNumber" Text="{Binding ReplyRate}"/>
+                        <TextBlock Classes="statCaption" Text="{loc:Tr Stats.ReplyRate}"/>
+                    </StackPanel>
+                    <StackPanel Grid.Column="2">
+                        <TextBlock Classes="statNumber" Text="{Binding MedianReply}"/>
+                        <TextBlock Classes="statCaption" Text="{loc:Tr Stats.MedianReply}"/>
+                    </StackPanel>
+                    <StackPanel Grid.Column="3">
+                        <TextBlock Classes="statNumber" Text="{Binding SoldFree}"/>
+                        <TextBlock Classes="statCaption" Text="{loc:Tr Stats.SoldFree}"/>
+                    </StackPanel>
+                    <StackPanel Grid.Column="4">
+                        <TextBlock Classes="statNumber" Text="{Binding BeatsAdded}"/>
+                        <TextBlock Classes="statCaption" Text="{loc:Tr Stats.BeatsAdded}"/>
+                    </StackPanel>
+                    <StackPanel Grid.Column="5" Spacing="4">
+                        <controls:PixelColumns Values="{Binding Weekly}" Height="44"/>
+                        <TextBlock Classes="statCaption" Text="{loc:Tr Stats.Weekly}"/>
+                    </StackPanel>
+                </Grid>
+
+                <Grid Grid.Row="2">
+                    <TextBlock Text="{loc:Tr Stats.Empty}" IsVisible="{Binding IsEmpty}"
+                               FontFamily="{StaticResource HeadingFont}" FontSize="15" LetterSpacing="1"
+                               TextWrapping="Wrap" MaxWidth="460" TextAlignment="Center"
+                               HorizontalAlignment="Center" VerticalAlignment="Center"
+                               Foreground="{StaticResource OnBackgroundDim}"/>
+
+                    <ScrollViewer IsVisible="{Binding !IsEmpty}" VerticalScrollBarVisibility="Auto">
+                        <ItemsControl ItemsSource="{Binding Sections}" Margin="0,0,10,0">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate><UniformGrid Columns="2"/></ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate DataType="vm:StatSection">
+                                    <Border Background="#14FFFFFF" BorderBrush="#22FFFFFF" BorderThickness="1"
+                                            CornerRadius="8" Padding="16,12" Margin="0,0,12,12">
+                                        <StackPanel Spacing="8">
+                                            <TextBlock Classes="sectionTitle" Text="{Binding Title}"/>
+                                            <TextBlock Classes="statCaption" Text="{loc:Tr Stats.NoData}"
+                                                       IsVisible="{Binding !HasData}"/>
+                                            <ItemsControl ItemsSource="{Binding Rows}" IsVisible="{Binding HasData}">
+                                                <ItemsControl.ItemTemplate>
+                                                    <DataTemplate DataType="stats:StatRow">
+                                                        <Grid ColumnDefinitions="130,*,96" Margin="0,2" ColumnSpacing="10">
+                                                            <TextBlock Grid.Column="0" Text="{Binding Label}" FontSize="12"
+                                                                       TextTrimming="CharacterEllipsis"
+                                                                       ToolTip.Tip="{Binding Label}"
+                                                                       Foreground="{StaticResource OnBackground}"
+                                                                       VerticalAlignment="Center"/>
+                                                            <controls:PixelBar Grid.Column="1" Value="{Binding Rate}"
+                                                                               VerticalAlignment="Center"/>
+                                                            <TextBlock Grid.Column="2" Text="{Binding ValueText}" FontSize="11"
+                                                                       HorizontalAlignment="Right"
+                                                                       Foreground="{StaticResource OnBackgroundDim}"
+                                                                       VerticalAlignment="Center"/>
+                                                        </Grid>
+                                                    </DataTemplate>
+                                                </ItemsControl.ItemTemplate>
+                                            </ItemsControl>
+                                        </StackPanel>
+                                    </Border>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </ScrollViewer>
+                </Grid>
+            </Grid>
+        </Border>
+    </Grid>
+</UserControl>

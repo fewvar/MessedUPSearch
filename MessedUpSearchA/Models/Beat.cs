@@ -13,4 +13,7 @@ public class Beat
     public string StatusColor { get; set; } = string.Empty;
     public string LicenseType { get; set; } = string.Empty;
     public bool IsSold { get; set; }
+
+    /// <summary>Ссылка на бит (облако, SoundCloud, BeatStars) — уходит в письме вместо вложения.</summary>
+    public string ShareUrl { get; set; } = string.Empty;
 }

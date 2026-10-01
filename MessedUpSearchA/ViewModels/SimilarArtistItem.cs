@@ -27,6 +27,9 @@ public partial class SimilarArtistItem : ObservableObject
 
     [ObservableProperty, NotifyPropertyChangedFor(nameof(CanImport))] private bool _isImporting;
 
+    /// <summary>Галочка «разослать» — отмеченным уйдёт письмо (кого нет в базе — сначала импорт).</summary>
+    [ObservableProperty] private bool _isPicked;
+
     /// <summary>Только что добавлен кнопкой ＋ — на её месте ✓ со щелчком.</summary>
     [ObservableProperty] private bool _justImported;
 

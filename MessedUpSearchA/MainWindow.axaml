@@ -170,6 +170,20 @@
                                FontSize="11" LetterSpacing="2"
                                Foreground="{StaticResource OnBackgroundDim}"/>
 
+                    <!-- Рассылка в фоне: «ПОЧТА: 3/10 · следующее через 27 с» и СТОП. -->
+                    <StackPanel Orientation="Horizontal" Spacing="10" IsVisible="{Binding Mail.IsRunning}">
+                        <TextBlock Text="•" FontSize="11" VerticalAlignment="Center"
+                                   Foreground="{StaticResource OnBackgroundDim}"/>
+                        <Ellipse Classes="pulse" Width="6" Height="6" VerticalAlignment="Center"
+                                 Fill="{StaticResource OnBackground}"/>
+                        <TextBlock Text="{Binding Mail.Status}" VerticalAlignment="Center"
+                                   FontFamily="{StaticResource HeadingFont}"
+                                   FontSize="11" LetterSpacing="2"
+                                   Foreground="{StaticResource OnBackgroundDim}"/>
+                        <Button Classes="statusButton" Content="{loc:Tr Mail.Stop}" VerticalAlignment="Center"
+                                Click="OnStopMailClick"/>
+                    </StackPanel>
+
                 </StackPanel>
 
                 <TextBlock Grid.Column="2"
@@ -187,6 +201,10 @@
             <views:SettingsOverlay IsVisible="False" motion:Motion.IsShown="{Binding IsSettingsOpen}"/>
             <views:ReminderOverlay IsVisible="False" motion:Motion.IsShown="{Binding IsReminderOpen}"/>
             <views:ParserOverlay IsVisible="False" motion:Motion.IsShown="{Binding IsParserOpen}"/>
+            <views:MailOverlay DataContext="{Binding MailVm}" IsVisible="False" motion:Motion.IsShown="{Binding IsOpen}"/>
+            <views:StatsOverlay DataContext="{Binding StatsVm}" IsVisible="False" motion:Motion.IsShown="{Binding IsOpen}"/>
+            <views:TodayOverlay DataContext="{Binding TodayVm}" IsVisible="False" motion:Motion.IsShown="{Binding IsOpen}"/>
+            <views:ConsentOverlay IsVisible="False" motion:Motion.IsShown="{Binding IsConsentOpen}"/>
         </Grid>
     </Grid>
 </Window>

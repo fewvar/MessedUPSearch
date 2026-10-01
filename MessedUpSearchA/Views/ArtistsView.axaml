@@ -102,13 +102,25 @@
                                         <Ellipse Fill="{Binding AvatarPath, Converter={StaticResource AvatarBrush}}"/>
                                     </Panel>
 
-                                    <TextBlock Grid.Column="1"
-                                               Text="{Binding Nickname}"
-                                               FontWeight="Bold" FontSize="15"
-                                               Margin="14,0,8,0"
-                                               TextTrimming="CharacterEllipsis"
-                                               ToolTip.Tip="{Binding Nickname}"
-                                               VerticalAlignment="Center"/>
+                                    <!-- Конверт — есть почта; клик открывает письмо в почтовой программе. -->
+                                    <DockPanel Grid.Column="1" Margin="14,0,8,0">
+                                        <Panel DockPanel.Dock="Right"
+                                               Background="Transparent" Cursor="Hand"
+                                               Width="28" Height="28"
+                                               VerticalAlignment="Center"
+                                               ToolTip.Tip="{Binding Email}"
+                                               IsVisible="{Binding Email, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
+                                               PointerPressed="OnEmailClick">
+                                            <Border Classes="icon icon-mail surfaceMuted"
+                                                    Width="20" Height="20"
+                                                    HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                        </Panel>
+                                        <TextBlock Text="{Binding Nickname}"
+                                                   FontWeight="Bold" FontSize="15"
+                                                   TextTrimming="CharacterEllipsis"
+                                                   ToolTip.Tip="{Binding Nickname}"
+                                                   VerticalAlignment="Center"/>
+                                    </DockPanel>
 
                                     <TextBlock Grid.Column="2"
                                                Text="{Binding AiGenreTags}"
@@ -156,6 +168,7 @@
                                                    FontSize="14"
                                                    TextTrimming="CharacterEllipsis"
                                                    VerticalAlignment="Center"/>
+
 
                                         <Panel Grid.Column="1"
                                                Background="Transparent" Cursor="Hand"
@@ -287,12 +300,21 @@
             </Border>
 
             <Border Grid.Column="4" Classes="filterBox" Padding="20,8">
-                <Grid ColumnDefinitions="*,Auto" VerticalAlignment="Center">
+                <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="12" VerticalAlignment="Center">
                     <TextBox Grid.Column="0"
                              Classes="search"
                              Text="{Binding SearchText}"
                              PlaceholderText="{loc:Tr Filter.Search}"/>
-                    <Border Grid.Column="1" Classes="icon icon-search onSurface" Width="20" Height="20"/>
+                    <!-- Фильтр «есть почта»: включённый конверт непрозрачный. -->
+                    <Panel Grid.Column="1" Background="Transparent" Cursor="Hand" Width="24" Height="24"
+                           ToolTip.Tip="{loc:Tr Filter.OnlyWithEmail}"
+                           PointerPressed="OnEmailFilterClick">
+                        <Border Classes="icon icon-mail onSurface" Width="22" Height="22"
+                                IsVisible="{Binding OnlyWithEmail}"/>
+                        <Border Classes="icon icon-mail onSurface" Width="22" Height="22" Opacity="0.45"
+                                IsVisible="{Binding !OnlyWithEmail}"/>
+                    </Panel>
+                    <Border Grid.Column="2" Classes="icon icon-search onSurface" Width="20" Height="20"/>
                 </Grid>
             </Border>
         </Grid>
@@ -365,6 +387,53 @@
 
                 <Grid ColumnDefinitions="*,14,*">
                     <StackPanel Grid.Column="0" Spacing="4">
+                        <TextBlock Classes="filterLabel" Text="{loc:Tr ArtistEditor.Email}"/>
+                        <TextBox Text="{Binding EditEmail}" PlaceholderText="name@mail.com"/>
+                    </StackPanel>
+                    <StackPanel Grid.Column="2" Spacing="4">
+                        <TextBlock Classes="filterLabel" Text="TELEGRAM"/>
+                        <TextBox Text="{Binding EditTelegram}" PlaceholderText="@nick"/>
+                    </StackPanel>
+                </Grid>
+
+                <Grid ColumnDefinitions="*,14,*">
+                    <StackPanel Grid.Column="0" Spacing="4">
+                        <TextBlock Classes="filterLabel" Text="{loc:Tr ArtistEditor.OtherContact}"/>
+                        <TextBox Text="{Binding EditOtherContact}" PlaceholderText="{loc:Tr ArtistEditor.OtherContactHint}"/>
+                    </StackPanel>
+                    <!-- Подсказки из описания профиля: в поля попадают только по клику. -->
+                    <StackPanel Grid.Column="2" Spacing="4" VerticalAlignment="Bottom" Margin="0,0,0,6"
+                                IsVisible="{Binding CanFindContacts}">
+                        <Button Classes="statusButton" HorizontalAlignment="Left"
+                                Command="{Binding FindContactsCommand}"
+                                Content="{loc:Tr ArtistEditor.FindContacts}"
+                                IsEnabled="{Binding !IsFindingContacts}"/>
+                        <TextBlock Text="{Binding ContactsStatus}" FontSize="11" TextWrapping="Wrap"
+                                   IsVisible="{Binding ContactsStatus, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
+                                   Foreground="{StaticResource OnBackgroundDim}"/>
+                    </StackPanel>
+                </Grid>
+
+                <StackPanel IsVisible="{Binding HasContactHints}">
+                    <ItemsControl ItemsSource="{Binding ContactHints}" IsVisible="{Binding HasContactHints}">
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate><WrapPanel/></ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate DataType="vm:ContactHintItem">
+                                <Button Classes="statusButton" Margin="0,0,8,6" Click="OnContactHintClick"
+                                        ToolTip.Tip="{loc:Tr ArtistEditor.UseHint}">
+                                    <TextBlock>
+                                        <Run Text="{Binding Label}"/><Run Text="  "/><Run Text="{Binding Value}"/><Run Text="  ＋"/>
+                                    </TextBlock>
+                                </Button>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </StackPanel>
+
+                <Grid ColumnDefinitions="*,14,*">
+                    <StackPanel Grid.Column="0" Spacing="4">
                         <TextBlock Classes="filterLabel" Text="{loc:Tr Filter.Language}"/>
                         <TextBox Text="{Binding EditLanguage}" PlaceholderText="{loc:Tr ArtistEditor.LanguageHint}"/>
                     </StackPanel>
@@ -376,15 +445,15 @@
                     </StackPanel>
                 </Grid>
 
+                </StackPanel>
+
+                <StackPanel Grid.Column="2" Spacing="12">
                 <StackPanel Spacing="4">
                     <TextBlock Classes="filterLabel" Text="{loc:Tr ArtistEditor.Notes}"/>
                     <TextBox Text="{Binding EditNotes}"
                              AcceptsReturn="True" TextWrapping="Wrap"
-                             Height="110"/>
+                             Height="70"/>
                 </StackPanel>
-                </StackPanel>
-
-                <StackPanel Grid.Column="2" Spacing="12">
                 <StackPanel Spacing="4" IsVisible="{Binding IsEditMode}">
                     <TextBlock Classes="filterLabel" Text="{loc:Tr ArtistEditor.AssignedBeats}"/>
                     <TextBlock Text="{loc:Tr ArtistEditor.NoAssignedBeats}"

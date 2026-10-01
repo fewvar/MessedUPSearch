@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
+using System.Threading.Tasks;
 using Avalonia.Controls;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
@@ -10,6 +11,7 @@ using MessedUpSearchA.Data;
 using MessedUpSearchA.Models;
 using MessedUpSearchA.Services.Localization;
 using MessedUpSearchA.Services.Ml;
+using MessedUpSearchA.Services.Parsing;
 
 namespace MessedUpSearchA.ViewModels;
 
@@ -33,7 +35,7 @@ public partial class ArtistsViewModel : ViewModelBase
     public string EditingArtistName => EditNickname;
 
     public IReadOnlyList<string> CrmStatusOptions { get; } =
-        new[] { "", "NO REPLY", "OK", "POSTED FREE" };
+        new[] { "", "NO REPLY", "REPLIED", "OK", "POSTED FREE" };
 
     public IReadOnlyList<string> TypeOptions { get; } =
         new[] { "ALL", "Rage", "Plugg", "Jerk", "Cloud", "Phonk", "Dark", "Ambient", "Trap", "Sad", "Emo" };
@@ -81,6 +83,10 @@ public partial class ArtistsViewModel : ViewModelBase
     partial void OnPlaysMaxChanged(string value) => ApplyFilter();
     partial void OnSearchTextChanged(string value) => ApplyFilter();
 
+    /// <summary>Конверт в поиске: только артисты, которым можно написать на почту.</summary>
+    [ObservableProperty] private bool _onlyWithEmail;
+    partial void OnOnlyWithEmailChanged(bool value) => ApplyFilter();
+
     [ObservableProperty] private bool _isEditorOpen;
     [ObservableProperty] private bool _isEditMode;
     [ObservableProperty] private string _editorTitle = string.Empty;
@@ -96,7 +102,11 @@ public partial class ArtistsViewModel : ViewModelBase
         ? Localizer.Instance.Format("ArtistEditor.PlatformLink", platform.ToUpperInvariant())
         : Localizer.Instance["ArtistEditor.ProfileLink"];
 
-    partial void OnEditScLinkChanged(string value) => OnPropertyChanged(nameof(ProfileLinkLabel));
+    partial void OnEditScLinkChanged(string value)
+    {
+        OnPropertyChanged(nameof(ProfileLinkLabel));
+        OnPropertyChanged(nameof(CanFindContacts));
+    }
 
     private static string? PlatformOf(string link)
     {
@@ -121,6 +131,22 @@ public partial class ArtistsViewModel : ViewModelBase
     [ObservableProperty] private string _editLanguage = string.Empty;
     [ObservableProperty] private string _editCrmStatus = string.Empty;
     [ObservableProperty] private string _editNotes = string.Empty;
+    [ObservableProperty] private string _editEmail = string.Empty;
+    [ObservableProperty] private string _editTelegram = string.Empty;
+    [ObservableProperty] private string _editOtherContact = string.Empty;
+
+    /// <summary>Контакты из описания профиля, которых ещё нет в полях карточки.</summary>
+    public ObservableCollection<ContactHintItem> ContactHints { get; } = new();
+    [ObservableProperty] private bool _hasContactHints;
+    [ObservableProperty] private bool _isFindingContacts;
+    [ObservableProperty] private string _contactsStatus = string.Empty;
+
+    /// <summary>Искать в профиле можно, если есть ссылка на SoundCloud или Audius.</summary>
+    public bool CanFindContacts => !string.IsNullOrWhiteSpace(ProfileUrl) && PlatformOf(ProfileUrl) is "SoundCloud" or "Audius";
+
+    private string ProfileUrl => string.IsNullOrWhiteSpace(_editingSourceUrl) ? EditScLink : _editingSourceUrl;
+    private string _editingSourceUrl = string.Empty;
+    private string _editingBio = string.Empty;
 
     [ObservableProperty] private bool _hasSimilarBeats;
 
@@ -177,6 +203,9 @@ public partial class ArtistsViewModel : ViewModelBase
         if (cutoff is not null)
             q = q.Where(a => DateTime.TryParse(a.LastTrackDate, out var d) && d >= cutoff);
 
+        if (OnlyWithEmail)
+            q = q.Where(a => !string.IsNullOrWhiteSpace(a.Email));
+
         if (!string.IsNullOrWhiteSpace(SearchText))
         {
             var s = SearchText.Trim();
@@ -222,6 +251,12 @@ public partial class ArtistsViewModel : ViewModelBase
         EditLanguage = string.Empty;
         EditCrmStatus = string.Empty;
         EditNotes = string.Empty;
+        EditEmail = string.Empty;
+        EditTelegram = string.Empty;
+        EditOtherContact = string.Empty;
+        _editingSourceUrl = string.Empty;
+        _editingBio = string.Empty;
+        ShowContactHints();
         EditAvatarPath = string.Empty;
         EditAvatarColor = "#888888";
         AssignedBeats.Clear();
@@ -245,6 +280,13 @@ public partial class ArtistsViewModel : ViewModelBase
         EditLanguage = artist.Language;
         EditCrmStatus = artist.CrmStatus;
         EditNotes = artist.Notes;
+        EditEmail = artist.Email;
+        EditTelegram = artist.Telegram;
+        EditOtherContact = artist.OtherContact;
+        _editingSourceUrl = artist.SourceUrl ?? string.Empty;
+        _editingBio = artist.Bio;
+        OnPropertyChanged(nameof(CanFindContacts));
+        ShowContactHints();
         EditAvatarPath = artist.AvatarPath;
         EditAvatarColor = string.IsNullOrWhiteSpace(artist.AvatarColor) ? "#888888" : artist.AvatarColor;
         LoadAssignedBeats(artist.Id);
@@ -418,6 +460,11 @@ public partial class ArtistsViewModel : ViewModelBase
         artist.Language = EditLanguage.Trim();
         artist.CrmStatus = EditCrmStatus;
         artist.Notes = EditNotes.Trim();
+        artist.Email = EditEmail.Trim();
+        artist.Telegram = EditTelegram.Trim();
+        artist.OtherContact = EditOtherContact.Trim();
+        if (!string.IsNullOrWhiteSpace(_editingBio))
+            artist.Bio = _editingBio;
 
         db.SaveChanges();
 
@@ -427,6 +474,83 @@ public partial class ArtistsViewModel : ViewModelBase
 
     [RelayCommand]
     private void Cancel() => IsEditorOpen = false;
+
+    /// <summary>
+    /// «Найти в профиле»: свежее описание с площадки. Сохранённое при импорте могло устареть,
+    /// а у добавленных до 1.1 его нет вовсе.
+    /// </summary>
+    [RelayCommand]
+    private async Task FindContactsAsync()
+    {
+        if (!CanFindContacts || IsFindingContacts)
+            return;
+
+        IsFindingContacts = true;
+        ContactsStatus = string.Empty;
+        try
+        {
+            var bio = await Services.Parsing.ContactHints.FetchBioAsync(ProfileUrl);
+            if (!string.IsNullOrWhiteSpace(bio))
+                _editingBio = bio;
+
+            ShowContactHints();
+            if (!HasContactHints)
+                ContactsStatus = Localizer.Instance["ArtistEditor.NoContactsFound"];
+        }
+        catch (Exception ex)
+        {
+            Services.AppLog.Write($"контакты из профиля {ProfileUrl}: {ex.Message}");
+            ContactsStatus = Localizer.Instance["ArtistEditor.ContactsFailed"];
+        }
+        finally
+        {
+            IsFindingContacts = false;
+        }
+    }
+
+    /// <summary>Подсказка -> в поле карточки. Сохраняется вместе с карточкой по SAVE.</summary>
+    public void ApplyContactHint(ContactHintItem item)
+    {
+        switch (item.Kind)
+        {
+            case ContactKind.Email: EditEmail = item.Value; break;
+            case ContactKind.Telegram: EditTelegram = item.Value; break;
+            case ContactKind.Instagram: EditIgLink = item.Value; break;
+        }
+
+        ShowContactHints();
+    }
+
+#if DEBUG
+    /// <summary>Сцена для снимков: подсказки без похода в сеть.</summary>
+    public void ShowBioForScene(string bio)
+    {
+        _editingBio = bio;
+        _editingSourceUrl = "https://soundcloud.com/scene";
+        OnPropertyChanged(nameof(CanFindContacts));
+        ShowContactHints();
+    }
+#endif
+
+    private void ShowContactHints()
+    {
+        ContactHints.Clear();
+        foreach (var hint in Services.Parsing.ContactHints.Extract(_editingBio))
+        {
+            var current = hint.Kind switch
+            {
+                ContactKind.Email => EditEmail,
+                ContactKind.Telegram => EditTelegram,
+                _ => EditIgLink
+            };
+            if (!current.Contains(hint.Value.TrimStart('@'), StringComparison.OrdinalIgnoreCase))
+                ContactHints.Add(new ContactHintItem(hint.Kind, hint.Value));
+        }
+
+        HasContactHints = ContactHints.Count > 0;
+        if (HasContactHints)
+            ContactsStatus = string.Empty;
+    }
 
     [RelayCommand]
     private void Delete()

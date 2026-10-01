@@ -140,6 +140,9 @@ public class ArtistImportService
         if (!string.IsNullOrWhiteSpace(candidate.Tags))
             artist.AiGenreTags = candidate.Tags;
 
+        if (!string.IsNullOrWhiteSpace(candidate.Description))
+            artist.Bio = candidate.Description;
+
         if (candidate.Platform == "SoundCloud" && string.IsNullOrWhiteSpace(artist.ScLink))
             artist.ScLink = candidate.SourceUrl;
 

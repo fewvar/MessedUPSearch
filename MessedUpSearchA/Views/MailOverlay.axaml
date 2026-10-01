@@ -1,0 +1,169 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:MessedUpSearchA.ViewModels"
+             xmlns:models="using:MessedUpSearchA.Models"
+             xmlns:loc="using:MessedUpSearchA.Services.Localization"
+             x:Class="MessedUpSearchA.Views.MailOverlay"
+             x:DataType="vm:MailViewModel">
+
+    <!-- Рассылка одного бита: слева получатели, справа шаблон и предпросмотр на выбранном артисте. -->
+    <Grid>
+        <Border Background="#B0000000"/>
+
+        <Border Classes="modal" Width="1000" Height="760">
+            <Grid RowDefinitions="Auto,*,Auto" Margin="28,18,28,22">
+                <Grid.Styles>
+                    <Style Selector="TextBlock.filterLabel">
+                        <Setter Property="Foreground" Value="{StaticResource OnBackground}"/>
+                    </Style>
+                </Grid.Styles>
+
+                <Grid Grid.Row="0" Margin="0,0,0,14">
+                    <StackPanel Orientation="Horizontal" Spacing="14">
+                        <TextBlock Text="{loc:Tr Mail.Title}"
+                                   FontFamily="{StaticResource HeadingFont}"
+                                   FontSize="20" FontWeight="Bold" LetterSpacing="3"
+                                   Foreground="{StaticResource OnBackground}"
+                                   VerticalAlignment="Center"/>
+                        <TextBlock Text="{Binding BeatTitle}"
+                                   FontSize="14" VerticalAlignment="Center"
+                                   Foreground="{StaticResource OnBackgroundDim}"/>
+                    </StackPanel>
+                    <Button Classes="modalClose" Content="✕" HorizontalAlignment="Right"
+                            Command="{Binding CloseCommand}"/>
+                </Grid>
+
+                <Grid Grid.Row="1" ColumnDefinitions="340,28,*">
+
+                    <!-- Получатели -->
+                    <Grid Grid.Column="0" RowDefinitions="Auto,*">
+                        <TextBlock Classes="filterLabel" Text="{loc:Tr Mail.Recipients}" Margin="0,0,0,6"/>
+                        <Border Grid.Row="1" BorderBrush="#33FFFFFF" BorderThickness="1" CornerRadius="6" Padding="6">
+                            <ScrollViewer VerticalScrollBarVisibility="Auto">
+                                <ItemsControl ItemsSource="{Binding Recipients}">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate DataType="vm:MailRecipientItem">
+                                            <Border Classes="mailRecipient" Padding="6,6" CornerRadius="4"
+                                                    Background="Transparent" Cursor="Hand"
+                                                    PointerPressed="OnRecipientClick">
+                                                <Grid ColumnDefinitions="Auto,Auto,*" ColumnSpacing="10">
+                                                    <CheckBox Grid.Column="0" IsChecked="{Binding IsSelected}"
+                                                              IsEnabled="{Binding CanSelect}"
+                                                              VerticalAlignment="Center" MinWidth="0"/>
+                                                    <Panel Grid.Column="1" Width="28" Height="28" VerticalAlignment="Center">
+                                                        <Ellipse Fill="{Binding AvatarColor, Converter={StaticResource StringToBrush}}"/>
+                                                        <Ellipse Fill="{Binding AvatarPath, Converter={StaticResource AvatarBrush}}"/>
+                                                    </Panel>
+                                                    <StackPanel Grid.Column="2" VerticalAlignment="Center">
+                                                        <TextBlock Text="{Binding Nickname}" FontWeight="Bold" FontSize="13"
+                                                                   TextTrimming="CharacterEllipsis"
+                                                                   Foreground="{StaticResource OnBackground}"/>
+                                                        <TextBlock Text="{Binding BeatLine}" FontSize="11"
+                                                                   IsVisible="{Binding HasBeatLine}"
+                                                                   TextTrimming="CharacterEllipsis"
+                                                                   Foreground="{StaticResource OnBackground}"/>
+                                                        <TextBlock Text="{Binding Email}" FontSize="11"
+                                                                   IsVisible="{Binding HasEmail}"
+                                                                   TextTrimming="CharacterEllipsis"
+                                                                   Foreground="{StaticResource OnBackgroundDim}"/>
+                                                        <TextBlock Text="{loc:Tr Llm.Personalized}" FontSize="11"
+                                                                   IsVisible="{Binding IsPersonalized}"
+                                                                   Foreground="#2ECC71"/>
+                                                        <TextBlock Text="{Binding Warning}" FontSize="11"
+                                                                   IsVisible="{Binding HasWarning}"
+                                                                   TextWrapping="Wrap" Foreground="#E0A040"/>
+                                                        <Button Classes="statusButton" Margin="0,4,0,0" HorizontalAlignment="Left"
+                                                                IsVisible="{Binding HasEmailHint}"
+                                                                Click="OnUseEmailHintClick"
+                                                                ToolTip.Tip="{loc:Tr Mail.UseHintTip}">
+                                                            <TextBlock>
+                                                                <Run Text="{Binding EmailHint}"/><Run Text="  ＋"/>
+                                                            </TextBlock>
+                                                        </Button>
+                                                    </StackPanel>
+                                                </Grid>
+                                            </Border>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                            </ScrollViewer>
+                        </Border>
+                    </Grid>
+
+                    <!-- Шаблон и предпросмотр -->
+                    <Grid Grid.Column="2" RowDefinitions="Auto,Auto,Auto,*,Auto,Auto" RowSpacing="6">
+                        <Grid Grid.Row="0" ColumnDefinitions="*,Auto,Auto" ColumnSpacing="8">
+                            <ComboBox Grid.Column="0" HorizontalAlignment="Stretch"
+                                      ItemsSource="{Binding Templates}"
+                                      SelectedItem="{Binding SelectedTemplate}">
+                                <ComboBox.ItemTemplate>
+                                    <DataTemplate DataType="models:MailTemplate">
+                                        <TextBlock Text="{Binding Name}"/>
+                                    </DataTemplate>
+                                </ComboBox.ItemTemplate>
+                            </ComboBox>
+                            <Button Grid.Column="1" Classes="statusButton" VerticalAlignment="Center"
+                                    Content="{loc:Tr Mail.NewTemplate}" Command="{Binding NewTemplateCommand}"/>
+                            <Button Grid.Column="2" Classes="statusButton" VerticalAlignment="Center"
+                                    Content="{loc:Tr Mail.DeleteTemplate}" Command="{Binding DeleteTemplateCommand}"/>
+                        </Grid>
+
+                        <TextBox Grid.Row="1" Text="{Binding EditSubject}" PlaceholderText="{loc:Tr Mail.Subject}"/>
+                        <TextBlock Grid.Row="2" Text="{Binding PlaceholdersHint}" FontSize="11"
+                                   Foreground="{StaticResource OnBackgroundDim}"/>
+                        <TextBox Grid.Row="3" Text="{Binding EditBody}"
+                                 AcceptsReturn="True" TextWrapping="Wrap"
+                                 VerticalContentAlignment="Top"/>
+
+                        <!-- Предпросмотр + «Оживить»: нейросеть переписывает письмо каждому отмеченному. -->
+                        <Grid Grid.Row="4" ColumnDefinitions="*,Auto" Margin="0,8,0,0">
+                            <TextBlock Grid.Column="0" Classes="filterLabel" VerticalAlignment="Center">
+                                <Run Text="{loc:Tr Mail.Preview}"/><Run Text=" "/><Run Text="{Binding PreviewRecipient.Nickname}"/>
+                            </TextBlock>
+                            <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8">
+                                <TextBlock Text="{Binding PersonalizeStatus}" FontSize="11" VerticalAlignment="Center"
+                                           Foreground="{StaticResource OnBackgroundDim}"/>
+                                <Button Classes="statusButton" Content="{loc:Tr Llm.Reset}"
+                                        IsVisible="{Binding HasPersonalized}"
+                                        Command="{Binding ResetPersonalizationCommand}"/>
+                                <Button Classes="statusButton" Command="{Binding PersonalizeCommand}"
+                                        ToolTip.Tip="{loc:Tr Llm.PersonalizeTip}">
+                                    <Panel>
+                                        <TextBlock Text="{loc:Tr Llm.Personalize}" IsVisible="{Binding !IsPersonalizing}"/>
+                                        <TextBlock Text="{loc:Tr Mail.Stop}" IsVisible="{Binding IsPersonalizing}"/>
+                                    </Panel>
+                                </Button>
+                            </StackPanel>
+                        </Grid>
+                        <Border Grid.Row="5" BorderBrush="#33FFFFFF" BorderThickness="1" CornerRadius="6"
+                                Padding="12,10" Height="200">
+                            <ScrollViewer VerticalScrollBarVisibility="Auto">
+                                <StackPanel Spacing="8">
+                                    <TextBlock Text="{Binding PreviewSubject}" FontWeight="Bold" FontSize="13"
+                                               TextWrapping="Wrap" Foreground="{StaticResource OnBackground}"/>
+                                    <SelectableTextBlock Text="{Binding PreviewBody}" FontSize="12" TextWrapping="Wrap"
+                                                         Foreground="{StaticResource OnBackground}"/>
+                                </StackPanel>
+                            </ScrollViewer>
+                        </Border>
+                    </Grid>
+                </Grid>
+
+                <Grid Grid.Row="2" ColumnDefinitions="*,Auto" Margin="0,16,0,0">
+                    <StackPanel Grid.Column="0" VerticalAlignment="Center" Spacing="2">
+                        <TextBlock Text="{Binding Summary}" FontSize="12"
+                                   Foreground="{StaticResource OnBackgroundDim}"/>
+                        <TextBlock Text="{Binding Problem}" FontSize="12" TextWrapping="Wrap"
+                                   IsVisible="{Binding Problem, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
+                                   Foreground="#E0A040"/>
+                    </StackPanel>
+                    <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="12">
+                        <Button Classes="action" Content="{loc:Tr Buttons.Cancel}" Command="{Binding CloseCommand}"/>
+                        <Button Classes="action" Content="{loc:Tr Mail.Send}" Command="{Binding SendCommand}"
+                                IsEnabled="{Binding CanSend}"/>
+                    </StackPanel>
+                </Grid>
+            </Grid>
+        </Border>
+    </Grid>
+</UserControl>

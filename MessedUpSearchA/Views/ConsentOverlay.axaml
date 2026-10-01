@@ -1,0 +1,58 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:MessedUpSearchA.ViewModels"
+             xmlns:loc="using:MessedUpSearchA.Services.Localization"
+             x:Class="MessedUpSearchA.Views.ConsentOverlay"
+             x:DataType="vm:MainWindowViewModel">
+
+    <!-- Согласие на сессии в DAW: на весь экран, «Разрешить» и «Не сейчас» одинаково заметны. -->
+    <Grid Background="{StaticResource AppBackground}">
+        <StackPanel MaxWidth="720" VerticalAlignment="Center" HorizontalAlignment="Center" Spacing="18" Margin="40">
+            <TextBlock Text="{loc:Tr Consent.Title}"
+                       FontFamily="{StaticResource HeadingFont}"
+                       FontSize="30" FontWeight="Bold" LetterSpacing="3" TextWrapping="Wrap"
+                       Foreground="{StaticResource OnBackground}"/>
+
+            <TextBlock Text="{loc:Tr Consent.Why}" FontSize="15" LineHeight="23" TextWrapping="Wrap"
+                       Foreground="{StaticResource OnBackground}"/>
+
+            <Border BorderBrush="#33FFFFFF" BorderThickness="1" CornerRadius="8" Padding="20,16">
+                <StackPanel Spacing="12">
+                    <StackPanel Spacing="3">
+                        <TextBlock Text="{loc:Tr Consent.WhatTitle}" FontFamily="{StaticResource HeadingFont}"
+                                   FontSize="12" LetterSpacing="2" Foreground="{StaticResource OnBackground}"/>
+                        <TextBlock Text="{loc:Tr Consent.What}" FontSize="13" TextWrapping="Wrap"
+                                   Foreground="{StaticResource OnBackgroundDim}"/>
+                    </StackPanel>
+                    <StackPanel Spacing="3">
+                        <TextBlock Text="{loc:Tr Consent.NotTitle}" FontFamily="{StaticResource HeadingFont}"
+                                   FontSize="12" LetterSpacing="2" Foreground="{StaticResource OnBackground}"/>
+                        <TextBlock Text="{loc:Tr Consent.Not}" FontSize="13" TextWrapping="Wrap"
+                                   Foreground="{StaticResource OnBackgroundDim}"/>
+                    </StackPanel>
+                    <StackPanel Spacing="3">
+                        <TextBlock Text="{loc:Tr Consent.WhereTitle}" FontFamily="{StaticResource HeadingFont}"
+                                   FontSize="12" LetterSpacing="2" Foreground="{StaticResource OnBackground}"/>
+                        <TextBlock Text="{loc:Tr Consent.Where}" FontSize="13" TextWrapping="Wrap"
+                                   Foreground="{StaticResource OnBackgroundDim}"/>
+                    </StackPanel>
+                    <StackPanel Spacing="3">
+                        <TextBlock Text="{loc:Tr Consent.BackgroundTitle}" FontFamily="{StaticResource HeadingFont}"
+                                   FontSize="12" LetterSpacing="2" Foreground="{StaticResource OnBackground}"/>
+                        <TextBlock Text="{loc:Tr Consent.Background}" FontSize="13" TextWrapping="Wrap"
+                                   Foreground="{StaticResource OnBackgroundDim}"/>
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+
+            <TextBlock Text="{loc:Tr Consent.Without}" FontSize="12" TextWrapping="Wrap"
+                       Foreground="{StaticResource OnBackgroundDim}"/>
+
+            <!-- Одинаковые кнопки: один класс, одна ширина, рядом. -->
+            <StackPanel Orientation="Horizontal" Spacing="16" HorizontalAlignment="Left" Margin="0,6,0,0">
+                <Button Classes="action" Width="220" Content="{loc:Tr Consent.Allow}" Command="{Binding AllowDawCommand}"/>
+                <Button Classes="action" Width="220" Content="{loc:Tr Consent.NotNow}" Command="{Binding DeclineDawCommand}"/>
+            </StackPanel>
+        </StackPanel>
+    </Grid>
+</UserControl>

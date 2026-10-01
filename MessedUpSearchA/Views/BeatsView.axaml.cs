@@ -18,6 +18,12 @@ public partial class BeatsView : UserControl
         InitializeComponent();
     }
 
+    private void OnStatsClick(object? sender, RoutedEventArgs e) =>
+        ((TopLevel.GetTopLevel(this) as Window)?.DataContext as MainWindowViewModel)?.StatsVm.Open();
+
+    private void OnTodayClick(object? sender, RoutedEventArgs e) =>
+        ((TopLevel.GetTopLevel(this) as Window)?.DataContext as MainWindowViewModel)?.ShowToday();
+
     private async void OnAddBeatClick(object? sender, RoutedEventArgs e)
     {
         var top = TopLevel.GetTopLevel(this);
@@ -107,6 +113,9 @@ public partial class BeatsView : UserControl
         if (tracks.Count > 0)
             main.Player.PlayArtistTracks(tracks, 0, item.Artist);
     }
+
+    private void OnPickSimilarClick(object? sender, RoutedEventArgs e) =>
+        (DataContext as BeatsViewModel)?.NotifyPickedChanged();
 
     private async void OnImportSimilarClick(object? sender, RoutedEventArgs e)
     {

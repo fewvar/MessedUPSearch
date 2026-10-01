@@ -70,15 +70,27 @@ public class Localizer
     }
 
     /// <summary>Культура для чисел и дат: «191 716» по-русски, «191,716» по-английски.</summary>
-    public System.Globalization.CultureInfo Culture =>
-        System.Globalization.CultureInfo.GetCultureInfo(_language == AppLanguage.Russian ? "ru-RU" : "en-US");
+    public System.Globalization.CultureInfo Culture => _language == AppLanguage.Russian ? RuCulture : EnCulture;
+
+    // Проценты слитно («63%»): в ru-RU они через пробел, и строка рвалась между числом и знаком.
+    private static readonly System.Globalization.CultureInfo RuCulture = Tight("ru-RU");
+    private static readonly System.Globalization.CultureInfo EnCulture = Tight("en-US");
+
+    private static System.Globalization.CultureInfo Tight(string name)
+    {
+        var culture = (System.Globalization.CultureInfo)System.Globalization.CultureInfo.GetCultureInfo(name).Clone();
+        culture.NumberFormat.PercentPositivePattern = 1;
+        culture.NumberFormat.PercentNegativePattern = 1;
+        return System.Globalization.CultureInfo.ReadOnly(culture);
+    }
 
     /// <summary>Строка с подстановкой: Format("Parser.Found", 12).</summary>
     public string Format(string key, params object[] args)
     {
         try
         {
-            return string.Format(this[key], args);
+            // Культура интерфейса, а не системы: «4,5» по-русски, «4.5» по-английски.
+            return string.Format(Culture, this[key], args);
         }
         catch (FormatException)
         {

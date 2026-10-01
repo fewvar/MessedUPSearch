@@ -40,6 +40,8 @@
                     Spacing="12">
             <Button Classes="action" Content="{loc:Tr Buttons.AddBeat}" Click="OnAddBeatClick"/>
             <Button Classes="action" Content="{loc:Tr Buttons.ImportFolder}" Click="OnImportFolderClick"/>
+            <Button Classes="action" Content="{loc:Tr Buttons.Today}" Click="OnTodayClick"/>
+            <Button Classes="action" Content="{loc:Tr Buttons.Stats}" Click="OnStatsClick"/>
         </StackPanel>
 
         <Border Grid.Row="1" Classes="card" ClipToBounds="True">
@@ -332,10 +334,17 @@
                     <TextBox Text="{Binding EditName}"/>
                 </StackPanel>
 
-                <StackPanel Spacing="4">
-                    <TextBlock Classes="filterLabel" Text="{loc:Tr Beats.Genre}"/>
-                    <TextBox Text="{Binding EditTags}" PlaceholderText="Rage, Plugg"/>
-                </StackPanel>
+                <!-- Ссылка на бит уходит в письме вместо вложения (рассылка 1.1). -->
+                <Grid ColumnDefinitions="*,14,*">
+                    <StackPanel Grid.Column="0" Spacing="4">
+                        <TextBlock Classes="filterLabel" Text="{loc:Tr Beats.Genre}"/>
+                        <TextBox Text="{Binding EditTags}" PlaceholderText="Rage, Plugg"/>
+                    </StackPanel>
+                    <StackPanel Grid.Column="2" Spacing="4">
+                        <TextBlock Classes="filterLabel" Text="{loc:Tr BeatEditor.ShareUrl}"/>
+                        <TextBox Text="{Binding EditShareUrl}" PlaceholderText="https://…"/>
+                    </StackPanel>
+                </Grid>
 
                 <Grid ColumnDefinitions="*,14,*">
                     <StackPanel Grid.Column="0" Spacing="4">
@@ -420,13 +429,17 @@
                                   IsVisible="{Binding HasSimilarity}">
                         <ItemsControl.ItemTemplate>
                             <DataTemplate DataType="vm:SimilarArtistItem">
-                                <Grid ColumnDefinitions="150,*,40,Auto" Margin="0,1" motion:Motion.Appear="True">
-                                    <TextBlock Grid.Column="0"
-                                               Text="{Binding Artist}"
-                                               FontSize="13"
-                                               TextTrimming="CharacterEllipsis"
-                                               VerticalAlignment="Center"
-                                               Foreground="{StaticResource OnBackground}"/>
+                                <Grid ColumnDefinitions="172,*,40,Auto" Margin="0,1" motion:Motion.Appear="True">
+                                    <!-- Галочка «разослать»: компактнее стандартного CheckBox, чтобы не сдвигать полоски. -->
+                                    <CheckBox Grid.Column="0" Classes="pick" IsChecked="{Binding IsPicked}"
+                                              Click="OnPickSimilarClick" MinWidth="0" Padding="4,0,0,0"
+                                              VerticalAlignment="Center">
+                                        <TextBlock Text="{Binding Artist}"
+                                                   FontSize="13"
+                                                   TextTrimming="CharacterEllipsis"
+                                                   VerticalAlignment="Center"
+                                                   Foreground="{StaticResource OnBackground}"/>
+                                    </CheckBox>
                                     <Border Grid.Column="1" Height="6" CornerRadius="3"
                                             Classes.leader="{Binding IsLeader}"
                                             Classes="similarTrack"
@@ -474,6 +487,11 @@
                             </DataTemplate>
                         </ItemsControl.ItemTemplate>
                     </ItemsControl>
+
+                    <Button Classes="statusButton" HorizontalAlignment="Left" Margin="0,6,0,0"
+                            IsVisible="{Binding HasPickedArtists}"
+                            Content="{loc:Tr Mail.SendPicked}"
+                            Command="{Binding MailPickedCommand}"/>
                 </StackPanel>
                 </Grid>
 
@@ -483,6 +501,8 @@
                             IsVisible="{Binding IsEditMode}"
                             Command="{Binding DeleteCommand}"/>
                     <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="12">
+                        <!-- Сохраняет бит и открывает рассылку на отмеченных артистов. -->
+                        <Button Classes="action" Content="{loc:Tr Mail.SendBeat}" Command="{Binding MailBeatCommand}"/>
                         <Button Classes="action" Content="{loc:Tr Buttons.Cancel}" Command="{Binding CancelCommand}"/>
                         <Button Classes="action" Content="{loc:Tr Buttons.Save}" Command="{Binding SaveCommand}"/>
                     </StackPanel>

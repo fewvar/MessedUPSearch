@@ -1,7 +1,9 @@
 #if DEBUG
 using System;
 using System.Linq;
+using Avalonia.Controls;
 using Avalonia.Threading;
+using Avalonia.VisualTree;
 using MessedUpSearchA.ViewModels;
 
 namespace MessedUpSearchA.Services;
@@ -78,6 +80,143 @@ public static class UiScenes
                 main.IsBeatsSelected = false;
                 if (main.ArtistsVm.Artists.FirstOrDefault() is { } artist)
                     main.ArtistsVm.BeginEditArtist(artist);
+                break;
+
+            case "artist-contacts":
+                main.IsBeatsSelected = false;
+                if (main.ArtistsVm.Artists.FirstOrDefault() is { } withBio)
+                {
+                    main.ArtistsVm.BeginEditArtist(withBio);
+                    main.ArtistsVm.EditEmail = "booking@label.com";
+                    main.ArtistsVm.ShowBioForScene("biz: beats (at) proton (dot) me · tg: @artist_mgr · instagram.com/artist.ig");
+                }
+                break;
+
+            // Раздел «Нейросеть для писем» в настройках.
+            case "settings-llm":
+                main.IsSettingsOpen = true;
+                DispatcherTimer.RunOnce(() =>
+                {
+                    if (Avalonia.Application.Current?.ApplicationLifetime is
+                        Avalonia.Controls.ApplicationLifetimes.IClassicDesktopStyleApplicationLifetime { MainWindow: { } window })
+                    {
+                        var header = window.GetVisualDescendants().OfType<Avalonia.Controls.TextBlock>()
+                            .FirstOrDefault(t => t.Text == Localization.Localizer.Instance["Settings.Llm"]);
+                        (header?.Parent?.Parent as Avalonia.Controls.Control)?.BringIntoView();
+                    }
+                }, TimeSpan.FromMilliseconds(600));
+                break;
+
+            // Низ настроек: «О программе» и «Сообщить о проблеме».
+            case "report":
+                main.IsSettingsOpen = true;
+                DispatcherTimer.RunOnce(() =>
+                {
+                    if (Avalonia.Application.Current?.ApplicationLifetime is
+                        Avalonia.Controls.ApplicationLifetimes.IClassicDesktopStyleApplicationLifetime { MainWindow: { } window })
+                    {
+                        foreach (var scroll in Avalonia.VisualTree.VisualExtensions.GetVisualDescendants(window)
+                                     .OfType<Avalonia.Controls.ScrollViewer>()
+                                     .Where(s => s.FindAncestorOfType<Views.SettingsOverlay>() is not null))
+                            scroll.ScrollToEnd();
+                    }
+                }, TimeSpan.FromMilliseconds(600));
+                break;
+
+            // Окно рассылки: первый бит, первые пять артистов (почта у них — из демо-копии базы).
+            case "mail":
+                if (main.BeatsVm.Beats.FirstOrDefault() is { } mailed)
+                    main.MailVm.Open(mailed.Id, main.ArtistsVm.Artists.Take(5).Select(a => a.Id).ToList());
+                break;
+
+            // Живая отправка на тестовый SMTP (127.0.0.1:2525): кадр ловит отсчёт в футере.
+            case "mail-send":
+                SecretStore.Set(Mail.MailQueue.PasswordKey("test@local.test"), "secret");
+                if (main.BeatsVm.Beats.FirstOrDefault() is { } sending)
+                {
+                    main.MailVm.Open(sending.Id, main.ArtistsVm.Artists.Take(5).Select(a => a.Id).ToList());
+                    main.MailVm.SendCommand.Execute(null);
+                }
+                break;
+
+            // «Оживить» на заглушке API (settings.json: LlmProvider=Custom, адрес заглушки).
+            case "mail-llm":
+                if (main.BeatsVm.Beats.FirstOrDefault() is { } livened)
+                {
+                    main.MailVm.Open(livened.Id, main.ArtistsVm.Artists.Take(5).Select(a => a.Id).ToList());
+                    main.MailVm.PersonalizeCommand.Execute(null);
+                }
+                break;
+
+            // Настройки, прокрученные к «Сегодня и сессии в DAW».
+            case "settings-daw":
+                main.ShowSettings();
+                DispatcherTimer.RunOnce(() =>
+                {
+                    if (Avalonia.Application.Current?.ApplicationLifetime is
+                        Avalonia.Controls.ApplicationLifetimes.IClassicDesktopStyleApplicationLifetime { MainWindow: { } window })
+                    {
+                        var header = window.GetVisualDescendants().OfType<Avalonia.Controls.TextBlock>()
+                            .FirstOrDefault(t => t.Text == Localization.Localizer.Instance["Settings.Today"]);
+                        (header?.Parent?.Parent as Avalonia.Controls.Control)?.BringIntoView();
+                    }
+                }, TimeSpan.FromMilliseconds(600));
+                break;
+
+            // Что macOS считает активным приложением — пишется в app.log через 3 с (окно уже впереди).
+            case "daw-probe":
+                DispatcherTimer.RunOnce(() =>
+                {
+                    AppLog.Enabled = true;
+                    var fg = Foreground.Current();
+                    AppLog.Write($"daw-probe: «{fg?.Name}» {fg?.BundleId} -> {DawCatalog.Match(fg) ?? "нет"}");
+                }, TimeSpan.FromSeconds(3));
+                break;
+
+            // Первый запуск 1.1: страница согласия, «Не сейчас» через 2 с — дальше «Сегодня».
+            case "consent-decline":
+                DispatcherTimer.RunOnce(() => main.DeclineDawCommand.Execute(null), TimeSpan.FromSeconds(1.2));
+                break;
+
+            // Рассылка для README: бит, который уходил реже всех, получатели — кому можно писать,
+            // плюс по примеру «нет почты» и «писал недавно».
+            case "readme-mail":
+                using (var db = new Data.AppDbContext())
+                {
+                    var readmeBeat = db.Beats.ToList()
+                        .OrderBy(b => db.OutgoingMails.Count(m => m.BeatId == b.Id)).First();
+                    var recent = DateTime.Now.AddDays(-7).ToString("yyyy-MM-dd HH:mm");
+                    var recentlyMailed = db.OutgoingMails.Where(m => string.Compare(m.SentAt, recent) > 0 || m.BeatId == readmeBeat.Id)
+                        .Select(m => m.ArtistId).ToHashSet();
+                    var free = db.Artists.Where(a => a.Email != "").ToList().Where(a => !recentlyMailed.Contains(a.Id)).Take(4).Select(a => a.Id);
+                    var noMail = db.Artists.Where(a => a.Email == "").Select(a => a.Id).Take(1);
+                    var busy = db.Artists.ToList().Where(a => recentlyMailed.Contains(a.Id) && a.Email != "").Select(a => a.Id).Take(1);
+                    main.MailVm.Open(readmeBeat.Id, free.Concat(noMail).Concat(busy).ToList());
+                }
+                break;
+
+            case "stats":
+                main.StatsVm.Open();
+                break;
+
+            case "today":
+                main.ShowToday();
+                break;
+
+            case "beat-analyze-pick":
+                if (main.BeatsVm.Beats.FirstOrDefault() is { } picked)
+                {
+                    main.BeatsVm.PropertyChanged += (_, e) =>
+                    {
+                        if (e.PropertyName != nameof(BeatsViewModel.IsAnalyzing) || main.BeatsVm.IsAnalyzing)
+                            return;
+                        foreach (var item in main.BeatsVm.SimilarArtists.Take(3))
+                            item.IsPicked = true;
+                        main.BeatsVm.NotifyPickedChanged();
+                    };
+                    main.BeatsVm.BeginEditBeat(picked);
+                    main.BeatsVm.AnalyzeSimilarityCommand.Execute(null);
+                }
                 break;
 
             case "parser":

@@ -13,6 +13,11 @@ public class AppDbContext : DbContext
     public DbSet<ArtistTrack> ArtistTracks => Set<ArtistTrack>();
     public DbSet<BeatSimilarity> BeatSimilarities => Set<BeatSimilarity>();
     public DbSet<TrackEmbedding> TrackEmbeddings => Set<TrackEmbedding>();
+    public DbSet<MailTemplate> MailTemplates => Set<MailTemplate>();
+    public DbSet<OutgoingMail> OutgoingMails => Set<OutgoingMail>();
+    public DbSet<IncomingReply> IncomingReplies => Set<IncomingReply>();
+    public DbSet<ActivityEvent> ActivityEvents => Set<ActivityEvent>();
+    public DbSet<DawSession> DawSessions => Set<DawSession>();
 
     public static string DbPath => AppPaths.DbFile;
 
@@ -82,5 +87,30 @@ public class AppDbContext : DbContext
         b.Entity<TrackEmbedding>()
             .HasIndex(e => new { e.ArtistTrackId, e.ModelVersion })
             .IsUnique();
+
+        // Журнал писем переживает удаление артиста, бита и шаблона — для статистики.
+        b.Entity<OutgoingMail>()
+            .HasOne<Artist>().WithMany().HasForeignKey(m => m.ArtistId).OnDelete(DeleteBehavior.SetNull);
+        b.Entity<OutgoingMail>()
+            .HasOne<Beat>().WithMany().HasForeignKey(m => m.BeatId).OnDelete(DeleteBehavior.SetNull);
+        b.Entity<OutgoingMail>()
+            .HasOne<MailTemplate>().WithMany().HasForeignKey(m => m.TemplateId).OnDelete(DeleteBehavior.SetNull);
+        b.Entity<OutgoingMail>().HasIndex(m => m.ArtistId);
+        b.Entity<OutgoingMail>().HasIndex(m => m.MessageId);
+
+        b.Entity<IncomingReply>()
+            .HasOne<Artist>().WithMany().HasForeignKey(r => r.ArtistId).OnDelete(DeleteBehavior.SetNull);
+        b.Entity<IncomingReply>()
+            .HasOne<OutgoingMail>().WithMany().HasForeignKey(r => r.OutgoingMailId).OnDelete(DeleteBehavior.SetNull);
+        b.Entity<IncomingReply>().HasIndex(r => r.MessageId);
+        b.Entity<IncomingReply>().HasIndex(r => r.ArtistId);
+
+        // События переживают удаление бита и артиста — статистика за прошлое не должна меняться.
+        b.Entity<ActivityEvent>()
+            .HasOne<Beat>().WithMany().HasForeignKey(e => e.BeatId).OnDelete(DeleteBehavior.SetNull);
+        b.Entity<ActivityEvent>()
+            .HasOne<Artist>().WithMany().HasForeignKey(e => e.ArtistId).OnDelete(DeleteBehavior.SetNull);
+        b.Entity<ActivityEvent>().HasIndex(e => e.At);
+        b.Entity<DawSession>().HasIndex(s => s.StartedAt);
     }
 }

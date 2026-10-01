@@ -134,6 +134,22 @@ public class AudiusSource : IArtistSource, IAudioResolver
         };
     }
 
+    /// <summary>Описание профиля плюс отдельные поля Audius с инстаграмом и сайтом.</summary>
+    public async Task<string> GetBioAsync(string profileUrl, CancellationToken ct)
+    {
+        await _limiter.WaitAsync(ct);
+        using var doc = JsonDocument.Parse(await _fetch(
+            $"{Host}/v1/resolve?url={Uri.EscapeDataString(profileUrl)}&app_name={AppName}", ct));
+
+        var user = doc.RootElement.Obj("data");
+        if (user is null)
+            return string.Empty;
+
+        var instagram = user.Value.Str("instagram_handle");
+        return string.Join("\n", user.Value.Str("bio"), user.Value.Str("website"),
+            string.IsNullOrWhiteSpace(instagram) ? "" : "instagram: @" + instagram.TrimStart('@'));
+    }
+
     private string BuildSearchUrl(ArtistSearchQuery query, int offset)
     {
 
