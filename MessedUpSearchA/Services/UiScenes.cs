@@ -178,6 +178,23 @@ public static class UiScenes
                 DispatcherTimer.RunOnce(() => main.DeclineDawCommand.Execute(null), TimeSpan.FromSeconds(1.2));
                 break;
 
+            // Рассылка для README: бит, который уходил реже всех, получатели — кому можно писать,
+            // плюс по примеру «нет почты» и «писал недавно».
+            case "readme-mail":
+                using (var db = new Data.AppDbContext())
+                {
+                    var readmeBeat = db.Beats.ToList()
+                        .OrderBy(b => db.OutgoingMails.Count(m => m.BeatId == b.Id)).First();
+                    var recent = DateTime.Now.AddDays(-7).ToString("yyyy-MM-dd HH:mm");
+                    var recentlyMailed = db.OutgoingMails.Where(m => string.Compare(m.SentAt, recent) > 0 || m.BeatId == readmeBeat.Id)
+                        .Select(m => m.ArtistId).ToHashSet();
+                    var free = db.Artists.Where(a => a.Email != "").ToList().Where(a => !recentlyMailed.Contains(a.Id)).Take(4).Select(a => a.Id);
+                    var noMail = db.Artists.Where(a => a.Email == "").Select(a => a.Id).Take(1);
+                    var busy = db.Artists.ToList().Where(a => recentlyMailed.Contains(a.Id) && a.Email != "").Select(a => a.Id).Take(1);
+                    main.MailVm.Open(readmeBeat.Id, free.Concat(noMail).Concat(busy).ToList());
+                }
+                break;
+
             case "stats":
                 main.StatsVm.Open();
                 break;
