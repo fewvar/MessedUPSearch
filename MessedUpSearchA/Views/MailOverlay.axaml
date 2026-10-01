@@ -58,6 +58,10 @@
                                                         <TextBlock Text="{Binding Nickname}" FontWeight="Bold" FontSize="13"
                                                                    TextTrimming="CharacterEllipsis"
                                                                    Foreground="{StaticResource OnBackground}"/>
+                                                        <TextBlock Text="{Binding BeatLine}" FontSize="11"
+                                                                   IsVisible="{Binding HasBeatLine}"
+                                                                   TextTrimming="CharacterEllipsis"
+                                                                   Foreground="{StaticResource OnBackground}"/>
                                                         <TextBlock Text="{Binding Email}" FontSize="11"
                                                                    IsVisible="{Binding HasEmail}"
                                                                    TextTrimming="CharacterEllipsis"

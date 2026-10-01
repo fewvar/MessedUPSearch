@@ -9,6 +9,13 @@ public class CrmEntry
     public string Notes { get; init; } = string.Empty;
     public List<CrmBeatItem> Beats { get; init; } = new();
 
+    /// <summary>«ответил 03.10: „Йо, кидай ещё“» — последний ответ из почты.</summary>
+    public string ReplyLine { get; init; } = string.Empty;
+    public bool HasReply => ReplyLine.Length > 0;
+
+    /// <summary>3+ писем без ответа.</summary>
+    public bool IsSilent { get; init; }
+
     public bool HasNotes => !string.IsNullOrWhiteSpace(Notes);
     public bool HasBeats => Beats.Count > 0;
 

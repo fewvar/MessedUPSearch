@@ -15,6 +15,7 @@ public class AppDbContext : DbContext
     public DbSet<TrackEmbedding> TrackEmbeddings => Set<TrackEmbedding>();
     public DbSet<MailTemplate> MailTemplates => Set<MailTemplate>();
     public DbSet<OutgoingMail> OutgoingMails => Set<OutgoingMail>();
+    public DbSet<IncomingReply> IncomingReplies => Set<IncomingReply>();
 
     public static string DbPath => AppPaths.DbFile;
 
@@ -94,5 +95,12 @@ public class AppDbContext : DbContext
             .HasOne<MailTemplate>().WithMany().HasForeignKey(m => m.TemplateId).OnDelete(DeleteBehavior.SetNull);
         b.Entity<OutgoingMail>().HasIndex(m => m.ArtistId);
         b.Entity<OutgoingMail>().HasIndex(m => m.MessageId);
+
+        b.Entity<IncomingReply>()
+            .HasOne<Artist>().WithMany().HasForeignKey(r => r.ArtistId).OnDelete(DeleteBehavior.SetNull);
+        b.Entity<IncomingReply>()
+            .HasOne<OutgoingMail>().WithMany().HasForeignKey(r => r.OutgoingMailId).OnDelete(DeleteBehavior.SetNull);
+        b.Entity<IncomingReply>().HasIndex(r => r.MessageId);
+        b.Entity<IncomingReply>().HasIndex(r => r.ArtistId);
     }
 }

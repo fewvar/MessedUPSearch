@@ -7,6 +7,16 @@ namespace MessedUpSearchA.ViewModels;
 public partial class MailRecipientItem : ObservableObject
 {
     public int ArtistId { get; init; }
+
+    /// <summary>Чей бит в письме. В рассылке бита — у всех один, в фоллоу-апах — у каждого свой.</summary>
+    public Models.Beat Beat { get; init; } = new();
+
+    /// <summary>Фоллоу-ап: Message-ID первого письма — ответ уйдёт в ту же переписку.</summary>
+    public string? InReplyTo { get; init; }
+
+    /// <summary>Подпись бита у получателя — только в фоллоу-апах, где биты разные.</summary>
+    public string BeatLine { get; init; } = string.Empty;
+    public bool HasBeatLine => BeatLine.Length > 0;
     public string Nickname { get; init; } = string.Empty;
     public string AvatarPath { get; init; } = string.Empty;
     public string AvatarColor { get; init; } = "#888888";

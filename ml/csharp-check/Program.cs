@@ -113,6 +113,118 @@ if (args.Length == 2 && args[0] == "mail")
     return 0;
 }
 
+// Живая CRM на GreenMail (SMTP 3025 / IMAP 3143, пользователь test@local.test:secret):
+//   MlCheck replies <папка данных-копия>
+if (args.Length == 2 && args[0] == "replies")
+{
+    Environment.SetEnvironmentVariable(MessedUpSearchA.Data.AppPaths.DataDirVariable, args[1]);
+    MessedUpSearchA.Services.AppLog.Enabled = true;
+    MessedUpSearchA.Services.Toasts.Shown += t => Console.WriteLine($"  тост: {t}");
+    int[] ids; int beatA, beatB;
+    using (var db = new MessedUpSearchA.Data.AppDbContext())
+    {
+        Microsoft.EntityFrameworkCore.RelationalDatabaseFacadeExtensions.Migrate(db.Database);
+        var three = db.Artists.OrderBy(a => a.Id).Take(3).ToList();
+        for (var i = 0; i < 3; i++) { three[i].Email = $"a{i + 1}@ok.test"; three[i].CrmStatus = ""; }
+        foreach (var b in db.Beats) b.ShareUrl = "https://example.com/" + b.Id;
+        db.SaveChanges();
+        ids = three.Select(a => a.Id).ToArray();
+        beatA = db.Beats.OrderBy(b => b.Id).First().Id;
+        beatB = db.Beats.OrderBy(b => b.Id).Skip(1).First().Id;
+    }
+
+    var settings = new MessedUpSearchA.Data.AppSettings
+    {
+        MailAddress = "test@local.test", MailSenderName = "fewvar", SmtpHost = "127.0.0.1", SmtpPort = 3025,
+        ImapHost = "127.0.0.1", ImapPort = 3143, FollowUpDays = 0
+    };
+    var key = MessedUpSearchA.Services.Mail.MailQueue.PasswordKey(settings.MailAddress);
+    MessedUpSearchA.Services.SecretStore.Set(key, "secret");
+
+    async Task Drain(MessedUpSearchA.Services.Mail.MailQueue q) { await Task.Delay(300); while (q.IsRunning) await Task.Delay(200); }
+    var queue = new MessedUpSearchA.Services.Mail.MailQueue(() => settings) { MinPauseSeconds = 1, MaxPauseSeconds = 1 };
+
+    Console.WriteLine("1. питч трём артистам");
+    var vm = new MessedUpSearchA.ViewModels.MailViewModel(queue, () => settings, () => null);
+    vm.Open(beatA, ids);
+    vm.SendCommand.Execute(null);
+    await Drain(queue);
+
+    Console.WriteLine("2. ответы: a1 по In-Reply-To с цитатой, a2 без заголовков HTML-письмом, посторонний спам");
+    string pitchToA1;
+    using (var db = new MessedUpSearchA.Data.AppDbContext())
+        pitchToA1 = db.OutgoingMails.First(m => m.ToAddress == "a1@ok.test").MessageId;
+    var account = new MessedUpSearchA.Services.Mail.MailAccount("test@local.test", "x", "secret", "127.0.0.1", 3025);
+    async Task Inject(string from, string subject, MimeKit.MimeEntity body, string? inReplyTo)
+    {
+        var m = new MimeKit.MimeMessage();
+        m.From.Add(MimeKit.MailboxAddress.Parse(from));
+        m.To.Add(MimeKit.MailboxAddress.Parse("test@local.test"));
+        m.Subject = subject; m.Body = body;
+        if (inReplyTo is not null) m.InReplyTo = inReplyTo;
+        using var smtp = new MailKit.Net.Smtp.SmtpClient();
+        await smtp.ConnectAsync("127.0.0.1", 3025, MailKit.Security.SecureSocketOptions.None);
+        await smtp.AuthenticateAsync("test@local.test", "secret");
+        await smtp.SendAsync(m);
+        await smtp.DisconnectAsync(true);
+    }
+    await Inject("a1@ok.test", "Re: бит", new MimeKit.TextPart("plain") { Text = "\n\nЙо, кидай ещё такие!\n\n> Привет, a1!\n> Послушал твои треки" }, pitchToA1);
+    await Inject("a2@ok.test", "beat", new MimeKit.TextPart("html") { Text = "<div>yo bro, <b>how much</b> for exclusive?</div><div>thx</div>" }, null);
+    await Inject("random@spam.test", "SEO services", new MimeKit.TextPart("plain") { Text = "buy now" }, null);
+
+    var found = await MessedUpSearchA.Services.Mail.ReplyChecker.CheckAsync(settings);
+    foreach (var f in found) Console.WriteLine($"  найден ответ: {f.Nickname}: «{f.Snippet}»");
+    Console.WriteLine($"  повторная проверка нашла: {(await MessedUpSearchA.Services.Mail.ReplyChecker.CheckAsync(settings)).Count} (ждём 0), lastUid={settings.ImapLastUid}");
+
+    using (var db = new MessedUpSearchA.Data.AppDbContext())
+    {
+        foreach (var id in ids)
+        {
+            var a = db.Artists.First(x => x.Id == id);
+            Console.WriteLine($"  CRM {a.Nickname} <{a.Email}>: «{a.CrmStatus}»");
+        }
+        var due = MessedUpSearchA.Services.Mail.CrmRules.DueFollowUps(db, 0);
+        Console.WriteLine($"3. фоллоу-ап пора: {string.Join(", ", due.Select(d => db.Artists.First(a => a.Id == d.ArtistId).Email))} (ждём a3)");
+
+        vm.OpenFollowUps(due);
+        foreach (var r in vm.Recipients)
+            Console.WriteLine($"  получатель {r.Email}: {r.BeatLine}, In-Reply-To={(r.InReplyTo is null ? "нет" : "есть")}, тема «{vm.PreviewSubject}»");
+        Console.WriteLine($"  можно отправить: {vm.CanSend} {vm.Problem}");
+    }
+    vm.SendCommand.Execute(null);
+    await Drain(queue);
+
+    using (var db = new MessedUpSearchA.Data.AppDbContext())
+    {
+        var fu = db.OutgoingMails.Where(m => m.Kind == "followup").ToList();
+        Console.WriteLine($"  фоллоу-апов в журнале: {fu.Count}, после отправки пора: {MessedUpSearchA.Services.Mail.CrmRules.DueFollowUps(db, 0).Count} (ждём 0)");
+    }
+
+    Console.WriteLine("4. у a3 третье письмо без ответа (старое, 10 дней назад) — «молчун»");
+    using (var db = new MessedUpSearchA.Data.AppDbContext())
+    {
+        db.OutgoingMails.Add(new MessedUpSearchA.Models.OutgoingMail
+        {
+            ArtistId = ids[2], BeatId = beatB, Kind = "pitch", ToAddress = "a3@ok.test", Subject = "s", Body = "b",
+            MessageId = "<old@local.test>", Status = "sent", SentAt = DateTime.Now.AddDays(-10).ToString("yyyy-MM-dd HH:mm")
+        });
+        db.SaveChanges();
+    }
+    using (var db = new MessedUpSearchA.Data.AppDbContext())
+    {
+        var silent = MessedUpSearchA.Services.Mail.CrmRules.SilentArtists(db);
+        Console.WriteLine($"  молчуны: {string.Join(", ", silent.Select(id => db.Artists.First(a => a.Id == id).Email))} (ждём a3)");
+    }
+    vm.Open(beatB, ids);
+    foreach (var r in vm.Recipients)
+        Console.WriteLine($"  в рассылке {r.Email}: выбран={r.IsSelected} {r.Warning}");
+
+    MessedUpSearchA.Services.SecretStore.Delete(key);
+    if (File.Exists(MessedUpSearchA.Services.AppLog.FilePath))
+        Console.WriteLine("лог: " + string.Join(" | ", File.ReadLines(MessedUpSearchA.Services.AppLog.FilePath).Where(l => l.Contains("ответ") || l.Contains("рассылк"))));
+    return 0;
+}
+
 // «Оживить» на заглушке API (127.0.0.1:8099): MlCheck llm <папка данных-копия>
 if (args.Length == 2 && args[0] == "llm")
 {

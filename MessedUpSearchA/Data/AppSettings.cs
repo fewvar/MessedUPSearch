@@ -48,8 +48,17 @@ public class AppSettings
     public string LlmBaseUrl { get; set; } = string.Empty;
     public string LlmModel { get; set; } = string.Empty;
 
+    /// <summary>Нет ответа столько дней — предложить фоллоу-ап.</summary>
+    public int FollowUpDays { get; set; } = 7;
+
+    // Докуда дочитаны входящие: следующая проверка берёт только новые письма.
+    // UidValidity сменился (ящик пересоздан) — читаем заново с даты первой рассылки.
+    public uint ImapLastUid { get; set; }
+    public uint ImapUidValidity { get; set; }
+
     /// <summary>Шаблон последней рассылки — открывается первым в следующий раз.</summary>
     public int LastPitchTemplateId { get; set; }
+    public int LastFollowUpTemplateId { get; set; }
 
     public static string DefaultMediaFolder => Path.Combine(
         Environment.GetFolderPath(Environment.SpecialFolder.UserProfile),

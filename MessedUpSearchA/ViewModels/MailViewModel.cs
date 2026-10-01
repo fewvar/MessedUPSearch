@@ -27,6 +27,10 @@ public partial class MailViewModel : ViewModelBase
     private readonly Func<AppSettings> _settings;
     private readonly Func<LlmClient?> _llm;
     private Beat? _beat;
+
+    /// <summary>Фоллоу-апы: разные биты, ответы в старые переписки, шаблоны вида «фоллоу-ап».</summary>
+    [ObservableProperty] private bool _isFollowUpMode;
+    private string Kind => IsFollowUpMode ? MailKinds.FollowUp : MailKinds.Pitch;
     private System.Threading.CancellationTokenSource? _personalizeCts;
 
     [ObservableProperty] private bool _isPersonalizing;
@@ -69,39 +73,110 @@ public partial class MailViewModel : ViewModelBase
         if (_beat is null)
             return;
 
-        MailTemplates.EnsureSeeded(db);
-        Templates.Clear();
-        foreach (var t in db.MailTemplates.Where(t => t.Kind == MailKinds.Pitch).OrderBy(t => t.Id).ToList())
-            Templates.Add(t);
-
-        var lastId = _settings().LastPitchTemplateId;
-        SelectedTemplate = Templates.FirstOrDefault(t => t.Id == lastId)
-                           ?? Templates.FirstOrDefault(t => t.Name.Contains(Localizer.Instance.Language == AppLanguage.Russian ? "RU" : "EN"))
-                           ?? Templates.FirstOrDefault();
-
+        IsFollowUpMode = false;
+        LoadTemplates(db);
         BeatTitle = _beat.BeatName;
+        LoadRecipients(db, artistIds);
+        Show();
+    }
+
+    /// <summary>Фоллоу-апы тем, кто молчит дольше срока: по одному на бит, ответом в ту же переписку.</summary>
+    public void OpenFollowUps(IReadOnlyCollection<FollowUpDue> due)
+    {
+        if (due.Count == 0)
+            return;
+
+        using var db = new AppDbContext();
+        _beat = null;
+        IsFollowUpMode = true;
+        LoadTemplates(db);
+        BeatTitle = Localizer.Instance.Format("Mail.FollowUpsTitle", due.Count);
+
+        ClearRecipients();
+        var artistIds = due.Select(d => d.ArtistId).ToList();
+        var beatIds = due.Select(d => d.BeatId).ToList();
+        var artists = db.Artists.Where(a => artistIds.Contains(a.Id)).ToDictionary(a => a.Id);
+        var beats = db.Beats.Where(b => beatIds.Contains(b.Id)).ToDictionary(b => b.Id);
+        var tracks = TopTracks(db, artistIds);
+
+        foreach (var d in due.OrderBy(d => d.Pitch.SentAt))
+        {
+            if (!artists.TryGetValue(d.ArtistId, out var artist) || !beats.TryGetValue(d.BeatId, out var beat))
+                continue;
+            AddRecipient(new MailRecipientItem
+            {
+                ArtistId = artist.Id,
+                Beat = beat,
+                InReplyTo = d.Pitch.MessageId.Length > 0 ? d.Pitch.MessageId : null,
+                BeatLine = Localizer.Instance.Format("Mail.FollowUpLine", beat.BeatName, ShortDate(d.Pitch.SentAt)),
+                Nickname = artist.Nickname,
+                AvatarPath = artist.AvatarPath,
+                AvatarColor = string.IsNullOrWhiteSpace(artist.AvatarColor) ? "#888888" : artist.AvatarColor,
+                // Адрес — тот же, на который ушло первое письмо: переписка должна продолжиться там же.
+                Email = d.Pitch.ToAddress,
+                IsSelected = true,
+                Genre = artist.AiGenreTags,
+                TopTrack = tracks.GetValueOrDefault(artist.Id, string.Empty)
+            });
+        }
+
+        Show();
+    }
+
+    private void Show()
+    {
         PersonalizeStatus = string.Empty;
         HasPersonalized = false;
-        LoadRecipients(db, artistIds);
         PreviewRecipient = Recipients.FirstOrDefault(r => r.IsSelected) ?? Recipients.FirstOrDefault();
         Validate();
         IsOpen = true;
     }
 
-    private void LoadRecipients(AppDbContext db, IReadOnlyCollection<int> artistIds)
+    private void LoadTemplates(AppDbContext db)
+    {
+        MailTemplates.EnsureSeeded(db);
+        _suppressSave = true;
+        Templates.Clear();
+        foreach (var t in db.MailTemplates.Where(t => t.Kind == Kind).OrderBy(t => t.Id).ToList())
+            Templates.Add(t);
+
+        var lastId = IsFollowUpMode ? _settings().LastFollowUpTemplateId : _settings().LastPitchTemplateId;
+        SelectedTemplate = Templates.FirstOrDefault(t => t.Id == lastId)
+                           ?? Templates.FirstOrDefault(t => t.Name.Contains(Localizer.Instance.Language == AppLanguage.Russian ? "RU" : "EN"))
+                           ?? Templates.FirstOrDefault();
+        _suppressSave = false;
+    }
+
+    private static Dictionary<int, string> TopTracks(AppDbContext db, ICollection<int> artistIds) =>
+        db.ArtistTracks.Where(t => artistIds.Contains(t.ArtistId)).ToList()
+            .GroupBy(t => t.ArtistId)
+            .ToDictionary(g => g.Key, g => g.OrderByDescending(t => t.PlayCount).First().Title);
+
+    private void ClearRecipients()
     {
         foreach (var r in Recipients)
             r.PropertyChanged -= OnRecipientChanged;
         Recipients.Clear();
+    }
+
+    private void AddRecipient(MailRecipientItem item)
+    {
+        item.PropertyChanged += OnRecipientChanged;
+        Recipients.Add(item);
+    }
+
+    private void LoadRecipients(AppDbContext db, IReadOnlyCollection<int> artistIds)
+    {
+        ClearRecipients();
+        var silent = CrmRules.SilentArtists(db);
+        var items = new List<MailRecipientItem>();
 
         var guardSince = DateTime.Now.AddDays(-SpamGuardDays).ToString("yyyy-MM-dd HH:mm");
         var sent = db.OutgoingMails.Where(m => m.Status == MailStatuses.Sent && m.ArtistId != null)
             .Select(m => new { m.ArtistId, m.BeatId, m.SentAt })
             .ToList();
 
-        var topTracks = db.ArtistTracks.Where(t => artistIds.Contains(t.ArtistId)).ToList()
-            .GroupBy(t => t.ArtistId)
-            .ToDictionary(g => g.Key, g => g.OrderByDescending(t => t.PlayCount).First().Title);
+        var topTracks = TopTracks(db, artistIds.ToList());
 
         foreach (var artist in db.Artists.Where(a => artistIds.Contains(a.Id)).OrderBy(a => a.Nickname).ToList())
         {
@@ -118,10 +193,13 @@ public partial class MailViewModel : ViewModelBase
                 warning = Localizer.Instance.Format("Mail.RecentlyWritten", DaysAgo(last));
             else if (artist.IsRedFlagged)
                 warning = Localizer.Instance["Mail.RedFlag"];
+            else if (silent.Contains(artist.Id))
+                warning = Localizer.Instance.Format("Mail.Silent", CrmRules.SilentAfter);
 
             var item = new MailRecipientItem
             {
                 ArtistId = artist.Id,
+                Beat = _beat!,
                 Nickname = artist.Nickname,
                 AvatarPath = artist.AvatarPath,
                 AvatarColor = string.IsNullOrWhiteSpace(artist.AvatarColor) ? "#888888" : artist.AvatarColor,
@@ -133,9 +211,12 @@ public partial class MailViewModel : ViewModelBase
                 EmailHints = ContactHints.Extract(artist.Bio)
                     .Where(h => h.Kind == ContactKind.Email).Select(h => h.Value).ToList()
             };
-            item.PropertyChanged += OnRecipientChanged;
-            Recipients.Add(item);
+            items.Add(item);
         }
+
+        // «Молчуны» — в конец: им писать в последнюю очередь.
+        foreach (var item in items.OrderBy(i => silent.Contains(i.ArtistId)))
+            AddRecipient(item);
     }
 
     private void OnRecipientChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
@@ -184,7 +265,7 @@ public partial class MailViewModel : ViewModelBase
 
     private void RenderPreview()
     {
-        if (_beat is null || PreviewRecipient is null)
+        if (PreviewRecipient is null)
         {
             PreviewSubject = PreviewBody = string.Empty;
             return;
@@ -205,9 +286,11 @@ public partial class MailViewModel : ViewModelBase
         Problem = string.Empty;
         if (string.IsNullOrWhiteSpace(settings.MailAddress) || string.IsNullOrWhiteSpace(settings.SmtpHost))
             Problem = Localizer.Instance["Mail.SetupFirst"];
-        else if (_beat is not null && string.IsNullOrWhiteSpace(_beat.ShareUrl) &&
-                 (EditBody + EditSubject).Contains("{link}", StringComparison.OrdinalIgnoreCase))
-            Problem = Localizer.Instance["Mail.NoLink"];
+        else if ((EditBody + EditSubject).Contains("{link}", StringComparison.OrdinalIgnoreCase) &&
+                 Recipients.FirstOrDefault(r => r.IsSelected && string.IsNullOrWhiteSpace(r.Beat.ShareUrl)) is { } noLink)
+            Problem = IsFollowUpMode
+                ? Localizer.Instance.Format("Mail.NoLinkFor", noLink.Beat.BeatName)
+                : Localizer.Instance["Mail.NoLink"];
         else if (string.IsNullOrWhiteSpace(EditBody))
             Problem = Localizer.Instance["Mail.EmptyBody"];
         else if (selected > remaining)
@@ -242,7 +325,7 @@ public partial class MailViewModel : ViewModelBase
         var template = new MailTemplate
         {
             Name = Localizer.Instance.Format("Mail.NewTemplateName", Templates.Count + 1),
-            Kind = MailKinds.Pitch,
+            Kind = Kind,
             Subject = EditSubject,
             Body = EditBody,
             CreatedAt = DateTime.Now.ToString("yyyy-MM-dd HH:mm")
@@ -282,21 +365,22 @@ public partial class MailViewModel : ViewModelBase
     private void Send()
     {
         Validate();
-        if (!CanSend || _beat is null)
+        if (!CanSend)
             return;
 
         SaveTemplateEdits(SelectedTemplate);
         var settings = _settings();
         if (SelectedTemplate is not null)
         {
-            settings.LastPitchTemplateId = SelectedTemplate.Id;
+            if (IsFollowUpMode) settings.LastFollowUpTemplateId = SelectedTemplate.Id;
+            else settings.LastPitchTemplateId = SelectedTemplate.Id;
             settings.Save();
         }
 
         var jobs = Recipients.Where(r => r.IsSelected && r.HasEmail).Select(r =>
         {
             var (subject, body) = LetterFor(r);
-            return new MailJob(r.ArtistId, _beat.Id, SelectedTemplate?.Id, MailKinds.Pitch, r.Email, subject, body);
+            return new MailJob(r.ArtistId, r.Beat.Id, SelectedTemplate?.Id, Kind, r.Email, subject, body, r.InReplyTo);
         }).ToList();
 
         _queue.Enqueue(jobs);
@@ -312,7 +396,7 @@ public partial class MailViewModel : ViewModelBase
 
         var artist = new Artist { Nickname = r.Nickname };
         var me = MailQueue.SenderName(_settings());
-        return (MailTemplates.Render(EditSubject, artist, _beat!, me), MailTemplates.Render(EditBody, artist, _beat!, me));
+        return (MailTemplates.Render(EditSubject, artist, r.Beat, me), MailTemplates.Render(EditBody, artist, r.Beat, me));
     }
 
     /// <summary>
@@ -328,7 +412,7 @@ public partial class MailViewModel : ViewModelBase
             return;
         }
 
-        if (_beat is null || _llm() is not { } client)
+        if (_llm() is not { } client)
         {
             PersonalizeStatus = Localizer.Instance["Llm.SetupFirst"];
             return;
@@ -351,7 +435,7 @@ public partial class MailViewModel : ViewModelBase
                 try
                 {
                     var result = await LetterPersonalizer.RewriteAsync(client,
-                        new ArtistFacts(r.Nickname, r.Genre, r.TopTrack), subject, body, _beat.ShareUrl,
+                        new ArtistFacts(r.Nickname, r.Genre, r.TopTrack), subject, body, r.Beat.ShareUrl,
                         _personalizeCts.Token);
                     if (result is { } letter)
                     {

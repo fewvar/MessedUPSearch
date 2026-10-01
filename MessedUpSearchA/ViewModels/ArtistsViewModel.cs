@@ -35,7 +35,7 @@ public partial class ArtistsViewModel : ViewModelBase
     public string EditingArtistName => EditNickname;
 
     public IReadOnlyList<string> CrmStatusOptions { get; } =
-        new[] { "", "NO REPLY", "OK", "POSTED FREE" };
+        new[] { "", "NO REPLY", "REPLIED", "OK", "POSTED FREE" };
 
     public IReadOnlyList<string> TypeOptions { get; } =
         new[] { "ALL", "Rage", "Plugg", "Jerk", "Cloud", "Phonk", "Dark", "Ambient", "Trap", "Sad", "Emo" };

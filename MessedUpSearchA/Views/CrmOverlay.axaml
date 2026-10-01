@@ -19,9 +19,18 @@
                                LetterSpacing="3"
                                Foreground="{StaticResource OnBackground}"
                                VerticalAlignment="Center"/>
-                    <Button Classes="modalClose" Content="✕"
-                            HorizontalAlignment="Right"
-                            Click="OnCloseClick"/>
+                    <StackPanel Orientation="Horizontal" Spacing="10" HorizontalAlignment="Right">
+                        <!-- Ответы проверяются сами раз в 5 минут; кнопка — не ждать. -->
+                        <Button Classes="statusButton" VerticalAlignment="Center"
+                                Content="{loc:Tr Crm.CheckReplies}"
+                                IsEnabled="{Binding !IsCheckingReplies}"
+                                Command="{Binding CheckRepliesCommand}"/>
+                        <Button Classes="statusButton" VerticalAlignment="Center"
+                                Content="{Binding FollowUpsLabel}"
+                                IsVisible="{Binding HasFollowUpsDue}"
+                                Command="{Binding OpenFollowUpsCommand}"/>
+                        <Button Classes="modalClose" Content="✕" Click="OnCloseClick"/>
+                    </StackPanel>
                 </Grid>
                 <Grid Grid.Row="1" Margin="28,16,18,22">
 
@@ -66,6 +75,15 @@
                                                                Foreground="{StaticResource OnBackground}"/>
                                                 </Border>
                                             </Grid>
+
+                                            <TextBlock Text="{Binding ReplyLine}"
+                                                       IsVisible="{Binding HasReply}"
+                                                       FontSize="13" TextWrapping="Wrap"
+                                                       Foreground="#2ECC71"/>
+                                            <TextBlock Text="{loc:Tr Crm.Silent}"
+                                                       IsVisible="{Binding IsSilent}"
+                                                       FontSize="12"
+                                                       Foreground="#E0A040"/>
 
                                             <TextBlock Text="{Binding Notes}"
                                                        IsVisible="{Binding HasNotes}"

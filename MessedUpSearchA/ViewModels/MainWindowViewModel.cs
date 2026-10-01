@@ -64,6 +64,16 @@ public partial class MainWindowViewModel : ViewModelBase
     [ObservableProperty] private string _imapHost = string.Empty;
     [ObservableProperty] private int _imapPort = 993;
     [ObservableProperty] private int _mailDailyLimit = 50;
+    [ObservableProperty] private int _followUpDays = 7;
+
+    /// <summary>Сколько фоллоу-апов пора отправить — кнопка в CRM.</summary>
+    [ObservableProperty, NotifyPropertyChangedFor(nameof(HasFollowUpsDue), nameof(FollowUpsLabel))]
+    private int _followUpsDue;
+    public bool HasFollowUpsDue => FollowUpsDue > 0;
+    public string FollowUpsLabel => Localizer.Instance.Format("Crm.FollowUps", FollowUpsDue);
+
+    [ObservableProperty] private bool _isCheckingReplies;
+    private Avalonia.Threading.DispatcherTimer? _replyTimer;
     [ObservableProperty] private bool _hasSavedMailPassword;
     [ObservableProperty] private bool _isTestingMail;
     [ObservableProperty] private string _mailTestStatus = string.Empty;
@@ -147,6 +157,7 @@ public partial class MainWindowViewModel : ViewModelBase
         _imapHost = _settings.ImapHost;
         _imapPort = _settings.ImapPort;
         _mailDailyLimit = Math.Clamp(_settings.MailDailyLimit, 1, 500);
+        _followUpDays = Math.Clamp(_settings.FollowUpDays, 1, 60);
         _hasSavedMailPassword = _mailAddress.Length > 0 && SecretStore.Get(MailQueue.PasswordKey(_mailAddress)) is not null;
 
         _llmProvider = LlmProviders.All.Contains(_settings.LlmProvider) ? _settings.LlmProvider : LlmProviders.Groq;
@@ -158,7 +169,11 @@ public partial class MainWindowViewModel : ViewModelBase
 
         Mail = new MailQueue(() => _settings);
         MailVm = new MailViewModel(Mail, () => _settings, CreateLlmClient);
-        Mail.MailSent += () => _artistsVm.LoadArtists();
+        Mail.MailSent += () =>
+        {
+            _artistsVm.LoadArtists();
+            RefreshFollowUps();
+        };
         MailVm.ContactsChanged += () => _artistsVm.LoadArtists();
         _beatsVm.MailRequested += (beatId, artistIds) => MailVm.Open(beatId, artistIds);
 
@@ -177,6 +192,7 @@ public partial class MainWindowViewModel : ViewModelBase
             OnPropertyChanged(nameof(MailHelp));
             OnPropertyChanged(nameof(LlmPrivacyNote));
             OnPropertyChanged(nameof(LlmKeyHint));
+            OnPropertyChanged(nameof(FollowUpsLabel));
         };
 
         _beatsVm.ArtistImported += () =>
@@ -216,6 +232,75 @@ public partial class MainWindowViewModel : ViewModelBase
 
         LoadReminders();
         IsReminderOpen = Reminders.Count > 0;
+        RefreshFollowUps();
+        StartReplyChecks();
+    }
+
+    /// <summary>
+    /// Ответы во входящих — раз в 5 минут, пока приложение открыто (первый раз через 15 с после
+    /// запуска, чтобы не тормозить старт). Без настроенной почты не делает ничего.
+    /// </summary>
+    private void StartReplyChecks()
+    {
+        if (Avalonia.Controls.Design.IsDesignMode)
+            return;
+
+        Avalonia.Threading.DispatcherTimer.RunOnce(() => _ = CheckRepliesAsync(), TimeSpan.FromSeconds(15));
+        _replyTimer = new Avalonia.Threading.DispatcherTimer(TimeSpan.FromMinutes(5), Avalonia.Threading.DispatcherPriority.Background,
+            (_, _) => _ = CheckRepliesAsync());
+        _replyTimer.Start();
+    }
+
+    [RelayCommand]
+    private async System.Threading.Tasks.Task CheckRepliesAsync()
+    {
+        if (IsCheckingReplies)
+            return;
+
+        IsCheckingReplies = true;
+        try
+        {
+            var found = await ReplyChecker.CheckAsync(_settings);
+            if (found.Count > 0)
+            {
+                var first = found[0];
+                Toasts.Show(found.Count == 1
+                    ? Localizer.Instance.Format("Crm.ReplyFrom", first.Nickname, first.Snippet)
+                    : Localizer.Instance.Format("Crm.Replies", found.Count, string.Join(", ", found.Select(f => f.Nickname).Distinct())));
+                Services.Audio.UiSounds.Play(Services.Audio.UiSound.AnalysisDone);
+                _artistsVm.LoadArtists();
+                if (IsCrmOpen)
+                    LoadCrm();
+            }
+        }
+        catch (Exception ex)
+        {
+            // Нет сети или почта не пускает IMAP — молча до следующей проверки, причина в логе.
+            AppLog.Write($"проверка ответов: {ex.GetType().Name}: {ex.Message}");
+        }
+        finally
+        {
+            IsCheckingReplies = false;
+            RefreshFollowUps();
+        }
+    }
+
+    public void RefreshFollowUps()
+    {
+        using var db = new AppDbContext();
+        FollowUpsDue = CrmRules.DueFollowUps(db, _settings.FollowUpDays).Count;
+    }
+
+    /// <summary>«Фоллоу-апы (N)» в CRM: окно рассылки со всеми, кому пора напомнить.</summary>
+    [RelayCommand]
+    private void OpenFollowUps()
+    {
+        using var db = new AppDbContext();
+        var due = CrmRules.DueFollowUps(db, _settings.FollowUpDays);
+        if (due.Count == 0)
+            return;
+        IsCrmOpen = false;
+        MailVm.OpenFollowUps(due);
     }
 
     partial void OnIsBeatsSelectedChanged(bool? value)
@@ -274,6 +359,13 @@ public partial class MainWindowViewModel : ViewModelBase
     partial void OnImapHostChanged(string value) { _settings.ImapHost = value.Trim(); _settings.Save(); }
     partial void OnImapPortChanged(int value) { _settings.ImapPort = value; _settings.Save(); }
     partial void OnMailDailyLimitChanged(int value) { _settings.MailDailyLimit = Math.Clamp(value, 1, 500); _settings.Save(); }
+
+    partial void OnFollowUpDaysChanged(int value)
+    {
+        _settings.FollowUpDays = Math.Clamp(value, 1, 60);
+        _settings.Save();
+        RefreshFollowUps();
+    }
 
     /// <summary>
     /// «Сохранить и проверить»: новый пароль (если ввели) — в связку ключей, затем тестовое письмо
@@ -488,6 +580,7 @@ public partial class MainWindowViewModel : ViewModelBase
     public void ShowCrm()
     {
         LoadCrm();
+        RefreshFollowUps();
         IsCrmOpen = true;
     }
 
@@ -499,6 +592,18 @@ public partial class MainWindowViewModel : ViewModelBase
         var artists = db.Artists
             .Where(a => a.CrmStatus != "" && a.CrmStatus != null)
             .OrderBy(a => a.Nickname)
+            .ToList();
+
+        var silent = CrmRules.SilentArtists(db);
+        var replies = db.IncomingReplies.Where(r => r.ArtistId != null).ToList()
+            .GroupBy(r => r.ArtistId!.Value)
+            .ToDictionary(g => g.Key, g => g.OrderBy(r => r.ReceivedAt).Last());
+
+        // «Молчуны» — в конец списка, ответившие — наверх.
+        artists = artists
+            .OrderBy(a => silent.Contains(a.Id))
+            .ThenByDescending(a => replies.ContainsKey(a.Id))
+            .ThenBy(a => a.Nickname)
             .ToList();
 
         foreach (var a in artists)
@@ -525,12 +630,19 @@ public partial class MainWindowViewModel : ViewModelBase
                 Nickname = a.Nickname,
                 CrmStatus = a.CrmStatus,
                 Notes = a.Notes,
-                Beats = items
+                Beats = items,
+                IsSilent = silent.Contains(a.Id),
+                ReplyLine = replies.TryGetValue(a.Id, out var reply)
+                    ? Localizer.Instance.Format("Crm.Replied", ShortDate(reply.ReceivedAt), reply.Snippet)
+                    : string.Empty
             });
         }
 
         IsCrmEmpty = CrmEntries.Count == 0;
     }
+
+    private static string ShortDate(string stored) =>
+        DateTime.TryParse(stored, out var d) ? d.ToString("dd.MM") : stored;
 
     [RelayCommand]
     private void MarkSent(int logId)
