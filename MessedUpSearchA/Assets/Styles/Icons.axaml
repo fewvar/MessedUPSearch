@@ -68,5 +68,10 @@
             <ImageBrush Source="/Assets/Icons/Star/3.png" Stretch="Uniform"/>
         </Setter>
     </Style>
+    <Style Selector="Border.icon.icon-mail">
+        <Setter Property="OpacityMask">
+            <ImageBrush Source="/Assets/Icons/Buttons/Mail.png" Stretch="Uniform"/>
+        </Setter>
+    </Style>
 
 </Styles>

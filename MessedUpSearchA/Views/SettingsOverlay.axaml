@@ -209,6 +209,10 @@
 
                                 <TextBlock Classes="settingsAbout" Text="@fewvar"/>
                                 <TextBlock Classes="settingsAbout" Text="@MessedUpK1d" Margin="0,2,0,0"/>
+
+                                <Button Classes="action" HorizontalAlignment="Left" Margin="0,14,0,16"
+                                        Content="{loc:Tr Settings.ReportProblem}"
+                                        Click="OnReportProblemClick"/>
                             </StackPanel>
                         </Border>
 

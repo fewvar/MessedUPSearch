@@ -61,6 +61,26 @@ public partial class ArtistsView : UserControl
             vm.BeginEditArtist(artist);
     }
 
+    private void OnContactHintClick(object? sender, RoutedEventArgs e)
+    {
+        if (sender is Control { DataContext: ContactHintItem hint } && DataContext is ArtistsViewModel vm)
+            vm.ApplyContactHint(hint);
+    }
+
+    private void OnEmailClick(object? sender, PointerPressedEventArgs e)
+    {
+        if (sender is Control { DataContext: Artist artist } && !string.IsNullOrWhiteSpace(artist.Email))
+            OpenLink("mailto:" + artist.Email.Trim());
+        e.Handled = true;
+    }
+
+    private void OnEmailFilterClick(object? sender, PointerPressedEventArgs e)
+    {
+        if (DataContext is ArtistsViewModel vm)
+            vm.OnlyWithEmail = !vm.OnlyWithEmail;
+        e.Handled = true;
+    }
+
     private void OnIgLinkClick(object? sender, PointerPressedEventArgs e)
     {
         if (sender is Control { DataContext: Artist artist })

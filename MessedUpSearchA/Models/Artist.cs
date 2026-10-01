@@ -18,6 +18,14 @@ public class Artist
     public bool IsRedFlagged { get; set; }
     public string CrmStatus { get; set; } = string.Empty;
     public string Notes { get; set; } = string.Empty;
+
+    // Контакты для рассылки (1.1). Заполняются руками или из подсказок по описанию профиля.
+    public string Email { get; set; } = string.Empty;
+    public string Telegram { get; set; } = string.Empty;
+    public string OtherContact { get; set; } = string.Empty;
+
+    /// <summary>Описание профиля с площадки — из него подсказываются контакты.</summary>
+    public string Bio { get; set; } = string.Empty;
     public string CreatedAt { get; set; } = string.Empty;
     public string LastParsed { get; set; } = string.Empty;
 

@@ -2,6 +2,7 @@
 using System;
 using System.Linq;
 using Avalonia.Threading;
+using Avalonia.VisualTree;
 using MessedUpSearchA.ViewModels;
 
 namespace MessedUpSearchA.Services;
@@ -78,6 +79,32 @@ public static class UiScenes
                 main.IsBeatsSelected = false;
                 if (main.ArtistsVm.Artists.FirstOrDefault() is { } artist)
                     main.ArtistsVm.BeginEditArtist(artist);
+                break;
+
+            case "artist-contacts":
+                main.IsBeatsSelected = false;
+                if (main.ArtistsVm.Artists.FirstOrDefault() is { } withBio)
+                {
+                    main.ArtistsVm.BeginEditArtist(withBio);
+                    main.ArtistsVm.EditEmail = "booking@label.com";
+                    main.ArtistsVm.ShowBioForScene("biz: beats (at) proton (dot) me · tg: @artist_mgr · instagram.com/artist.ig");
+                }
+                break;
+
+            // Низ настроек: «О программе» и «Сообщить о проблеме».
+            case "report":
+                main.IsSettingsOpen = true;
+                DispatcherTimer.RunOnce(() =>
+                {
+                    if (Avalonia.Application.Current?.ApplicationLifetime is
+                        Avalonia.Controls.ApplicationLifetimes.IClassicDesktopStyleApplicationLifetime { MainWindow: { } window })
+                    {
+                        foreach (var scroll in Avalonia.VisualTree.VisualExtensions.GetVisualDescendants(window)
+                                     .OfType<Avalonia.Controls.ScrollViewer>()
+                                     .Where(s => s.FindAncestorOfType<Views.SettingsOverlay>() is not null))
+                            scroll.ScrollToEnd();
+                    }
+                }, TimeSpan.FromMilliseconds(600));
                 break;
 
             case "parser":

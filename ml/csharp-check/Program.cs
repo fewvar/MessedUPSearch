@@ -7,6 +7,34 @@ using MessedUpSearchA.Services.Ml;
 // Список — по пути на строку. Выход: int файлов, int размерность, затем на файл
 // сырой вектор EffNet и финальный (после головы), float32. Не посчитался — нули.
 
+// Письмо «Сообщить о проблеме»: MlCheck report — mailto, его длина и расшифрованный текст.
+if (args.Length == 1 && args[0] == "report")
+{
+    MessedUpSearchA.Services.AppLog.Enabled = true;
+    var uri = MessedUpSearchA.Services.SupportReport.BuildMailto("v1.1", "Что случилось и что ты делал перед этим?");
+    Console.WriteLine($"длина {uri.Length}\n{Uri.UnescapeDataString(uri)}");
+    return 0;
+}
+
+// Подсказки контактов: MlCheck hints <ссылка на профиль> — описание с площадки и что из него достаётся.
+if (args.Length == 2 && args[0] == "hints")
+{
+    string[] samples =
+    [
+        "booking: Name.Surname@Gmail.com | tg: @some_manager",
+        "biz → beats (at) proton (dot) me  ig: @artist.nick",
+        "t.me/artistchannel instagram.com/artist_ig/ instagram.com/p/xyz",
+        "мейл для битов: beatz@mail.ru, инст @nick_ru",
+        "Instagram: https://instagram.com/real_one telegram: https://t.me/real_tg big trap figure"
+    ];
+    foreach (var sample in samples)
+        Console.WriteLine($"{sample}\n  -> {string.Join(", ", MessedUpSearchA.Services.Parsing.ContactHints.Extract(sample))}");
+
+    var bio = await MessedUpSearchA.Services.Parsing.ContactHints.FetchBioAsync(args[1]);
+    Console.WriteLine($"\nпрофиль: {bio?.Replace('\n', ' ')}\n  -> {string.Join(", ", MessedUpSearchA.Services.Parsing.ContactHints.Extract(bio))}");
+    return 0;
+}
+
 // Звуки интерфейса в WAV: MlCheck sounds <папка> — послушать и проверить уровни.
 if (args.Length == 2 && args[0] == "sounds")
 {

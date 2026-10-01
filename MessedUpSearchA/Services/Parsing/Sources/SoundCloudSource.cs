@@ -208,6 +208,13 @@ public class SoundCloudSource : IArtistSource, IAudioResolver
             : new ResolvedAudio { Urls = segments, AudioKind = AudioKinds.Full };
     }
 
+    /// <summary>Описание профиля — из него подсказываются контакты.</summary>
+    public async Task<string> GetBioAsync(string profileUrl, CancellationToken ct)
+    {
+        using var doc = await GetJsonAsync($"{Api}/resolve?url={Uri.EscapeDataString(profileUrl)}", ct);
+        return doc.RootElement.Str("kind") == "user" ? doc.RootElement.Str("description") : string.Empty;
+    }
+
     private async Task<JsonDocument> GetJsonAsync(string url, CancellationToken ct)
     {
         await _limiter.WaitAsync(ct);

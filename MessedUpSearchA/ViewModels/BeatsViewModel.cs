@@ -89,6 +89,7 @@ public partial class BeatsViewModel : ViewModelBase
     [ObservableProperty] private string _editKey = string.Empty;
     [ObservableProperty] private string _editStatus = "POTENTIAL";
     [ObservableProperty] private string _editLicense = string.Empty;
+    [ObservableProperty] private string _editShareUrl = string.Empty;
 
     public ObservableCollection<SimilarArtistItem> SimilarArtists { get; } = new();
 
@@ -249,6 +250,7 @@ public partial class BeatsViewModel : ViewModelBase
         EditKey = string.Empty;
         EditStatus = "POTENTIAL";
         EditLicense = string.Empty;
+        EditShareUrl = string.Empty;
         LoadArtistPicks(0);
         LoadSimilarity(0);
         IsEditorOpen = true;
@@ -266,6 +268,7 @@ public partial class BeatsViewModel : ViewModelBase
         EditKey = beat.Key;
         EditStatus = string.IsNullOrWhiteSpace(beat.Status) ? "POTENTIAL" : beat.Status;
         EditLicense = beat.LicenseType;
+        EditShareUrl = beat.ShareUrl;
         LoadArtistPicks(beat.Id);
         LoadSimilarity(beat.Id);
         IsEditorOpen = true;
@@ -541,6 +544,7 @@ public partial class BeatsViewModel : ViewModelBase
         beat.StatusColor = StatusColorFor(EditStatus);
         beat.IsSold = EditStatus == "SOLD";
         beat.LicenseType = EditStatus == "SOLD" ? EditLicense.Trim() : string.Empty;
+        beat.ShareUrl = EditShareUrl.Trim();
         if (_editingId == 0)
             beat.FilePath = _editFilePath;
 

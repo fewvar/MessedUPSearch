@@ -37,6 +37,17 @@ public partial class SettingsOverlay : UserControl
         launcher?.LaunchDirectoryInfoAsync(new System.IO.DirectoryInfo(folder));
     }
 
+    private void OnReportProblemClick(object? sender, RoutedEventArgs e)
+    {
+        var top = TopLevel.GetTopLevel(this);
+        if ((top as Window)?.DataContext is not MainWindowViewModel vm)
+            return;
+
+        var uri = MessedUpSearchA.Services.SupportReport.BuildMailto(
+            vm.AppVersion, MessedUpSearchA.Services.Localization.Localizer.Instance["Settings.ReportIntro"]);
+        top?.Launcher.LaunchUriAsync(new System.Uri(uri));
+    }
+
     private async void OnChooseMediaFolderClick(object? sender, RoutedEventArgs e)
     {
         var top = TopLevel.GetTopLevel(this);

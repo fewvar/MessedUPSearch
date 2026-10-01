@@ -332,10 +332,17 @@
                     <TextBox Text="{Binding EditName}"/>
                 </StackPanel>
 
-                <StackPanel Spacing="4">
-                    <TextBlock Classes="filterLabel" Text="{loc:Tr Beats.Genre}"/>
-                    <TextBox Text="{Binding EditTags}" PlaceholderText="Rage, Plugg"/>
-                </StackPanel>
+                <!-- Ссылка на бит уходит в письме вместо вложения (рассылка 1.1). -->
+                <Grid ColumnDefinitions="*,14,*">
+                    <StackPanel Grid.Column="0" Spacing="4">
+                        <TextBlock Classes="filterLabel" Text="{loc:Tr Beats.Genre}"/>
+                        <TextBox Text="{Binding EditTags}" PlaceholderText="Rage, Plugg"/>
+                    </StackPanel>
+                    <StackPanel Grid.Column="2" Spacing="4">
+                        <TextBlock Classes="filterLabel" Text="{loc:Tr BeatEditor.ShareUrl}"/>
+                        <TextBox Text="{Binding EditShareUrl}" PlaceholderText="https://…"/>
+                    </StackPanel>
+                </Grid>
 
                 <Grid ColumnDefinitions="*,14,*">
                     <StackPanel Grid.Column="0" Spacing="4">
