@@ -107,6 +107,38 @@ public static class UiScenes
                 }, TimeSpan.FromMilliseconds(600));
                 break;
 
+            // Окно рассылки: первый бит, первые пять артистов (почта у них — из демо-копии базы).
+            case "mail":
+                if (main.BeatsVm.Beats.FirstOrDefault() is { } mailed)
+                    main.MailVm.Open(mailed.Id, main.ArtistsVm.Artists.Take(5).Select(a => a.Id).ToList());
+                break;
+
+            // Живая отправка на тестовый SMTP (127.0.0.1:2525): кадр ловит отсчёт в футере.
+            case "mail-send":
+                SecretStore.Set(Mail.MailQueue.PasswordKey("test@local.test"), "secret");
+                if (main.BeatsVm.Beats.FirstOrDefault() is { } sending)
+                {
+                    main.MailVm.Open(sending.Id, main.ArtistsVm.Artists.Take(5).Select(a => a.Id).ToList());
+                    main.MailVm.SendCommand.Execute(null);
+                }
+                break;
+
+            case "beat-analyze-pick":
+                if (main.BeatsVm.Beats.FirstOrDefault() is { } picked)
+                {
+                    main.BeatsVm.PropertyChanged += (_, e) =>
+                    {
+                        if (e.PropertyName != nameof(BeatsViewModel.IsAnalyzing) || main.BeatsVm.IsAnalyzing)
+                            return;
+                        foreach (var item in main.BeatsVm.SimilarArtists.Take(3))
+                            item.IsPicked = true;
+                        main.BeatsVm.NotifyPickedChanged();
+                    };
+                    main.BeatsVm.BeginEditBeat(picked);
+                    main.BeatsVm.AnalyzeSimilarityCommand.Execute(null);
+                }
+                break;
+
             case "parser":
                 main.IsParserOpen = true;
                 break;

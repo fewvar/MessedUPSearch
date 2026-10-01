@@ -69,6 +69,84 @@
                             </StackPanel>
                         </Border>
 
+                        <!-- Почта для рассылки: пароль приложения уходит в связку ключей, не в settings.json. -->
+                        <Border Classes="settingsSection">
+                            <StackPanel>
+                                <TextBlock Classes="settingsHeader" Text="{loc:Tr Settings.Mail}"/>
+                                <Grid ColumnDefinitions="*,Auto" Margin="0,0,0,12">
+                                    <StackPanel Grid.Column="0">
+                                        <TextBlock Classes="settingsLabel" Text="{loc:Tr Mail.Address}"/>
+                                        <TextBlock Classes="settingsHint" Text="{loc:Tr Mail.AddressHint}" TextWrapping="Wrap" MaxWidth="460" HorizontalAlignment="Left"/>
+                                    </StackPanel>
+                                    <TextBox Grid.Column="1" Classes="settings" Width="260"
+                                             Text="{Binding MailAddress}" PlaceholderText="name@gmail.com"
+                                             VerticalAlignment="Center"/>
+                                </Grid>
+                                <Grid ColumnDefinitions="*,Auto" Margin="0,0,0,12">
+                                    <StackPanel Grid.Column="0">
+                                        <TextBlock Classes="settingsLabel" Text="{loc:Tr Mail.SenderName}"/>
+                                        <TextBlock Classes="settingsHint" Text="{loc:Tr Mail.SenderNameHint}" TextWrapping="Wrap" MaxWidth="460" HorizontalAlignment="Left"/>
+                                    </StackPanel>
+                                    <TextBox Grid.Column="1" Classes="settings" Width="260"
+                                             Text="{Binding MailSenderName}" VerticalAlignment="Center"/>
+                                </Grid>
+                                <Grid ColumnDefinitions="*,Auto" Margin="0,0,0,12">
+                                    <StackPanel Grid.Column="0">
+                                        <TextBlock Classes="settingsLabel" Text="{loc:Tr Mail.Password}"/>
+                                        <TextBlock Classes="settingsHint" Text="{Binding MailHelp}" TextWrapping="Wrap" MaxWidth="460" HorizontalAlignment="Left"/>
+                                    </StackPanel>
+                                    <StackPanel Grid.Column="1" Spacing="4" VerticalAlignment="Center">
+                                        <TextBox Classes="settings" Width="260"
+                                                 Text="{Binding MailPassword}" PasswordChar="•"
+                                                 PlaceholderText="{loc:Tr Mail.PasswordSaved}"
+                                                 IsVisible="{Binding HasSavedMailPassword}"/>
+                                        <TextBox Classes="settings" Width="260"
+                                                 Text="{Binding MailPassword}" PasswordChar="•"
+                                                 IsVisible="{Binding !HasSavedMailPassword}"/>
+                                        <Button Classes="statusButton" HorizontalAlignment="Right"
+                                                Content="{loc:Tr Mail.ForgetPassword}"
+                                                IsVisible="{Binding HasSavedMailPassword}"
+                                                Command="{Binding ForgetMailPasswordCommand}"/>
+                                    </StackPanel>
+                                </Grid>
+
+                                <Grid ColumnDefinitions="*,Auto" Margin="0,0,0,12">
+                                    <StackPanel Grid.Column="0">
+                                        <TextBlock Classes="settingsLabel" Text="{loc:Tr Mail.Servers}"/>
+                                        <TextBlock Classes="settingsHint" Text="{loc:Tr Mail.ServersHint}" TextWrapping="Wrap" MaxWidth="460" HorizontalAlignment="Left"/>
+                                    </StackPanel>
+                                    <Grid Grid.Column="1" ColumnDefinitions="Auto,156,8,56" RowDefinitions="Auto,6,Auto"
+                                          VerticalAlignment="Center">
+                                        <TextBlock Grid.Row="0" Grid.Column="0" Text="SMTP" Classes="settingsHint"
+                                                   VerticalAlignment="Center" Margin="0,0,8,0"/>
+                                        <TextBox Grid.Row="0" Grid.Column="1" Classes="settings" Width="156" Text="{Binding SmtpHost}"/>
+                                        <TextBox Grid.Row="0" Grid.Column="3" Classes="settings" Width="56" MinWidth="0" Text="{Binding SmtpPort}"/>
+                                        <TextBlock Grid.Row="2" Grid.Column="0" Text="IMAP" Classes="settingsHint"
+                                                   VerticalAlignment="Center" Margin="0,0,8,0"/>
+                                        <TextBox Grid.Row="2" Grid.Column="1" Classes="settings" Width="156" Text="{Binding ImapHost}"/>
+                                        <TextBox Grid.Row="2" Grid.Column="3" Classes="settings" Width="56" MinWidth="0" Text="{Binding ImapPort}"/>
+                                    </Grid>
+                                </Grid>
+                                <Grid ColumnDefinitions="*,Auto" Margin="0,0,0,12">
+                                    <StackPanel Grid.Column="0">
+                                        <TextBlock Classes="settingsLabel" Text="{loc:Tr Mail.DailyLimit}"/>
+                                        <TextBlock Classes="settingsHint" Text="{loc:Tr Mail.DailyLimitHint}" TextWrapping="Wrap" MaxWidth="460" HorizontalAlignment="Left"/>
+                                    </StackPanel>
+                                    <TextBox Grid.Column="1" Classes="settings" Width="80"
+                                             Text="{Binding MailDailyLimit}" VerticalAlignment="Center"/>
+                                </Grid>
+                                <Grid ColumnDefinitions="*,Auto">
+                                    <TextBlock Grid.Column="0" Classes="settingsHint" Text="{Binding MailTestStatus}"
+                                               TextWrapping="Wrap" MaxWidth="460" HorizontalAlignment="Left"
+                                               VerticalAlignment="Center"/>
+                                    <Button Grid.Column="1" Classes="action" Content="{loc:Tr Mail.SaveAndTest}"
+                                            VerticalAlignment="Center"
+                                            IsEnabled="{Binding !IsTestingMail}"
+                                            Command="{Binding TestMailCommand}"/>
+                                </Grid>
+                            </StackPanel>
+                        </Border>
+
                         <Border Classes="settingsSection">
                             <StackPanel>
                                 <TextBlock Classes="settingsHeader" Text="{loc:Tr Settings.Parser}"/>

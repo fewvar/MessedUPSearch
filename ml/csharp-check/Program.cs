@@ -16,6 +16,114 @@ if (args.Length == 1 && args[0] == "report")
     return 0;
 }
 
+// Рассылка целиком на тестовом SMTP (127.0.0.1:2525, ml-скрипт не нужен — сервер в scratchpad):
+//   MlCheck mail <папка данных-копия>
+// Пароль кладётся в связку ключей и в конце удаляется. Печатает журнал писем, отметки в CRM и лимит.
+if (args.Length == 2 && args[0] == "mail")
+{
+    Environment.SetEnvironmentVariable(MessedUpSearchA.Data.AppPaths.DataDirVariable, args[1]);
+    MessedUpSearchA.Services.AppLog.Enabled = true;
+    using (var db = new MessedUpSearchA.Data.AppDbContext())
+    {
+        Microsoft.EntityFrameworkCore.RelationalDatabaseFacadeExtensions.Migrate(db.Database);
+        var artists = db.Artists.OrderBy(a => a.Id).Take(3).ToList();
+        artists[0].Email = "one@ok.test";
+        artists[1].Email = "bad@reject.test";
+        artists[2].Email = "two@ok.test";
+        db.Beats.First().ShareUrl = "https://example.com/beat";
+        db.SaveChanges();
+    }
+
+    var settings = new MessedUpSearchA.Data.AppSettings
+    {
+        MailAddress = "test@local.test", MailSenderName = "fewvar", SmtpHost = "127.0.0.1", SmtpPort = 2525,
+        MailDailyLimit = 50
+    };
+    var key = MessedUpSearchA.Services.Mail.MailQueue.PasswordKey(settings.MailAddress);
+    Console.WriteLine($"связка ключей: запись {MessedUpSearchA.Services.SecretStore.Set(key, "secret")}, " +
+                      $"чтение {(MessedUpSearchA.Services.SecretStore.Get(key) == "secret" ? "совпало" : "НЕ совпало")}");
+
+    async Task RunQueue(MessedUpSearchA.Data.AppSettings s, int count)
+    {
+        var queue = new MessedUpSearchA.Services.Mail.MailQueue(() => s) { MinPauseSeconds = 1, MaxPauseSeconds = 2 };
+        using var db = new MessedUpSearchA.Data.AppDbContext();
+        var beat = db.Beats.First();
+        var vm = new MessedUpSearchA.ViewModels.MailViewModel(queue, () => s);
+        vm.Open(beat.Id, db.Artists.OrderBy(a => a.Id).Take(count).Select(a => a.Id).ToList());
+        foreach (var r in vm.Recipients)
+            Console.WriteLine($"  получатель {r.Nickname} <{r.Email}> выбран={r.IsSelected} {r.Warning}");
+        Console.WriteLine($"  предпросмотр: {vm.PreviewSubject} | {vm.PreviewBody.Replace('\n', ' ')}");
+        Console.WriteLine($"  можно отправить: {vm.CanSend} {vm.Problem} · {vm.Summary}");
+        vm.SendCommand.Execute(null);
+        await Task.Delay(300);
+        while (queue.IsRunning) await Task.Delay(200);
+    }
+
+    MessedUpSearchA.Services.Toasts.Shown += t => Console.WriteLine($"  тост: {t}");
+    Console.WriteLine("прогон 1: три артиста, один адрес отклоняется");
+    await RunQueue(settings, 3);
+
+    using (var db = new MessedUpSearchA.Data.AppDbContext())
+    {
+        foreach (var m in db.OutgoingMails.ToList())
+            Console.WriteLine($"  журнал: {m.ToAddress} {m.Status} id={(m.MessageId.Length > 0 ? "есть" : "нет")} {m.Error}");
+        foreach (var a in db.Artists.OrderBy(a => a.Id).Take(3).ToList())
+        {
+            var link = db.SentBeatsLog.FirstOrDefault(l => l.ArtistId == a.Id);
+            Console.WriteLine($"  CRM: {a.Nickname} статус «{a.CrmStatus}» отправлен={link?.IsSent}");
+        }
+    }
+
+    Console.WriteLine("прогон 2: тот же бит тем же — защита от спама");
+    await RunQueue(settings, 3);
+
+    Console.WriteLine("прогон 3: неверный пароль");
+    MessedUpSearchA.Services.SecretStore.Set(key, "wrong");
+    using (var db = new MessedUpSearchA.Data.AppDbContext())
+    {
+        db.OutgoingMails.RemoveRange(db.OutgoingMails);
+        db.SaveChanges();
+    }
+    await RunQueue(settings, 1);
+
+    Console.WriteLine("прогон 4: лимит 1 письмо в сутки");
+    MessedUpSearchA.Services.SecretStore.Set(key, "secret");
+    using (var db = new MessedUpSearchA.Data.AppDbContext())
+    {
+        db.OutgoingMails.RemoveRange(db.OutgoingMails);
+        db.SaveChanges();
+    }
+    settings.MailDailyLimit = 1;
+    var limited = settings;
+    int[] ids;
+    using (var db = new MessedUpSearchA.Data.AppDbContext())
+        ids = db.Artists.OrderBy(a => a.Id).Take(3).Select(a => a.Id).ToArray();
+    {
+        var queue = new MessedUpSearchA.Services.Mail.MailQueue(() => limited) { MinPauseSeconds = 1, MaxPauseSeconds = 1 };
+        queue.Enqueue([
+            new MessedUpSearchA.Services.Mail.MailJob(ids[0], 1, null, "pitch", "one@ok.test", "s1", "b1"),
+            new MessedUpSearchA.Services.Mail.MailJob(ids[2], 999, null, "pitch", "two@ok.test", "s2", "b2")]);
+        await Task.Delay(300);
+        while (queue.IsRunning) await Task.Delay(200);
+    }
+
+    Console.WriteLine("лог:\n" + string.Join("\n", File.ReadLines(MessedUpSearchA.Services.AppLog.FilePath).Where(l => l.Contains("рассылк") || l.Contains("провер"))));
+    MessedUpSearchA.Services.SecretStore.Delete(key);
+    Console.WriteLine($"связка ключей после удаления: {MessedUpSearchA.Services.SecretStore.Get(key) ?? "пусто"}");
+    return 0;
+}
+
+// Подстановка в шаблон без BPM / тональности: MlCheck render
+if (args.Length == 1 && args[0] == "render")
+{
+    var a = new MessedUpSearchA.Models.Artist { Nickname = "nick" };
+    foreach (var (bpm, key) in new[] { (150, "C#min"), (0, "C#min"), (150, ""), (0, "") })
+        Console.WriteLine(MessedUpSearchA.Services.Mail.MailTemplates.Render(
+            "бит: {beat} ({bpm} BPM, {key}). Ссылка {link}", a,
+            new MessedUpSearchA.Models.Beat { BeatName = "pink", Bpm = bpm, Key = key, ShareUrl = "u" }, "me"));
+    return 0;
+}
+
 // Подсказки контактов: MlCheck hints <ссылка на профиль> — описание с площадки и что из него достаётся.
 if (args.Length == 2 && args[0] == "hints")
 {

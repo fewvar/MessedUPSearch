@@ -108,6 +108,9 @@ public partial class BeatsView : UserControl
             main.Player.PlayArtistTracks(tracks, 0, item.Artist);
     }
 
+    private void OnPickSimilarClick(object? sender, RoutedEventArgs e) =>
+        (DataContext as BeatsViewModel)?.NotifyPickedChanged();
+
     private async void OnImportSimilarClick(object? sender, RoutedEventArgs e)
     {
         if (sender is Control { DataContext: SimilarArtistItem item } && DataContext is BeatsViewModel vm)

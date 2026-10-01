@@ -189,6 +189,11 @@
         <Setter Property="RenderTransform" Value="scale(0.96)"/>
     </Style>
 
+    <!-- Недоступная кнопка (рассылка без почты, без получателей) — приглушена, а не как живая. -->
+    <Style Selector="Button.action:disabled, Button.statusButton:disabled">
+        <Setter Property="Opacity" Value="0.35"/>
+    </Style>
+
     <!-- «Уменьшить движение»: без масштаба при нажатии, смена цвета остаётся (Apple это допускает). -->
     <Style Selector="Window.reduceMotion Button:pressed">
         <Setter Property="RenderTransform" Value="scale(1)"/>

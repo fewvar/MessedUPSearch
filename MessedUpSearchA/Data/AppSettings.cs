@@ -32,6 +32,20 @@ public class AppSettings
     /// <summary>Громкость плеера, 0..1.</summary>
     public double PlayerVolume { get; set; } = 0.8;
 
+    // Почта для рассылки. Пароль — в системном хранилище (SecretStore), не здесь.
+    public string MailAddress { get; set; } = string.Empty;
+    public string MailSenderName { get; set; } = string.Empty;
+    public string SmtpHost { get; set; } = string.Empty;
+    public int SmtpPort { get; set; } = 465;
+    public string ImapHost { get; set; } = string.Empty;
+    public int ImapPort { get; set; } = 993;
+
+    /// <summary>Сколько писем в сутки, не больше. Почтовые сервисы режут массовые рассылки с личных ящиков.</summary>
+    public int MailDailyLimit { get; set; } = 50;
+
+    /// <summary>Шаблон последней рассылки — открывается первым в следующий раз.</summary>
+    public int LastPitchTemplateId { get; set; }
+
     public static string DefaultMediaFolder => Path.Combine(
         Environment.GetFolderPath(Environment.SpecialFolder.UserProfile),
         "Downloads", "MessedUpSearch");

@@ -23,6 +23,9 @@ public partial class MainWindow : Window
         InitializeEffects();
     }
 
+    private void OnStopMailClick(object? sender, Avalonia.Interactivity.RoutedEventArgs e) =>
+        (DataContext as MainWindowViewModel)?.Mail.Stop();
+
     private void OnPlayerKeys(object? sender, KeyEventArgs e)
     {
         if (DataContext is not MainWindowViewModel { Player: { HasTrack: true } player })

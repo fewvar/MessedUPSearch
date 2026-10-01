@@ -106,6 +106,9 @@ public partial class BeatsViewModel : ViewModelBase
     /// <summary>Артиста из выдачи добавили в базу — вкладке артистов пора перечитать список.</summary>
     public event Action? ArtistImported;
 
+    /// <summary>«Разослать»: номер бита и кого отметить получателями.</summary>
+    public event Action<int, IReadOnlyCollection<int>>? MailRequested;
+
     /// <summary>Индекс не скачался — второй раз за сессию не пробуем, чтобы не тормозить каждый анализ.</summary>
     private static bool _indexDownloadFailed;
 
@@ -408,6 +411,7 @@ public partial class BeatsViewModel : ViewModelBase
     private void LoadSimilarity(int beatId)
     {
         SimilarArtists.Clear();
+        OnPropertyChanged(nameof(HasPickedArtists));
         HasSimilarity = false;
         AnalysisStatus = string.Empty;
         _pendingSimilarity = null;
@@ -448,6 +452,7 @@ public partial class BeatsViewModel : ViewModelBase
     private void ShowSimilarity(IEnumerable<SimilarArtistItem> items, IEnumerable<string> references)
     {
         SimilarArtists.Clear();
+        OnPropertyChanged(nameof(HasPickedArtists));
         var first = true;
         foreach (var item in items)
         {
@@ -501,6 +506,8 @@ public partial class BeatsViewModel : ViewModelBase
         }
     }
 
+    private HashSet<int> _loadedAssigned = new();
+
     private void LoadArtistPicks(int beatId)
     {
         using var db = new AppDbContext();
@@ -508,6 +515,7 @@ public partial class BeatsViewModel : ViewModelBase
             ? new HashSet<int>()
             : db.SentBeatsLog.Where(s => s.BeatId == beatId).Select(s => s.ArtistId).ToHashSet();
 
+        _loadedAssigned = assigned;
         ArtistPicks.Clear();
         foreach (var a in db.Artists.OrderBy(a => a.Nickname).ToList())
             ArtistPicks.Add(new ArtistPick { Id = a.Id, Nickname = a.Nickname, IsSelected = assigned.Contains(a.Id) });
@@ -516,8 +524,58 @@ public partial class BeatsViewModel : ViewModelBase
     [RelayCommand]
     private void Save()
     {
-        if (string.IsNullOrWhiteSpace(EditName))
+        if (PersistBeat() is null)
             return;
+
+        IsEditorOpen = false;
+        LoadBeats();
+    }
+
+    /// <summary>«РАЗОСЛАТЬ» в карточке: сохранить бит и открыть рассылку на отмеченных артистов.</summary>
+    [RelayCommand]
+    private void MailBeat()
+    {
+        var picked = ArtistPicks.Where(p => p.IsSelected).Select(p => p.Id).ToList();
+        if (PersistBeat() is not { } beatId)
+            return;
+
+        IsEditorOpen = false;
+        LoadBeats();
+        MailRequested?.Invoke(beatId, picked);
+    }
+
+    /// <summary>
+    /// «Разослать отмеченным» в выдаче анализа: кого нет в базе — импортируем (как ＋),
+    /// затем рассылка. Почты у свежих артистов обычно нет — окно рассылки подскажет её из профиля.
+    /// </summary>
+    [RelayCommand]
+    private async Task MailPickedAsync()
+    {
+        var picked = SimilarArtists.Where(a => a.IsPicked).ToList();
+        if (picked.Count == 0)
+            return;
+
+        foreach (var item in picked.Where(a => a.ArtistId is null))
+            await ImportArtistAsync(item);
+
+        var ids = picked.Where(a => a.ArtistId is not null).Select(a => a.ArtistId!.Value).ToList();
+        if (ids.Count == 0 || PersistBeat() is not { } beatId)
+            return;
+
+        IsEditorOpen = false;
+        LoadBeats();
+        MailRequested?.Invoke(beatId, ids);
+    }
+
+    public bool HasPickedArtists => SimilarArtists.Any(a => a.IsPicked);
+
+    public void NotifyPickedChanged() => OnPropertyChanged(nameof(HasPickedArtists));
+
+    /// <returns>Номер бита в базе; null — без названия не сохраняем.</returns>
+    private int? PersistBeat()
+    {
+        if (string.IsNullOrWhiteSpace(EditName))
+            return null;
 
         int.TryParse(EditBpm, out var bpm);
 
@@ -558,8 +616,7 @@ public partial class BeatsViewModel : ViewModelBase
             _pendingSimilarity = null;
         }
 
-        IsEditorOpen = false;
-        LoadBeats();
+        _editingId = beat.Id;
 
         if (becomesSold)
         {
@@ -567,6 +624,8 @@ public partial class BeatsViewModel : ViewModelBase
             // Сбросить, чтобы вспышка не повторялась при следующей перерисовке таблицы (фильтр, сортировка).
             Avalonia.Threading.DispatcherTimer.RunOnce(() => JustSoldBeatId = 0, TimeSpan.FromSeconds(1.5));
         }
+
+        return beat.Id;
     }
 
     private void SyncArtistLinks(AppDbContext db, int beatId)
@@ -574,7 +633,9 @@ public partial class BeatsViewModel : ViewModelBase
         var selected = ArtistPicks.Where(p => p.IsSelected).Select(p => p.Id).ToHashSet();
         var existing = db.SentBeatsLog.Where(s => s.BeatId == beatId).ToList();
 
-        foreach (var log in existing.Where(l => !selected.Contains(l.ArtistId)))
+        // Снимаем только те связи, что были при открытии карточки: пока она открыта,
+        // фоновая рассылка могла добавить новые — их галочек здесь нет, но удалять их нельзя.
+        foreach (var log in existing.Where(l => !selected.Contains(l.ArtistId) && _loadedAssigned.Contains(l.ArtistId)))
             db.SentBeatsLog.Remove(log);
 
         var alreadyLinked = existing.Select(l => l.ArtistId).ToHashSet();

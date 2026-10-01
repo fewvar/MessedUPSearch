@@ -9,6 +9,7 @@ using MessedUpSearchA.Models;
 using MessedUpSearchA.Converters;
 using MessedUpSearchA.Services;
 using MessedUpSearchA.Services.Localization;
+using MessedUpSearchA.Services.Mail;
 
 namespace MessedUpSearchA.ViewModels;
 
@@ -24,6 +25,10 @@ public partial class MainWindowViewModel : ViewModelBase
     public PlayerViewModel Player { get; }
     public ArtistsViewModel ArtistsVm => _artistsVm;
     public ParserViewModel ParserVm => _parserVm;
+
+    /// <summary>Рассылка идёт в фоне — одна на приложение.</summary>
+    public MailQueue Mail { get; }
+    public MailViewModel MailVm { get; }
 
     public ObservableCollection<CrmEntry> CrmEntries { get; } = new();
 
@@ -48,6 +53,22 @@ public partial class MainWindowViewModel : ViewModelBase
     [ObservableProperty] private bool _enableParserLogs = true;
     [ObservableProperty] private bool _animations = true;
     [ObservableProperty] private bool _sounds = true;
+
+    // Почта. Пароль сюда не читается: он в связке ключей, поле только для ввода нового.
+    [ObservableProperty] private string _mailAddress = string.Empty;
+    [ObservableProperty] private string _mailSenderName = string.Empty;
+    [ObservableProperty] private string _mailPassword = string.Empty;
+    [ObservableProperty] private string _smtpHost = string.Empty;
+    [ObservableProperty] private int _smtpPort = 465;
+    [ObservableProperty] private string _imapHost = string.Empty;
+    [ObservableProperty] private int _imapPort = 993;
+    [ObservableProperty] private int _mailDailyLimit = 50;
+    [ObservableProperty] private bool _hasSavedMailPassword;
+    [ObservableProperty] private bool _isTestingMail;
+    [ObservableProperty] private string _mailTestStatus = string.Empty;
+
+    /// <summary>Где взять пароль приложения — под почту, которую ввели.</summary>
+    public string MailHelp => Localizer.Instance[MailPresets.For(MailAddress)?.HelpKey ?? "Mail.HelpOther"];
 
     /// <summary>Идёт анализ бита или поиск парсера — звезда в шапке вращается.</summary>
     public bool IsBusy => _beatsVm.IsAnalyzing || _parserVm.IsSearching;
@@ -96,6 +117,21 @@ public partial class MainWindowViewModel : ViewModelBase
         _language = string.IsNullOrWhiteSpace(_settings.Language) ? "English" : _settings.Language;
         ApplyLanguage(_language);
 
+        _mailAddress = _settings.MailAddress;
+        _mailSenderName = _settings.MailSenderName;
+        _smtpHost = _settings.SmtpHost;
+        _smtpPort = _settings.SmtpPort;
+        _imapHost = _settings.ImapHost;
+        _imapPort = _settings.ImapPort;
+        _mailDailyLimit = Math.Clamp(_settings.MailDailyLimit, 1, 500);
+        _hasSavedMailPassword = _mailAddress.Length > 0 && SecretStore.Get(MailQueue.PasswordKey(_mailAddress)) is not null;
+
+        Mail = new MailQueue(() => _settings);
+        MailVm = new MailViewModel(Mail, () => _settings);
+        Mail.MailSent += () => _artistsVm.LoadArtists();
+        MailVm.ContactsChanged += () => _artistsVm.LoadArtists();
+        _beatsVm.MailRequested += (beatId, artistIds) => MailVm.Open(beatId, artistIds);
+
         _enableParserLogs = _settings.EnableParserLogs;
         _animations = _settings.Animations;
         _sounds = _settings.Sounds;
@@ -108,6 +144,7 @@ public partial class MainWindowViewModel : ViewModelBase
         {
             OnPropertyChanged(nameof(ReminderDaysLabel));
             OnPropertyChanged(nameof(ParserStatus));
+            OnPropertyChanged(nameof(MailHelp));
         };
 
         _beatsVm.ArtistImported += () =>
@@ -177,6 +214,98 @@ public partial class MainWindowViewModel : ViewModelBase
     {
         _settings.GeniusAccessToken = value.Trim();
         _settings.Save();
+    }
+
+    partial void OnMailAddressChanged(string value)
+    {
+        var address = value.Trim();
+        _settings.MailAddress = address;
+
+        // Знакомый домен — серверы подставляются сами, вписывать руками не нужно.
+        if (MailPresets.For(address) is { } preset)
+        {
+            SmtpHost = preset.SmtpHost;
+            SmtpPort = preset.SmtpPort;
+            ImapHost = preset.ImapHost;
+            ImapPort = preset.ImapPort;
+        }
+
+        HasSavedMailPassword = address.Length > 0 && SecretStore.Get(MailQueue.PasswordKey(address)) is not null;
+        MailTestStatus = string.Empty;
+        OnPropertyChanged(nameof(MailHelp));
+        _settings.Save();
+    }
+
+    partial void OnMailSenderNameChanged(string value) { _settings.MailSenderName = value.Trim(); _settings.Save(); }
+    partial void OnSmtpHostChanged(string value) { _settings.SmtpHost = value.Trim(); _settings.Save(); }
+    partial void OnSmtpPortChanged(int value) { _settings.SmtpPort = value; _settings.Save(); }
+    partial void OnImapHostChanged(string value) { _settings.ImapHost = value.Trim(); _settings.Save(); }
+    partial void OnImapPortChanged(int value) { _settings.ImapPort = value; _settings.Save(); }
+    partial void OnMailDailyLimitChanged(int value) { _settings.MailDailyLimit = Math.Clamp(value, 1, 500); _settings.Save(); }
+
+    /// <summary>
+    /// «Сохранить и проверить»: новый пароль (если ввели) — в связку ключей, затем тестовое письмо
+    /// самому себе. Дошло — значит, и рассылка дойдёт.
+    /// </summary>
+    [RelayCommand]
+    private async System.Threading.Tasks.Task TestMailAsync()
+    {
+        var address = MailAddress.Trim();
+        if (address.Length == 0 || SmtpHost.Trim().Length == 0)
+        {
+            MailTestStatus = Localizer.Instance["Mail.SetupFirst"];
+            return;
+        }
+
+        if (MailPassword.Length > 0)
+        {
+            if (!SecretStore.Set(MailQueue.PasswordKey(address), MailPassword))
+            {
+                MailTestStatus = Localizer.Instance["Mail.KeychainFailed"];
+                return;
+            }
+            MailPassword = string.Empty;
+            HasSavedMailPassword = true;
+        }
+
+        var password = SecretStore.Get(MailQueue.PasswordKey(address));
+        if (string.IsNullOrEmpty(password))
+        {
+            MailTestStatus = Localizer.Instance["Mail.NoPassword"];
+            return;
+        }
+
+        IsTestingMail = true;
+        MailTestStatus = Localizer.Instance["Mail.Testing"];
+        try
+        {
+            var account = new MailAccount(address, MailQueue.SenderName(_settings), password, SmtpHost.Trim(), SmtpPort);
+            await MailService.SendAsync(account, address, Localizer.Instance["Mail.TestSubject"], Localizer.Instance["Mail.TestBody"]);
+            MailTestStatus = Localizer.Instance["Mail.TestOk"];
+        }
+        catch (MailSendException ex)
+        {
+            AppLog.Write($"проверка почты: {ex.Failure}: {ex.Message}");
+            MailTestStatus = ex.Failure switch
+            {
+                MailFailure.Auth => Localizer.Instance["Mail.AuthFailed"],
+                MailFailure.Connection => Localizer.Instance["Mail.ConnectionFailed"],
+                _ => ex.Message
+            };
+        }
+        finally
+        {
+            IsTestingMail = false;
+        }
+    }
+
+    /// <summary>«Забыть пароль» — удалить запись из связки ключей.</summary>
+    [RelayCommand]
+    private void ForgetMailPassword()
+    {
+        SecretStore.Delete(MailQueue.PasswordKey(MailAddress));
+        HasSavedMailPassword = false;
+        MailTestStatus = string.Empty;
     }
 
     partial void OnEnableParserLogsChanged(bool value)
@@ -342,6 +471,8 @@ public partial class MainWindowViewModel : ViewModelBase
 
     public void CloseOverlays()
     {
+        if (MailVm.IsOpen)
+            MailVm.CloseCommand.Execute(null);
         IsCrmOpen = false;
         IsSettingsOpen = false;
         IsParserOpen = false;
