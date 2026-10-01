@@ -90,6 +90,8 @@ Everything the analysis finds is saved: an artist's card shows which of your bea
   <img src="docs/en-today.jpg" alt="Today" width="49%">
 </p>
 
+<sub>Screenshots use demo data: made-up emails and replies, addresses in the reserved `.example` domain.</sub>
+
 ## Small things
 
 - Russian and English interface, switches instantly, no restart.
