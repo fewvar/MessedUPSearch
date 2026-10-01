@@ -18,6 +18,12 @@ public partial class BeatsView : UserControl
         InitializeComponent();
     }
 
+    private void OnStatsClick(object? sender, RoutedEventArgs e) =>
+        ((TopLevel.GetTopLevel(this) as Window)?.DataContext as MainWindowViewModel)?.StatsVm.Open();
+
+    private void OnTodayClick(object? sender, RoutedEventArgs e) =>
+        ((TopLevel.GetTopLevel(this) as Window)?.DataContext as MainWindowViewModel)?.ShowToday();
+
     private async void OnAddBeatClick(object? sender, RoutedEventArgs e)
     {
         var top = TopLevel.GetTopLevel(this);

@@ -40,6 +40,8 @@
                     Spacing="12">
             <Button Classes="action" Content="{loc:Tr Buttons.AddBeat}" Click="OnAddBeatClick"/>
             <Button Classes="action" Content="{loc:Tr Buttons.ImportFolder}" Click="OnImportFolderClick"/>
+            <Button Classes="action" Content="{loc:Tr Buttons.Today}" Click="OnTodayClick"/>
+            <Button Classes="action" Content="{loc:Tr Buttons.Stats}" Click="OnStatsClick"/>
         </StackPanel>
 
         <Border Grid.Row="1" Classes="card" ClipToBounds="True">

@@ -1,0 +1,142 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:MessedUpSearchA.ViewModels"
+             xmlns:controls="using:MessedUpSearchA.Controls"
+             xmlns:loc="using:MessedUpSearchA.Services.Localization"
+             x:Class="MessedUpSearchA.Views.TodayOverlay"
+             x:DataType="vm:TodayViewModel">
+
+    <UserControl.Styles>
+        <Style Selector="Border.todayCard">
+            <Setter Property="Background" Value="#14FFFFFF"/>
+            <Setter Property="BorderBrush" Value="#22FFFFFF"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="CornerRadius" Value="8"/>
+            <Setter Property="Padding" Value="18,14"/>
+        </Style>
+        <Style Selector="TextBlock.cardTitle">
+            <Setter Property="FontFamily" Value="{StaticResource HeadingFont}"/>
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="LetterSpacing" Value="2"/>
+            <Setter Property="Foreground" Value="{StaticResource OnBackground}"/>
+            <Setter Property="Margin" Value="0,0,0,8"/>
+        </Style>
+        <Style Selector="TextBlock.line">
+            <Setter Property="FontSize" Value="13"/>
+            <Setter Property="TextWrapping" Value="Wrap"/>
+            <Setter Property="Foreground" Value="{StaticResource OnBackground}"/>
+            <Setter Property="Margin" Value="0,2"/>
+        </Style>
+        <Style Selector="TextBlock.caption">
+            <Setter Property="FontSize" Value="11"/>
+            <Setter Property="TextWrapping" Value="Wrap"/>
+            <Setter Property="Foreground" Value="{StaticResource OnBackgroundDim}"/>
+        </Style>
+    </UserControl.Styles>
+
+    <Grid>
+        <Border Background="#B0000000"/>
+
+        <Border Classes="modal" Width="1000" Height="720">
+            <Grid RowDefinitions="Auto,*" Margin="28,18,18,22">
+                <Grid Grid.Row="0" Margin="0,0,10,14">
+                    <TextBlock Text="{loc:Tr Today.Title}"
+                               FontFamily="{StaticResource HeadingFont}"
+                               FontSize="22" FontWeight="Bold" LetterSpacing="3"
+                               Foreground="{StaticResource OnBackground}"
+                               VerticalAlignment="Center"/>
+                    <Button Classes="modalClose" Content="✕" HorizontalAlignment="Right"
+                            Command="{Binding CloseCommand}"/>
+                </Grid>
+
+                <Grid Grid.Row="1" ColumnDefinitions="1.15*,*" ColumnSpacing="14" Margin="0,0,10,0">
+
+                    <!-- Слева: совет и продуктивные часы. -->
+                    <Grid Grid.Column="0" RowDefinitions="*,Auto" RowSpacing="14">
+                        <Border Grid.Row="0" Classes="todayCard">
+                            <Grid RowDefinitions="Auto,Auto,*,Auto">
+                                <Grid Grid.Row="0" ColumnDefinitions="*,Auto">
+                                    <TextBlock Classes="cardTitle" Text="{loc:Tr Today.Now}"/>
+                                    <Button Grid.Column="1" Classes="statusButton" VerticalAlignment="Top"
+                                            Content="{loc:Tr Today.Refresh}"
+                                            IsVisible="{Binding HasCoach}"
+                                            IsEnabled="{Binding !IsCoachThinking}"
+                                            Command="{Binding RefreshCoachCommand}"/>
+                                </Grid>
+
+                                <StackPanel Grid.Row="1" Spacing="6" Margin="0,0,0,10">
+                                    <StackPanel Orientation="Horizontal" Spacing="8" IsVisible="{Binding IsCoachThinking}">
+                                        <controls:PixelEqualizer IsActive="{Binding IsCoachThinking}"
+                                                                 Brush="{StaticResource OnBackgroundDim}"/>
+                                        <TextBlock Classes="caption" Text="{loc:Tr Today.Thinking}" VerticalAlignment="Center"/>
+                                    </StackPanel>
+                                    <TextBlock Text="{Binding CoachText}" IsVisible="{Binding HasCoach}"
+                                               FontSize="16" LineHeight="24" TextWrapping="Wrap"
+                                               Foreground="{StaticResource OnBackground}"/>
+                                </StackPanel>
+
+                                <ScrollViewer Grid.Row="2" VerticalScrollBarVisibility="Auto">
+                                    <ItemsControl ItemsSource="{Binding Facts}">
+                                        <ItemsControl.ItemTemplate>
+                                            <DataTemplate x:DataType="x:String">
+                                                <TextBlock Classes="line" Text="{Binding StringFormat='· {0}'}"/>
+                                            </DataTemplate>
+                                        </ItemsControl.ItemTemplate>
+                                    </ItemsControl>
+                                </ScrollViewer>
+
+                                <TextBlock Grid.Row="3" Classes="caption" Text="{Binding CoachBasis}" Margin="0,8,0,0"/>
+                            </Grid>
+                        </Border>
+
+                        <Border Grid.Row="1" Classes="todayCard">
+                            <StackPanel>
+                                <TextBlock Classes="cardTitle" Text="{loc:Tr Today.Hours}"/>
+                                <StackPanel IsVisible="{Binding HasHours}" Spacing="4">
+                                    <controls:PixelColumns Values="{Binding Hours}" Highlight="{Binding HoursHighlight}" Height="60"/>
+                                    <!-- Подписи на границах четвертей суток: 00 · 06 · 12 · 18 · 24. -->
+                                    <Grid ColumnDefinitions="*,*,*,*">
+                                        <TextBlock Grid.Column="0" Classes="caption" Text="00"/>
+                                        <TextBlock Grid.Column="1" Classes="caption" Text="06"/>
+                                        <TextBlock Grid.Column="2" Classes="caption" Text="12"/>
+                                        <TextBlock Grid.Column="3" Classes="caption" Text="18"/>
+                                        <TextBlock Grid.Column="3" Classes="caption" Text="24" HorizontalAlignment="Right"/>
+                                    </Grid>
+                                </StackPanel>
+                                <TextBlock Classes="caption" Text="{Binding HoursCaption}" Margin="0,6,0,0"/>
+                            </StackPanel>
+                        </Border>
+                    </Grid>
+
+                    <!-- Справа: дела. -->
+                    <Border Grid.Column="1" Classes="todayCard">
+                        <Grid RowDefinitions="Auto,*,Auto">
+                            <TextBlock Grid.Row="0" Classes="cardTitle" Text="{loc:Tr Today.Deals}"/>
+                            <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
+                                <StackPanel Spacing="2">
+                                    <ItemsControl ItemsSource="{Binding Deals}">
+                                        <ItemsControl.ItemTemplate>
+                                            <DataTemplate x:DataType="x:String">
+                                                <TextBlock Classes="line" Text="{Binding StringFormat='· {0}'}"/>
+                                            </DataTemplate>
+                                        </ItemsControl.ItemTemplate>
+                                    </ItemsControl>
+                                    <TextBlock Classes="caption" Text="{Binding StyleLine}" Margin="0,10,0,0"
+                                               IsVisible="{Binding StyleLine, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+                                </StackPanel>
+                            </ScrollViewer>
+                            <WrapPanel Grid.Row="2" Margin="0,12,0,0">
+                                <Button Classes="statusButton" Margin="0,0,8,6" Content="{Binding FollowUpsLabel}"
+                                        IsVisible="{Binding HasFollowUps}" Command="{Binding OpenFollowUpsCommand}"/>
+                                <Button Classes="statusButton" Margin="0,0,8,6" Content="{Binding RemindersLabel}"
+                                        IsVisible="{Binding HasReminders}" Command="{Binding OpenCrmCommand}"/>
+                                <Button Classes="statusButton" Margin="0,0,8,6" Content="{loc:Tr Today.OpenCrm}"
+                                        Command="{Binding OpenCrmCommand}"/>
+                            </WrapPanel>
+                        </Grid>
+                    </Border>
+                </Grid>
+            </Grid>
+        </Border>
+    </Grid>
+</UserControl>

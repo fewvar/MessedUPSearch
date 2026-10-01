@@ -30,6 +30,24 @@ public partial class MainWindowViewModel : ViewModelBase
     /// <summary>Рассылка идёт в фоне — одна на приложение.</summary>
     public MailQueue Mail { get; }
     public MailViewModel MailVm { get; }
+    public StatsViewModel StatsVm { get; } = new();
+    public TodayViewModel TodayVm { get; }
+
+    /// <summary>Сессии в DAW: пишет трекер раз в минуту, если есть согласие.</summary>
+    public DawTracker? DawTracker { get; }
+
+    /// <summary>Страница согласия на весь экран — при первом запуске 1.1.</summary>
+    [ObservableProperty] private bool _isConsentOpen;
+    [ObservableProperty] private bool _dawTracking;
+    [ObservableProperty] private string _dawSummary = string.Empty;
+    [ObservableProperty] private string _backgroundStatus = string.Empty;
+
+    /// <summary>Фоновый режим включили/выключили — App ставит или убирает иконку в трее.</summary>
+    public event Action<bool>? BackgroundModeChanged;
+
+    [ObservableProperty] private bool _showTodayOnStart = true;
+    [ObservableProperty] private bool _yourTimeToast = true;
+    private Avalonia.Threading.DispatcherTimer? _minuteTimer;
 
     public ObservableCollection<CrmEntry> CrmEntries { get; } = new();
 
@@ -167,6 +185,16 @@ public partial class MainWindowViewModel : ViewModelBase
             LlmModels.Add(_llmModel);
         _hasSavedLlmKey = SecretStore.Get(LlmProviders.KeyName(_llmProvider)) is not null;
 
+        _dawTracking = _settings.DawTracking;
+        DawTracker = new DawTracker(() => _settings);
+        _isConsentOpen = !_settings.DawConsentAsked && !Avalonia.Controls.Design.IsDesignMode;
+
+        _showTodayOnStart = _settings.ShowTodayOnStart;
+        _yourTimeToast = _settings.YourTimeToast;
+        TodayVm = new TodayViewModel(() => _settings, CreateLlmClient);
+        TodayVm.OpenFollowUpsRequested += () => OpenFollowUpsCommand.Execute(null);
+        TodayVm.OpenCrmRequested += ShowCrm;
+
         Mail = new MailQueue(() => _settings);
         MailVm = new MailViewModel(Mail, () => _settings, CreateLlmClient);
         Mail.MailSent += () =>
@@ -231,9 +259,135 @@ public partial class MainWindowViewModel : ViewModelBase
         };
 
         LoadReminders();
-        IsReminderOpen = Reminders.Count > 0;
         RefreshFollowUps();
+
+        // Первый запуск за день — «Сегодня» (напоминания там же, карточкой). Дальше — как раньше.
+        // Пока открыта страница согласия, «Сегодня» откроется после ответа на неё.
+        if (IsConsentOpen)
+            IsReminderOpen = false;
+        else if (ShowTodayOnStart && _settings.TodayShownDate != DateTime.Now.ToString("yyyy-MM-dd") &&
+            !Avalonia.Controls.Design.IsDesignMode)
+            ShowToday();
+        else
+            IsReminderOpen = Reminders.Count > 0;
+
         StartReplyChecks();
+        StartMinuteTimer();
+    }
+
+    /// <summary>«Разрешить» на странице согласия: сессии в DAW + фоновый режим (трей, автозапуск).</summary>
+    [RelayCommand]
+    private void AllowDaw()
+    {
+        _settings.DawConsentAsked = true;
+        DawTracking = true;
+        IsConsentOpen = false;
+        AfterConsent();
+    }
+
+    /// <summary>«Не сейчас»: ничего не пишется; включить можно в настройках.</summary>
+    [RelayCommand]
+    private void DeclineDaw()
+    {
+        _settings.DawConsentAsked = true;
+        _settings.Save();
+        IsConsentOpen = false;
+        AfterConsent();
+    }
+
+    private void AfterConsent()
+    {
+        if (ShowTodayOnStart && _settings.TodayShownDate != DateTime.Now.ToString("yyyy-MM-dd"))
+            ShowToday();
+        else
+            IsReminderOpen = Reminders.Count > 0;
+    }
+
+    partial void OnDawTrackingChanged(bool value)
+    {
+        _settings.DawTracking = value;
+        _settings.Save();
+
+        var problem = value ? Autostart.Enable() : string.Empty;
+        if (!value)
+            Autostart.Disable();
+        BackgroundStatus = problem.Length > 0 ? Localizer.Instance[problem] : string.Empty;
+
+        BackgroundModeChanged?.Invoke(value);
+        RefreshDawSummary();
+    }
+
+    /// <summary>«Что собрано» в настройках: число сессий, часы и последние интервалы.</summary>
+    public void RefreshDawSummary()
+    {
+        using var db = new AppDbContext();
+        var sessions = db.DawSessions.OrderByDescending(s => s.StartedAt).ToList();
+        if (sessions.Count == 0)
+        {
+            DawSummary = Localizer.Instance["Daw.Nothing"];
+            return;
+        }
+
+        var minutes = sessions.Sum(s =>
+            Services.Stats.StatsService.Parse(s.StartedAt) is { } a && Services.Stats.StatsService.Parse(s.EndedAt) is { } b
+                ? (b - a).TotalMinutes + 1 : 0);
+        var last = sessions.Take(5).Select(s => $"{s.App} {s.StartedAt}–{s.EndedAt[^5..]}");
+        DawSummary = Localizer.Instance.Format("Daw.Summary", sessions.Count, Math.Round(minutes / 60, 1)) + "\n" + string.Join("\n", last);
+    }
+
+    [RelayCommand]
+    private void EraseDaw()
+    {
+        DawTracker?.EraseAll();
+        RefreshDawSummary();
+        Toasts.Show(Localizer.Instance["Daw.Erased"]);
+    }
+
+    public void ShowToday()
+    {
+        IsReminderOpen = false;
+        TodayVm.Open(Reminders.Sum(r => r.BeatNames.Count));
+    }
+
+    partial void OnShowTodayOnStartChanged(bool value) { _settings.ShowTodayOnStart = value; _settings.Save(); }
+    partial void OnYourTimeToastChanged(bool value) { _settings.YourTimeToast = value; _settings.Save(); }
+
+    /// <summary>Раз в минуту: «сейчас твоё время» (не чаще раза в день) и сессии в DAW.</summary>
+    private void StartMinuteTimer()
+    {
+        if (Avalonia.Controls.Design.IsDesignMode)
+            return;
+        _minuteTimer = new Avalonia.Threading.DispatcherTimer(TimeSpan.FromMinutes(1), Avalonia.Threading.DispatcherPriority.Background,
+            (_, _) => OnMinute());
+        _minuteTimer.Start();
+    }
+
+    private int _hoursComputedAt = -1;
+    private Services.Stats.ProductiveHours? _hours;
+
+    private void OnMinute()
+    {
+        var now = DateTime.Now;
+        DawTracker?.Tick(now);
+
+        if (!_settings.YourTimeToast || _settings.YourTimeToastDate == now.ToString("yyyy-MM-dd"))
+            return;
+
+        // Часы пересчитываются раз в час — это запрос к базе и чтение дат файлов.
+        if (_hoursComputedAt != now.Hour)
+        {
+            using var db = new AppDbContext();
+            _hours = Services.Stats.TodayFacts.ProductiveHoursFor(db, _settings);
+            _hoursComputedAt = now.Hour;
+        }
+
+        if (_hours is not { Known: true } hours || now.Hour != hours.Start)
+            return;
+
+        _settings.YourTimeToastDate = now.ToString("yyyy-MM-dd");
+        _settings.Save();
+        var window = $"{hours.Start:00}–{(hours.Start + hours.Length) % 24:00}";
+        Toasts.Show(Localizer.Instance.Format("Today.YourTimeToast", window));
     }
 
     /// <summary>
@@ -703,7 +857,11 @@ public partial class MainWindowViewModel : ViewModelBase
         ShowCrm();
     }
 
-    public void ShowSettings() => IsSettingsOpen = true;
+    public void ShowSettings()
+    {
+        RefreshDawSummary();
+        IsSettingsOpen = true;
+    }
 
     public void ShowParser() => IsParserOpen = true;
 

@@ -148,6 +148,44 @@ public static class UiScenes
                 }
                 break;
 
+            // Настройки, прокрученные к «Сегодня и сессии в DAW».
+            case "settings-daw":
+                main.ShowSettings();
+                DispatcherTimer.RunOnce(() =>
+                {
+                    if (Avalonia.Application.Current?.ApplicationLifetime is
+                        Avalonia.Controls.ApplicationLifetimes.IClassicDesktopStyleApplicationLifetime { MainWindow: { } window })
+                    {
+                        var header = window.GetVisualDescendants().OfType<Avalonia.Controls.TextBlock>()
+                            .FirstOrDefault(t => t.Text == Localization.Localizer.Instance["Settings.Today"]);
+                        (header?.Parent?.Parent as Avalonia.Controls.Control)?.BringIntoView();
+                    }
+                }, TimeSpan.FromMilliseconds(600));
+                break;
+
+            // Что macOS считает активным приложением — пишется в app.log через 3 с (окно уже впереди).
+            case "daw-probe":
+                DispatcherTimer.RunOnce(() =>
+                {
+                    AppLog.Enabled = true;
+                    var fg = Foreground.Current();
+                    AppLog.Write($"daw-probe: «{fg?.Name}» {fg?.BundleId} -> {DawCatalog.Match(fg) ?? "нет"}");
+                }, TimeSpan.FromSeconds(3));
+                break;
+
+            // Первый запуск 1.1: страница согласия, «Не сейчас» через 2 с — дальше «Сегодня».
+            case "consent-decline":
+                DispatcherTimer.RunOnce(() => main.DeclineDawCommand.Execute(null), TimeSpan.FromSeconds(1.2));
+                break;
+
+            case "stats":
+                main.StatsVm.Open();
+                break;
+
+            case "today":
+                main.ShowToday();
+                break;
+
             case "beat-analyze-pick":
                 if (main.BeatsVm.Beats.FirstOrDefault() is { } picked)
                 {

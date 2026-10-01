@@ -215,30 +215,33 @@ public partial class BeatsViewModel : ViewModelBase
         var existing = db.Beats.Select(b => b.FilePath).ToHashSet();
         var today = DateTime.Now.ToString("yyyy-MM-dd");
 
-        var added = 0;
+        var added = new List<Beat>();
         foreach (var file in audioFiles)
         {
             if (existing.Contains(file))
                 continue;
 
-            db.Beats.Add(new Beat
+            var beat = new Beat
             {
                 BeatName = Path.GetFileNameWithoutExtension(file),
                 FilePath = file,
                 Added = today,
                 Status = "POTENTIAL",
                 StatusColor = StatusColorFor("POTENTIAL")
-            });
-            added++;
+            };
+            db.Beats.Add(beat);
+            added.Add(beat);
         }
 
-        if (added > 0)
+        if (added.Count > 0)
         {
             db.SaveChanges();
+            foreach (var beat in added)
+                Activity.Log(ActivityKinds.BeatAdded, beat.Id);
             LoadBeats();
         }
 
-        return added;
+        return added.Count;
     }
 
     public void BeginAddBeat(string filePath)
@@ -338,6 +341,7 @@ public partial class BeatsViewModel : ViewModelBase
                 SaveSimilarity(_editingId, result);
             ShowSimilarity(result);
             UiSounds.Play(UiSound.AnalysisDone);
+            Activity.Log(ActivityKinds.Analysis, _editingId == 0 ? null : _editingId);
 
             AnalysisStatus = string.Empty;
         }
@@ -593,6 +597,8 @@ public partial class BeatsViewModel : ViewModelBase
         }
 
         var becomesSold = EditStatus == "SOLD" && !beat.IsSold;
+        var isNew = _editingId == 0;
+        var statusChanged = !isNew && beat.Status != EditStatus;
 
         beat.BeatName = EditName.Trim();
         beat.AiTags = EditTags.Trim();
@@ -617,6 +623,11 @@ public partial class BeatsViewModel : ViewModelBase
         }
 
         _editingId = beat.Id;
+
+        if (isNew)
+            Activity.Log(ActivityKinds.BeatAdded, beat.Id);
+        else if (statusChanged)
+            Activity.Log(ActivityKinds.BeatStatus, beat.Id, value: EditStatus);
 
         if (becomesSold)
         {

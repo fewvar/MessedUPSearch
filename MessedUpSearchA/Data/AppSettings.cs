@@ -56,6 +56,23 @@ public class AppSettings
     public uint ImapLastUid { get; set; }
     public uint ImapUidValidity { get; set; }
 
+    // «Сегодня».
+    /// <summary>Когда «Сегодня» открывали последний раз — от этого момента считаются «новые ответы».</summary>
+    public string TodaySeenAt { get; set; } = string.Empty;
+    /// <summary>Показывать «Сегодня» при первом запуске за день.</summary>
+    public bool ShowTodayOnStart { get; set; } = true;
+    public string TodayShownDate { get; set; } = string.Empty;
+    /// <summary>Совет нейросети кэшируется на день: не тратить запросы на каждое открытие.</summary>
+    public string CoachDate { get; set; } = string.Empty;
+    public string CoachText { get; set; } = string.Empty;
+    /// <summary>Тост «сейчас твоё время» — не чаще раза в день.</summary>
+    public bool YourTimeToast { get; set; } = true;
+    public string YourTimeToastDate { get; set; } = string.Empty;
+
+    // Сессии в DAW и фоновый режим — только с согласия (страница при первом запуске 1.1).
+    public bool DawConsentAsked { get; set; }
+    public bool DawTracking { get; set; }
+
     /// <summary>Шаблон последней рассылки — открывается первым в следующий раз.</summary>
     public int LastPitchTemplateId { get; set; }
     public int LastFollowUpTemplateId { get; set; }

@@ -202,6 +202,9 @@
             <views:ReminderOverlay IsVisible="False" motion:Motion.IsShown="{Binding IsReminderOpen}"/>
             <views:ParserOverlay IsVisible="False" motion:Motion.IsShown="{Binding IsParserOpen}"/>
             <views:MailOverlay DataContext="{Binding MailVm}" IsVisible="False" motion:Motion.IsShown="{Binding IsOpen}"/>
+            <views:StatsOverlay DataContext="{Binding StatsVm}" IsVisible="False" motion:Motion.IsShown="{Binding IsOpen}"/>
+            <views:TodayOverlay DataContext="{Binding TodayVm}" IsVisible="False" motion:Motion.IsShown="{Binding IsOpen}"/>
+            <views:ConsentOverlay IsVisible="False" motion:Motion.IsShown="{Binding IsConsentOpen}"/>
         </Grid>
     </Grid>
 </Window>

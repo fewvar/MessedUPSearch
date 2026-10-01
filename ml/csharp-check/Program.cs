@@ -113,6 +113,69 @@ if (args.Length == 2 && args[0] == "mail")
     return 0;
 }
 
+// Сессии в DAW и фоновый режим: MlCheck daw <папка данных> — активное приложение, сопоставление,
+// склейка сессий, автозапуск (HOME подменяется на папку данных, настоящий ~/Library не трогается).
+if (args.Length == 2 && args[0] == "daw")
+{
+    Environment.SetEnvironmentVariable(MessedUpSearchA.Data.AppPaths.DataDirVariable, args[1]);
+    var fg = MessedUpSearchA.Services.Foreground.Current();
+    Console.WriteLine($"сейчас впереди: «{fg?.Name}» {fg?.BundleId} -> DAW: {MessedUpSearchA.Services.DawCatalog.Match(fg) ?? "нет"}");
+
+    foreach (var (name, id) in new[] { ("GarageBand", "com.apple.garageband10"), ("FL Studio 2024", "com.image-line.flstudio"),
+                 ("Ableton Live 12 Suite", "com.ableton.live"), ("Logic Pro", "com.apple.logic10"), ("REAPER", "com.cockos.reaper"),
+                 ("Cubase 14", "com.steinberg.cubase14"), ("Studio Pro", "com.fender.studiopro"), ("Reason", "com.reasonstudios.reason"),
+                 ("Safari", "com.apple.Safari"), ("Reasonable Notes", "com.x.notes"), ("Live Photos", "com.x.live") })
+        Console.WriteLine($"  {name,-22} -> {MessedUpSearchA.Services.DawCatalog.Match(new(name, id, "")) ?? "—"}");
+
+    using (var db = new MessedUpSearchA.Data.AppDbContext())
+    {
+        Microsoft.EntityFrameworkCore.RelationalDatabaseFacadeExtensions.Migrate(db.Database);
+        db.DawSessions.RemoveRange(db.DawSessions);
+        db.SaveChanges();
+    }
+    var tracker = new MessedUpSearchA.Services.DawTracker(() => new MessedUpSearchA.Data.AppSettings { DawTracking = true });
+    var t0 = DateTime.Today.AddHours(14);
+    // 14:00–14:30 FL, перерыв 8 мин (браузер), 14:38–14:50 FL, перерыв 30 мин, 15:20–15:25 FL, 15:26 Ableton
+    for (var m = 0; m <= 30; m++) tracker.Record(t0.AddMinutes(m), "FL Studio");
+    for (var m = 31; m < 38; m++) tracker.Record(t0.AddMinutes(m), null);
+    for (var m = 38; m <= 50; m++) tracker.Record(t0.AddMinutes(m), "FL Studio");
+    for (var m = 80; m <= 85; m++) tracker.Record(t0.AddMinutes(m), "FL Studio");
+    tracker.Record(t0.AddMinutes(86), "Ableton Live");
+    using (var db = new MessedUpSearchA.Data.AppDbContext())
+        foreach (var s in db.DawSessions.OrderBy(s => s.Id))
+            Console.WriteLine($"  сессия {s.App} {s.StartedAt[11..]}–{s.EndedAt[11..]}");
+    Console.WriteLine("  (ждём: FL 14:00–14:50, FL 15:20–15:25, Ableton 15:26–15:26)");
+
+    Environment.SetEnvironmentVariable("HOME", args[1]);
+    Console.WriteLine($"автозапуск: «{MessedUpSearchA.Services.Autostart.Enable()}» (пусто = ок), включён={MessedUpSearchA.Services.Autostart.IsEnabled()}");
+    var plist = Path.Combine(args[1], "Library", "LaunchAgents", "com.fewvar.messedupsearch.plist");
+    Console.WriteLine(File.ReadAllText(plist));
+    MessedUpSearchA.Services.Autostart.Disable();
+    Console.WriteLine($"после выключения: включён={MessedUpSearchA.Services.Autostart.IsEnabled()}, файл есть={File.Exists(plist)}");
+    return 0;
+}
+
+// Статистика на копии базы: MlCheck stats <папка данных> <дней> — сверяется с ml-скриптом в scratchpad.
+if (args.Length == 3 && args[0] == "stats")
+{
+    Environment.SetEnvironmentVariable(MessedUpSearchA.Data.AppPaths.DataDirVariable, args[1]);
+    MessedUpSearchA.Services.Localization.Localizer.Instance.Language = MessedUpSearchA.Services.Localization.AppLanguage.Russian;
+    var days = int.Parse(args[2]);
+    using var db = new MessedUpSearchA.Data.AppDbContext();
+    var r = MessedUpSearchA.Services.Stats.StatsService.Build(db, DateTime.Today.AddDays(-days + 1),
+        MessedUpSearchA.Services.Localization.Localizer.Instance.Culture);
+    Console.WriteLine($"питчей {r.Pitches} отвечено {r.Answered} {r.ReplyRate:P0}");
+    foreach (var row in r.ByTemplate) Console.WriteLine($" шаблон {row.Label} {row.Hits} / {row.Total}");
+    Console.WriteLine(" дни " + string.Join(" ", r.ByWeekday.Select(x => $"{x.Label}:{x.Hits}/{x.Total}")));
+    Console.WriteLine(" часы " + string.Join(" ", r.ByHours.Select(x => $"{x.Label[..2]}:{x.Hits}/{x.Total}")));
+    Console.WriteLine($" время ответа [{string.Join(", ", r.ReplyTime.Select(x => x.Hits))}]");
+    Console.WriteLine($" медиана {r.MedianReply}");
+    Console.WriteLine($" фоллоу-апов {r.FollowUps} продано {r.Sold} фри {r.Free} новых битов {r.BeatsAdded}");
+    Console.WriteLine($" биты: {string.Join("; ", r.TopBeats.Select(x => $"{x.Label} {x.ValueText}"))}");
+    Console.WriteLine($" по неделям: {string.Join(" ", r.WeeklySent)}");
+    return 0;
+}
+
 // Живая CRM на GreenMail (SMTP 3025 / IMAP 3143, пользователь test@local.test:secret):
 //   MlCheck replies <папка данных-копия>
 if (args.Length == 2 && args[0] == "replies")

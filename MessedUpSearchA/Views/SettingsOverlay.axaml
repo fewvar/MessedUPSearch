@@ -232,6 +232,36 @@
                             </StackPanel>
                         </Border>
 
+                        <!-- «Сегодня» и сессии в DAW (согласие + фоновый режим). -->
+                        <Border Classes="settingsSection">
+                            <StackPanel>
+                                <TextBlock Classes="settingsHeader" Text="{loc:Tr Settings.Today}"/>
+
+                                <CheckBox Classes="settings" Content="{loc:Tr Today.ShowOnStart}"
+                                          IsChecked="{Binding ShowTodayOnStart}" Margin="0,0,0,8"/>
+                                <CheckBox Classes="settings" Content="{loc:Tr Today.YourTimeSetting}"
+                                          IsChecked="{Binding YourTimeToast}" Margin="0,0,0,14"/>
+
+                                <CheckBox Classes="settings" Content="{loc:Tr Daw.Setting}"
+                                          IsChecked="{Binding DawTracking}"/>
+                                <TextBlock Classes="settingsHint" Text="{loc:Tr Daw.SettingHint}"
+                                           TextWrapping="Wrap" MaxWidth="700" HorizontalAlignment="Left" Margin="0,4,0,0"/>
+                                <TextBlock Classes="settingsHint" Text="{Binding BackgroundStatus}" Foreground="#E0A040"
+                                           IsVisible="{Binding BackgroundStatus, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
+                                           TextWrapping="Wrap" MaxWidth="700" HorizontalAlignment="Left" Margin="0,4,0,0"/>
+
+                                <Grid ColumnDefinitions="*,Auto" Margin="0,12,0,0">
+                                    <StackPanel Grid.Column="0">
+                                        <TextBlock Classes="settingsLabel" Text="{loc:Tr Daw.Collected}"/>
+                                        <TextBlock Classes="settingsHint" Text="{Binding DawSummary}"
+                                                   TextWrapping="Wrap" MaxWidth="560" HorizontalAlignment="Left"/>
+                                    </StackPanel>
+                                    <Button Grid.Column="1" Classes="action" Content="{loc:Tr Daw.Erase}"
+                                            VerticalAlignment="Top" Command="{Binding EraseDawCommand}"/>
+                                </Grid>
+                            </StackPanel>
+                        </Border>
+
                         <Border Classes="settingsSection">
                             <StackPanel>
                                 <TextBlock Classes="settingsHeader" Text="{loc:Tr Settings.Parser}"/>

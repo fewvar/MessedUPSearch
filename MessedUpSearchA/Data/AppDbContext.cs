@@ -16,6 +16,8 @@ public class AppDbContext : DbContext
     public DbSet<MailTemplate> MailTemplates => Set<MailTemplate>();
     public DbSet<OutgoingMail> OutgoingMails => Set<OutgoingMail>();
     public DbSet<IncomingReply> IncomingReplies => Set<IncomingReply>();
+    public DbSet<ActivityEvent> ActivityEvents => Set<ActivityEvent>();
+    public DbSet<DawSession> DawSessions => Set<DawSession>();
 
     public static string DbPath => AppPaths.DbFile;
 
@@ -102,5 +104,13 @@ public class AppDbContext : DbContext
             .HasOne<OutgoingMail>().WithMany().HasForeignKey(r => r.OutgoingMailId).OnDelete(DeleteBehavior.SetNull);
         b.Entity<IncomingReply>().HasIndex(r => r.MessageId);
         b.Entity<IncomingReply>().HasIndex(r => r.ArtistId);
+
+        // События переживают удаление бита и артиста — статистика за прошлое не должна меняться.
+        b.Entity<ActivityEvent>()
+            .HasOne<Beat>().WithMany().HasForeignKey(e => e.BeatId).OnDelete(DeleteBehavior.SetNull);
+        b.Entity<ActivityEvent>()
+            .HasOne<Artist>().WithMany().HasForeignKey(e => e.ArtistId).OnDelete(DeleteBehavior.SetNull);
+        b.Entity<ActivityEvent>().HasIndex(e => e.At);
+        b.Entity<DawSession>().HasIndex(s => s.StartedAt);
     }
 }
