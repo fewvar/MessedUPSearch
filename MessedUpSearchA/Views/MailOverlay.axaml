@@ -62,6 +62,9 @@
                                                                    IsVisible="{Binding HasEmail}"
                                                                    TextTrimming="CharacterEllipsis"
                                                                    Foreground="{StaticResource OnBackgroundDim}"/>
+                                                        <TextBlock Text="{loc:Tr Llm.Personalized}" FontSize="11"
+                                                                   IsVisible="{Binding IsPersonalized}"
+                                                                   Foreground="#2ECC71"/>
                                                         <TextBlock Text="{Binding Warning}" FontSize="11"
                                                                    IsVisible="{Binding HasWarning}"
                                                                    TextWrapping="Wrap" Foreground="#E0A040"/>
@@ -108,9 +111,26 @@
                                  AcceptsReturn="True" TextWrapping="Wrap"
                                  VerticalContentAlignment="Top"/>
 
-                        <TextBlock Grid.Row="4" Classes="filterLabel" Margin="0,8,0,0">
-                            <Run Text="{loc:Tr Mail.Preview}"/><Run Text=" "/><Run Text="{Binding PreviewRecipient.Nickname}"/>
-                        </TextBlock>
+                        <!-- Предпросмотр + «Оживить»: нейросеть переписывает письмо каждому отмеченному. -->
+                        <Grid Grid.Row="4" ColumnDefinitions="*,Auto" Margin="0,8,0,0">
+                            <TextBlock Grid.Column="0" Classes="filterLabel" VerticalAlignment="Center">
+                                <Run Text="{loc:Tr Mail.Preview}"/><Run Text=" "/><Run Text="{Binding PreviewRecipient.Nickname}"/>
+                            </TextBlock>
+                            <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8">
+                                <TextBlock Text="{Binding PersonalizeStatus}" FontSize="11" VerticalAlignment="Center"
+                                           Foreground="{StaticResource OnBackgroundDim}"/>
+                                <Button Classes="statusButton" Content="{loc:Tr Llm.Reset}"
+                                        IsVisible="{Binding HasPersonalized}"
+                                        Command="{Binding ResetPersonalizationCommand}"/>
+                                <Button Classes="statusButton" Command="{Binding PersonalizeCommand}"
+                                        ToolTip.Tip="{loc:Tr Llm.PersonalizeTip}">
+                                    <Panel>
+                                        <TextBlock Text="{loc:Tr Llm.Personalize}" IsVisible="{Binding !IsPersonalizing}"/>
+                                        <TextBlock Text="{loc:Tr Mail.Stop}" IsVisible="{Binding IsPersonalizing}"/>
+                                    </Panel>
+                                </Button>
+                            </StackPanel>
+                        </Grid>
                         <Border Grid.Row="5" BorderBrush="#33FFFFFF" BorderThickness="1" CornerRadius="6"
                                 Padding="12,10" Height="200">
                             <ScrollViewer VerticalScrollBarVisibility="Auto">

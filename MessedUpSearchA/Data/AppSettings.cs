@@ -43,6 +43,11 @@ public class AppSettings
     /// <summary>Сколько писем в сутки, не больше. Почтовые сервисы режут массовые рассылки с личных ящиков.</summary>
     public int MailDailyLimit { get; set; } = 50;
 
+    // Нейросеть для «Оживить»: свой ключ, OpenAI-совместимый провайдер. Ключ — в связке ключей.
+    public string LlmProvider { get; set; } = "Groq";
+    public string LlmBaseUrl { get; set; } = string.Empty;
+    public string LlmModel { get; set; } = string.Empty;
+
     /// <summary>Шаблон последней рассылки — открывается первым в следующий раз.</summary>
     public int LastPitchTemplateId { get; set; }
 

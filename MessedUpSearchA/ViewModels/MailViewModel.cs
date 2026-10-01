@@ -7,6 +7,7 @@ using CommunityToolkit.Mvvm.Input;
 using MessedUpSearchA.Data;
 using MessedUpSearchA.Models;
 using MessedUpSearchA.Services;
+using MessedUpSearchA.Services.Llm;
 using MessedUpSearchA.Services.Localization;
 using MessedUpSearchA.Services.Mail;
 using MessedUpSearchA.Services.Parsing;
@@ -24,7 +25,13 @@ public partial class MailViewModel : ViewModelBase
 
     private readonly MailQueue _queue;
     private readonly Func<AppSettings> _settings;
+    private readonly Func<LlmClient?> _llm;
     private Beat? _beat;
+    private System.Threading.CancellationTokenSource? _personalizeCts;
+
+    [ObservableProperty] private bool _isPersonalizing;
+    [ObservableProperty] private string _personalizeStatus = string.Empty;
+    [ObservableProperty] private bool _hasPersonalized;
 
     public ObservableCollection<MailRecipientItem> Recipients { get; } = new();
     public ObservableCollection<MailTemplate> Templates { get; } = new();
@@ -47,10 +54,11 @@ public partial class MailViewModel : ViewModelBase
 
     public string PlaceholdersHint => string.Join(" ", MailTemplates.Placeholders);
 
-    public MailViewModel(MailQueue queue, Func<AppSettings> settings)
+    public MailViewModel(MailQueue queue, Func<AppSettings> settings, Func<LlmClient?> llm)
     {
         _queue = queue;
         _settings = settings;
+        _llm = llm;
     }
 
     /// <summary>Открыть рассылку бита; preselect — кого отметить (остальные получатели — привязанные к биту).</summary>
@@ -72,6 +80,8 @@ public partial class MailViewModel : ViewModelBase
                            ?? Templates.FirstOrDefault();
 
         BeatTitle = _beat.BeatName;
+        PersonalizeStatus = string.Empty;
+        HasPersonalized = false;
         LoadRecipients(db, artistIds);
         PreviewRecipient = Recipients.FirstOrDefault(r => r.IsSelected) ?? Recipients.FirstOrDefault();
         Validate();
@@ -88,6 +98,10 @@ public partial class MailViewModel : ViewModelBase
         var sent = db.OutgoingMails.Where(m => m.Status == MailStatuses.Sent && m.ArtistId != null)
             .Select(m => new { m.ArtistId, m.BeatId, m.SentAt })
             .ToList();
+
+        var topTracks = db.ArtistTracks.Where(t => artistIds.Contains(t.ArtistId)).ToList()
+            .GroupBy(t => t.ArtistId)
+            .ToDictionary(g => g.Key, g => g.OrderByDescending(t => t.PlayCount).First().Title);
 
         foreach (var artist in db.Artists.Where(a => artistIds.Contains(a.Id)).OrderBy(a => a.Nickname).ToList())
         {
@@ -114,6 +128,8 @@ public partial class MailViewModel : ViewModelBase
                 Email = artist.Email.Trim(),
                 Warning = warning,
                 IsSelected = warning.Length == 0,
+                Genre = artist.AiGenreTags,
+                TopTrack = topTracks.GetValueOrDefault(artist.Id, string.Empty),
                 EmailHints = ContactHints.Extract(artist.Bio)
                     .Where(h => h.Kind == ContactKind.Email).Select(h => h.Value).ToList()
             };
@@ -161,8 +177,9 @@ public partial class MailViewModel : ViewModelBase
         EditBody = newValue?.Body ?? string.Empty;
     }
 
-    partial void OnEditSubjectChanged(string value) => RenderPreview();
-    partial void OnEditBodyChanged(string value) => RenderPreview();
+    // Шаблон поменяли — переписанные письма больше ему не соответствуют.
+    partial void OnEditSubjectChanged(string value) { ResetPersonalization(); RenderPreview(); }
+    partial void OnEditBodyChanged(string value) { ResetPersonalization(); RenderPreview(); }
     partial void OnPreviewRecipientChanged(MailRecipientItem? value) => RenderPreview();
 
     private void RenderPreview()
@@ -173,10 +190,9 @@ public partial class MailViewModel : ViewModelBase
             return;
         }
 
-        var artist = new Artist { Nickname = PreviewRecipient.Nickname };
-        var me = MailQueue.SenderName(_settings());
-        PreviewSubject = MailTemplates.Render(EditSubject, artist, _beat, me);
-        PreviewBody = MailTemplates.Render(EditBody, artist, _beat, me);
+        var (subject, body) = LetterFor(PreviewRecipient);
+        PreviewSubject = subject;
+        PreviewBody = body;
         Validate();
     }
 
@@ -277,13 +293,10 @@ public partial class MailViewModel : ViewModelBase
             settings.Save();
         }
 
-        var me = MailQueue.SenderName(settings);
         var jobs = Recipients.Where(r => r.IsSelected && r.HasEmail).Select(r =>
         {
-            var artist = new Artist { Nickname = r.Nickname };
-            return new MailJob(r.ArtistId, _beat.Id, SelectedTemplate?.Id, MailKinds.Pitch, r.Email,
-                MailTemplates.Render(EditSubject, artist, _beat, me),
-                MailTemplates.Render(EditBody, artist, _beat, me));
+            var (subject, body) = LetterFor(r);
+            return new MailJob(r.ArtistId, _beat.Id, SelectedTemplate?.Id, MailKinds.Pitch, r.Email, subject, body);
         }).ToList();
 
         _queue.Enqueue(jobs);
@@ -291,9 +304,114 @@ public partial class MailViewModel : ViewModelBase
         IsOpen = false;
     }
 
+    /// <summary>Письмо этому артисту: переписанное нейросетью, если есть, иначе шаблон.</summary>
+    private (string Subject, string Body) LetterFor(MailRecipientItem r)
+    {
+        if (r.IsPersonalized)
+            return (r.CustomSubject, r.CustomBody);
+
+        var artist = new Artist { Nickname = r.Nickname };
+        var me = MailQueue.SenderName(_settings());
+        return (MailTemplates.Render(EditSubject, artist, _beat!, me), MailTemplates.Render(EditBody, artist, _beat!, me));
+    }
+
+    /// <summary>
+    /// «Оживить»: каждому отмеченному — своё письмо, переписанное под него (ник, жанр, один трек).
+    /// Всё видно в предпросмотре до отправки; не вышло у кого-то — ему уйдёт шаблон.
+    /// </summary>
+    [RelayCommand]
+    private async System.Threading.Tasks.Task PersonalizeAsync()
+    {
+        if (IsPersonalizing)
+        {
+            _personalizeCts?.Cancel();
+            return;
+        }
+
+        if (_beat is null || _llm() is not { } client)
+        {
+            PersonalizeStatus = Localizer.Instance["Llm.SetupFirst"];
+            return;
+        }
+
+        var targets = Recipients.Where(r => r.IsSelected && r.HasEmail).ToList();
+        if (targets.Count == 0)
+            return;
+
+        IsPersonalizing = true;
+        _personalizeCts = new System.Threading.CancellationTokenSource();
+        int done = 0, failed = 0;
+        try
+        {
+            foreach (var r in targets)
+            {
+                PersonalizeStatus = Localizer.Instance.Format("Llm.Progress", done + failed + 1, targets.Count);
+                r.CustomSubject = r.CustomBody = string.Empty;
+                var (subject, body) = LetterFor(r);
+                try
+                {
+                    var result = await LetterPersonalizer.RewriteAsync(client,
+                        new ArtistFacts(r.Nickname, r.Genre, r.TopTrack), subject, body, _beat.ShareUrl,
+                        _personalizeCts.Token);
+                    if (result is { } letter)
+                    {
+                        r.CustomSubject = letter.Subject;
+                        r.CustomBody = letter.Body;
+                        done++;
+                    }
+                    else
+                        failed++;
+                }
+                catch (LlmException ex)
+                {
+                    AppLog.Write($"оживить {r.Nickname}: {ex.Message}");
+                    failed++;
+                    if (ex.IsAuth)
+                    {
+                        PersonalizeStatus = Localizer.Instance["Llm.AuthFailed"];
+                        return;
+                    }
+                }
+
+                if (r == PreviewRecipient)
+                    RenderPreview();
+            }
+
+            PersonalizeStatus = failed == 0
+                ? Localizer.Instance.Format("Llm.Done", done)
+                : Localizer.Instance.Format("Llm.DonePartly", done, failed);
+        }
+        catch (OperationCanceledException)
+        {
+            PersonalizeStatus = Localizer.Instance.Format("Llm.Done", done);
+        }
+        finally
+        {
+            IsPersonalizing = false;
+            HasPersonalized = Recipients.Any(r => r.IsPersonalized);
+            _personalizeCts.Dispose();
+            _personalizeCts = null;
+            RenderPreview();
+        }
+    }
+
+    /// <summary>Вернуть всем шаблонный текст.</summary>
+    [RelayCommand]
+    private void ResetPersonalization()
+    {
+        if (IsPersonalizing)
+            return;
+        foreach (var r in Recipients)
+            r.CustomSubject = r.CustomBody = string.Empty;
+        if (HasPersonalized)
+            PersonalizeStatus = string.Empty;
+        HasPersonalized = false;
+    }
+
     [RelayCommand]
     private void Close()
     {
+        _personalizeCts?.Cancel();
         SaveTemplateEdits(SelectedTemplate);
         IsOpen = false;
     }

@@ -2,6 +2,7 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:MessedUpSearchA.ViewModels"
              xmlns:loc="using:MessedUpSearchA.Services.Localization"
+             xmlns:conv="using:MessedUpSearchA.Converters"
              x:Class="MessedUpSearchA.Views.SettingsOverlay"
              x:DataType="vm:MainWindowViewModel">
 
@@ -143,6 +144,80 @@
                                             VerticalAlignment="Center"
                                             IsEnabled="{Binding !IsTestingMail}"
                                             Command="{Binding TestMailCommand}"/>
+                                </Grid>
+                            </StackPanel>
+                        </Border>
+
+                        <!-- Нейросеть для «Оживить» в рассылке: свой ключ, ключ — в связке ключей. -->
+                        <Border Classes="settingsSection">
+                            <StackPanel>
+                                <TextBlock Classes="settingsHeader" Text="{loc:Tr Settings.Llm}"/>
+
+                                <Grid ColumnDefinitions="*,Auto" Margin="0,0,0,12">
+                                    <StackPanel Grid.Column="0">
+                                        <TextBlock Classes="settingsLabel" Text="{loc:Tr Llm.Provider}"/>
+                                        <TextBlock Classes="settingsHint" Text="{Binding LlmPrivacyNote}"
+                                                   TextWrapping="Wrap" MaxWidth="460" HorizontalAlignment="Left"/>
+                                    </StackPanel>
+                                    <ComboBox Grid.Column="1" Width="260" VerticalAlignment="Center"
+                                              ItemsSource="{Binding LlmProviderOptions}"
+                                              SelectedItem="{Binding LlmProvider}">
+                                        <ComboBox.ItemTemplate>
+                                            <DataTemplate x:DataType="x:String">
+                                                <TextBlock Text="{Binding Converter={x:Static conv:DataLabelConverter.Instance}}"/>
+                                            </DataTemplate>
+                                        </ComboBox.ItemTemplate>
+                                    </ComboBox>
+                                </Grid>
+
+                                <Grid ColumnDefinitions="*,Auto" Margin="0,0,0,12" IsVisible="{Binding IsCustomLlm}">
+                                    <StackPanel Grid.Column="0">
+                                        <TextBlock Classes="settingsLabel" Text="{loc:Tr Llm.BaseUrl}"/>
+                                        <TextBlock Classes="settingsHint" Text="{loc:Tr Llm.BaseUrlHint}"
+                                                   TextWrapping="Wrap" MaxWidth="460" HorizontalAlignment="Left"/>
+                                    </StackPanel>
+                                    <TextBox Grid.Column="1" Classes="settings" Width="260" VerticalAlignment="Center"
+                                             Text="{Binding LlmBaseUrl}" PlaceholderText="http://localhost:1234/v1"/>
+                                </Grid>
+
+                                <Grid ColumnDefinitions="*,Auto" Margin="0,0,0,12">
+                                    <StackPanel Grid.Column="0">
+                                        <TextBlock Classes="settingsLabel" Text="{loc:Tr Llm.Key}"/>
+                                        <TextBlock Classes="settingsHint" Text="{Binding LlmKeyHint}"
+                                                   TextWrapping="Wrap" MaxWidth="460" HorizontalAlignment="Left"/>
+                                    </StackPanel>
+                                    <StackPanel Grid.Column="1" Spacing="4" VerticalAlignment="Center">
+                                        <TextBox Classes="settings" Width="260" Text="{Binding LlmKey}" PasswordChar="•"
+                                                 PlaceholderText="{loc:Tr Mail.PasswordSaved}"
+                                                 IsVisible="{Binding HasSavedLlmKey}"/>
+                                        <TextBox Classes="settings" Width="260" Text="{Binding LlmKey}" PasswordChar="•"
+                                                 IsVisible="{Binding !HasSavedLlmKey}"/>
+                                        <Button Classes="statusButton" HorizontalAlignment="Right"
+                                                Content="{loc:Tr Mail.ForgetPassword}"
+                                                IsVisible="{Binding HasSavedLlmKey}"
+                                                Command="{Binding ForgetLlmKeyCommand}"/>
+                                    </StackPanel>
+                                </Grid>
+
+                                <Grid ColumnDefinitions="*,Auto" Margin="0,0,0,12">
+                                    <StackPanel Grid.Column="0">
+                                        <TextBlock Classes="settingsLabel" Text="{loc:Tr Llm.Model}"/>
+                                        <TextBlock Classes="settingsHint" Text="{loc:Tr Llm.ModelHint}"
+                                                   TextWrapping="Wrap" MaxWidth="460" HorizontalAlignment="Left"/>
+                                    </StackPanel>
+                                    <ComboBox Grid.Column="1" Width="260" VerticalAlignment="Center"
+                                              ItemsSource="{Binding LlmModels}"
+                                              SelectedItem="{Binding LlmModel}"/>
+                                </Grid>
+
+                                <Grid ColumnDefinitions="*,Auto">
+                                    <TextBlock Grid.Column="0" Classes="settingsHint" Text="{Binding LlmTestStatus}"
+                                               TextWrapping="Wrap" MaxWidth="460" HorizontalAlignment="Left"
+                                               VerticalAlignment="Center"/>
+                                    <Button Grid.Column="1" Classes="action" Content="{loc:Tr Mail.SaveAndTest}"
+                                            VerticalAlignment="Center"
+                                            IsEnabled="{Binding !IsTestingLlm}"
+                                            Command="{Binding TestLlmCommand}"/>
                                 </Grid>
                             </StackPanel>
                         </Border>

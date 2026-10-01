@@ -48,7 +48,7 @@ if (args.Length == 2 && args[0] == "mail")
         var queue = new MessedUpSearchA.Services.Mail.MailQueue(() => s) { MinPauseSeconds = 1, MaxPauseSeconds = 2 };
         using var db = new MessedUpSearchA.Data.AppDbContext();
         var beat = db.Beats.First();
-        var vm = new MessedUpSearchA.ViewModels.MailViewModel(queue, () => s);
+        var vm = new MessedUpSearchA.ViewModels.MailViewModel(queue, () => s, () => null);
         vm.Open(beat.Id, db.Artists.OrderBy(a => a.Id).Take(count).Select(a => a.Id).ToList());
         foreach (var r in vm.Recipients)
             Console.WriteLine($"  получатель {r.Nickname} <{r.Email}> выбран={r.IsSelected} {r.Warning}");
@@ -110,6 +110,46 @@ if (args.Length == 2 && args[0] == "mail")
     Console.WriteLine("лог:\n" + string.Join("\n", File.ReadLines(MessedUpSearchA.Services.AppLog.FilePath).Where(l => l.Contains("рассылк") || l.Contains("провер"))));
     MessedUpSearchA.Services.SecretStore.Delete(key);
     Console.WriteLine($"связка ключей после удаления: {MessedUpSearchA.Services.SecretStore.Get(key) ?? "пусто"}");
+    return 0;
+}
+
+// «Оживить» на заглушке API (127.0.0.1:8099): MlCheck llm <папка данных-копия>
+if (args.Length == 2 && args[0] == "llm")
+{
+    Environment.SetEnvironmentVariable(MessedUpSearchA.Data.AppPaths.DataDirVariable, args[1]);
+    const string url = "http://127.0.0.1:8099/v1";
+
+    try { await new MessedUpSearchA.Services.Llm.LlmClient(url, "bad").ListModelsAsync(); }
+    catch (MessedUpSearchA.Services.Llm.LlmException ex) { Console.WriteLine($"плохой ключ: auth={ex.IsAuth} «{ex.Message}»"); }
+
+    var models = await new MessedUpSearchA.Services.Llm.LlmClient(url, "good").ListModelsAsync();
+    Console.WriteLine($"модели: {string.Join(", ", models)} -> по умолчанию {MessedUpSearchA.Services.Llm.LlmProviders.PickDefault(models)}");
+
+    using (var db = new MessedUpSearchA.Data.AppDbContext())
+    {
+        Microsoft.EntityFrameworkCore.RelationalDatabaseFacadeExtensions.Migrate(db.Database);
+        foreach (var a in db.Artists) a.Email = a.Nickname.Replace(" ", "").ToLowerInvariant() + "@ok.test";
+        foreach (var b in db.Beats) b.ShareUrl = "https://example.com/beat";
+        db.SaveChanges();
+    }
+
+    var settings = new MessedUpSearchA.Data.AppSettings { MailAddress = "me@x.test", SmtpHost = "h", MailSenderName = "fewvar" };
+    var queue = new MessedUpSearchA.Services.Mail.MailQueue(() => settings);
+    var vm = new MessedUpSearchA.ViewModels.MailViewModel(queue, () => settings,
+        () => new MessedUpSearchA.Services.Llm.LlmClient(url, "good", "stub-small"));
+    using (var db = new MessedUpSearchA.Data.AppDbContext())
+        vm.Open(db.Beats.First().Id, db.Artists.Where(a => new[] { "Yopz", "LDE Whyte", "sunraw" }.Contains(a.Nickname)).Select(a => a.Id).ToList());
+    vm.SelectedTemplate = vm.Templates.First(t => t.Name.Contains("RU"));
+
+    await vm.PersonalizeCommand.ExecuteAsync(null);
+    Console.WriteLine($"статус: {vm.PersonalizeStatus}");
+    foreach (var r in vm.Recipients)
+        Console.WriteLine($"  {r.Nickname} (трек «{r.TopTrack}»): переписано={r.IsPersonalized} {r.CustomSubject} | {r.CustomBody.Split('\n')[0]}");
+
+    vm.PreviewRecipient = vm.Recipients.First(r => r.IsPersonalized);
+    Console.WriteLine($"предпросмотр {vm.PreviewRecipient.Nickname}: {vm.PreviewSubject}");
+    vm.EditBody += " ";
+    Console.WriteLine($"после правки шаблона переписанных: {vm.Recipients.Count(r => r.IsPersonalized)}");
     return 0;
 }
 

@@ -10,6 +10,7 @@ using MessedUpSearchA.Converters;
 using MessedUpSearchA.Services;
 using MessedUpSearchA.Services.Localization;
 using MessedUpSearchA.Services.Mail;
+using MessedUpSearchA.Services.Llm;
 
 namespace MessedUpSearchA.ViewModels;
 
@@ -66,6 +67,28 @@ public partial class MainWindowViewModel : ViewModelBase
     [ObservableProperty] private bool _hasSavedMailPassword;
     [ObservableProperty] private bool _isTestingMail;
     [ObservableProperty] private string _mailTestStatus = string.Empty;
+
+    // Нейросеть. Ключ, как и пароль почты, только вводится — читается из связки ключей при запросе.
+    public IReadOnlyList<string> LlmProviderOptions => LlmProviders.All;
+    public ObservableCollection<string> LlmModels { get; } = new();
+    [ObservableProperty] private string _llmProvider = LlmProviders.Groq;
+    [ObservableProperty] private string _llmBaseUrl = string.Empty;
+    [ObservableProperty] private string _llmModel = string.Empty;
+    [ObservableProperty] private string _llmKey = string.Empty;
+    [ObservableProperty] private bool _hasSavedLlmKey;
+    [ObservableProperty] private bool _isTestingLlm;
+    [ObservableProperty] private string _llmTestStatus = string.Empty;
+
+    public bool IsCustomLlm => LlmProvider == LlmProviders.Custom;
+    public string LlmPrivacyNote => Localizer.Instance.Format("Llm.Privacy",
+        LlmProvider != LlmProviders.Custom ? LlmProvider
+        : Uri.TryCreate(LlmBaseUrl.Trim(), UriKind.Absolute, out var uri) ? uri.Host : Localizer.Instance["Value.Custom"]);
+    public string LlmKeyHint => Localizer.Instance[LlmProvider switch
+    {
+        LlmProviders.Groq => "Llm.KeyHintGroq",
+        LlmProviders.OpenRouter => "Llm.KeyHintOpenRouter",
+        _ => "Llm.KeyHintCustom"
+    }];
 
     /// <summary>Где взять пароль приложения — под почту, которую ввели.</summary>
     public string MailHelp => Localizer.Instance[MailPresets.For(MailAddress)?.HelpKey ?? "Mail.HelpOther"];
@@ -126,8 +149,15 @@ public partial class MainWindowViewModel : ViewModelBase
         _mailDailyLimit = Math.Clamp(_settings.MailDailyLimit, 1, 500);
         _hasSavedMailPassword = _mailAddress.Length > 0 && SecretStore.Get(MailQueue.PasswordKey(_mailAddress)) is not null;
 
+        _llmProvider = LlmProviders.All.Contains(_settings.LlmProvider) ? _settings.LlmProvider : LlmProviders.Groq;
+        _llmBaseUrl = _settings.LlmBaseUrl;
+        _llmModel = _settings.LlmModel;
+        if (_llmModel.Length > 0)
+            LlmModels.Add(_llmModel);
+        _hasSavedLlmKey = SecretStore.Get(LlmProviders.KeyName(_llmProvider)) is not null;
+
         Mail = new MailQueue(() => _settings);
-        MailVm = new MailViewModel(Mail, () => _settings);
+        MailVm = new MailViewModel(Mail, () => _settings, CreateLlmClient);
         Mail.MailSent += () => _artistsVm.LoadArtists();
         MailVm.ContactsChanged += () => _artistsVm.LoadArtists();
         _beatsVm.MailRequested += (beatId, artistIds) => MailVm.Open(beatId, artistIds);
@@ -145,6 +175,8 @@ public partial class MainWindowViewModel : ViewModelBase
             OnPropertyChanged(nameof(ReminderDaysLabel));
             OnPropertyChanged(nameof(ParserStatus));
             OnPropertyChanged(nameof(MailHelp));
+            OnPropertyChanged(nameof(LlmPrivacyNote));
+            OnPropertyChanged(nameof(LlmKeyHint));
         };
 
         _beatsVm.ArtistImported += () =>
@@ -306,6 +338,100 @@ public partial class MainWindowViewModel : ViewModelBase
         SecretStore.Delete(MailQueue.PasswordKey(MailAddress));
         HasSavedMailPassword = false;
         MailTestStatus = string.Empty;
+    }
+
+    partial void OnLlmProviderChanged(string value)
+    {
+        _settings.LlmProvider = value;
+        _settings.LlmModel = string.Empty;
+        _settings.Save();
+        LlmModel = string.Empty;
+        LlmModels.Clear();
+        LlmTestStatus = string.Empty;
+        HasSavedLlmKey = SecretStore.Get(LlmProviders.KeyName(value)) is not null;
+        OnPropertyChanged(nameof(IsCustomLlm));
+        OnPropertyChanged(nameof(LlmPrivacyNote));
+        OnPropertyChanged(nameof(LlmKeyHint));
+    }
+
+    partial void OnLlmBaseUrlChanged(string value)
+    {
+        _settings.LlmBaseUrl = value.Trim();
+        _settings.Save();
+        OnPropertyChanged(nameof(LlmPrivacyNote));
+    }
+
+    partial void OnLlmModelChanged(string value)
+    {
+        if (string.IsNullOrEmpty(value))
+            return;
+        _settings.LlmModel = value;
+        _settings.Save();
+    }
+
+    /// <summary>Клиент по текущим настройкам; null — нейросеть не настроена.</summary>
+    public LlmClient? CreateLlmClient()
+    {
+        var key = SecretStore.Get(LlmProviders.KeyName(_settings.LlmProvider)) ?? string.Empty;
+        var baseUrl = LlmProviders.BaseUrl(_settings.LlmProvider, _settings.LlmBaseUrl);
+        if (baseUrl.Length == 0 || _settings.LlmModel.Length == 0 ||
+            (key.Length == 0 && _settings.LlmProvider != LlmProviders.Custom))
+            return null;
+        return new LlmClient(baseUrl, key, _settings.LlmModel);
+    }
+
+    /// <summary>«Сохранить и проверить»: ключ — в связку ключей, затем список моделей с провайдера.</summary>
+    [RelayCommand]
+    private async System.Threading.Tasks.Task TestLlmAsync()
+    {
+        var keyName = LlmProviders.KeyName(LlmProvider);
+        if (LlmKey.Length > 0)
+        {
+            if (!SecretStore.Set(keyName, LlmKey.Trim()))
+            {
+                LlmTestStatus = Localizer.Instance["Mail.KeychainFailed"];
+                return;
+            }
+            LlmKey = string.Empty;
+            HasSavedLlmKey = true;
+        }
+
+        var baseUrl = LlmProviders.BaseUrl(LlmProvider, LlmBaseUrl);
+        if (baseUrl.Length == 0)
+        {
+            LlmTestStatus = Localizer.Instance["Llm.NoUrl"];
+            return;
+        }
+
+        IsTestingLlm = true;
+        LlmTestStatus = Localizer.Instance["Llm.Testing"];
+        try
+        {
+            var models = await new LlmClient(baseUrl, SecretStore.Get(keyName) ?? string.Empty).ListModelsAsync();
+            var keep = LlmModel;
+            LlmModels.Clear();
+            foreach (var m in models)
+                LlmModels.Add(m);
+            LlmModel = models.Contains(keep) ? keep : LlmProviders.PickDefault(models);
+            LlmTestStatus = Localizer.Instance.Format("Llm.TestOk", models.Count);
+        }
+        catch (LlmException ex)
+        {
+            AppLog.Write($"нейросеть {LlmProvider}: {ex.Message}");
+            LlmTestStatus = ex.IsAuth ? Localizer.Instance["Llm.AuthFailed"] : Localizer.Instance.Format("Llm.Failed", ex.Message);
+        }
+        finally
+        {
+            IsTestingLlm = false;
+        }
+    }
+
+    [RelayCommand]
+    private void ForgetLlmKey()
+    {
+        SecretStore.Delete(LlmProviders.KeyName(LlmProvider));
+        HasSavedLlmKey = false;
+        LlmTestStatus = string.Empty;
     }
 
     partial void OnEnableParserLogsChanged(bool value)

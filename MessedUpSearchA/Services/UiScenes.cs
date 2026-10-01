@@ -1,6 +1,7 @@
 #if DEBUG
 using System;
 using System.Linq;
+using Avalonia.Controls;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
 using MessedUpSearchA.ViewModels;
@@ -91,6 +92,21 @@ public static class UiScenes
                 }
                 break;
 
+            // Раздел «Нейросеть для писем» в настройках.
+            case "settings-llm":
+                main.IsSettingsOpen = true;
+                DispatcherTimer.RunOnce(() =>
+                {
+                    if (Avalonia.Application.Current?.ApplicationLifetime is
+                        Avalonia.Controls.ApplicationLifetimes.IClassicDesktopStyleApplicationLifetime { MainWindow: { } window })
+                    {
+                        var header = window.GetVisualDescendants().OfType<Avalonia.Controls.TextBlock>()
+                            .FirstOrDefault(t => t.Text == Localization.Localizer.Instance["Settings.Llm"]);
+                        (header?.Parent?.Parent as Avalonia.Controls.Control)?.BringIntoView();
+                    }
+                }, TimeSpan.FromMilliseconds(600));
+                break;
+
             // Низ настроек: «О программе» и «Сообщить о проблеме».
             case "report":
                 main.IsSettingsOpen = true;
@@ -120,6 +136,15 @@ public static class UiScenes
                 {
                     main.MailVm.Open(sending.Id, main.ArtistsVm.Artists.Take(5).Select(a => a.Id).ToList());
                     main.MailVm.SendCommand.Execute(null);
+                }
+                break;
+
+            // «Оживить» на заглушке API (settings.json: LlmProvider=Custom, адрес заглушки).
+            case "mail-llm":
+                if (main.BeatsVm.Beats.FirstOrDefault() is { } livened)
+                {
+                    main.MailVm.Open(livened.Id, main.ArtistsVm.Artists.Take(5).Select(a => a.Id).ToList());
+                    main.MailVm.PersonalizeCommand.Execute(null);
                 }
                 break;
 
